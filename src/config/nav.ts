@@ -3,6 +3,7 @@ import {
   Activity,
   BookOpenText,
   Bot,
+  Brain,
   Building2,
   Compass,
   FlaskConical,
@@ -32,6 +33,7 @@ export type NavItem = {
 export const NAV: NavItem[] = [
   { href: "/", label: "Best Ideas", short: "Best Ideas", icon: Trophy, hotkey: "b", description: "Hermes-ranked Top 10 + Watchlist 10 for beating QQQ over 10 years" },
   { href: "/best-ideas", label: "Top 10 + Watchlist", short: "Top 10", icon: Trophy, hotkey: "t", description: "Full ranked list, QQQ case, falsifiers, and next Hermes action" },
+  { href: "/learnings", label: "Learnings", short: "Learnings", icon: Brain, hotkey: "l", description: "Archive of Hermes investing philosophy updates that shape the ranked list" },
   { href: "/research", label: "Research", short: "Research", icon: BookOpenText, hotkey: "r", description: "Hermes memos, notes, journal, and source-backed conclusions" },
   { href: "/pipeline", label: "Idea Pipeline", short: "Pipeline", icon: KanbanSquare, hotkey: "i", description: "Sourcing → Diligence → Live → Monitor → Archive" },
   { href: "/north-star", label: "North Star", short: "North Star", icon: Compass, hotkey: "n", description: "Mandate, rules, KPIs, stats vs QQQ" },

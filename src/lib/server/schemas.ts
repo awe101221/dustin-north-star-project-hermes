@@ -189,6 +189,22 @@ export const bestIdeasSnapshotCreate = z.object({
   actor: z.string().trim().max(64).default("hermes"),
 });
 
+const learningChange = z.object({
+  title: z.string().trim().min(1).max(200),
+  learning: z.string().trim().min(1).max(4000),
+  implication: z.string().trim().min(1).max(4000),
+  source: z.string().trim().max(400).nullable().optional(),
+  tickers: z.array(ticker).max(20).default([]),
+});
+
+export const learningSnapshotCreate = z.object({
+  asOf: z.string().datetime({ offset: true }).optional(),
+  summary: z.string().trim().min(1).max(4000),
+  principles: z.array(z.string().trim().min(1).max(400)).min(1).max(12),
+  changes: z.array(learningChange).min(1).max(20),
+  actor: z.string().trim().max(64).default("hermes"),
+});
+
 export type IdeaCreate = z.infer<typeof ideaCreate>;
 export type NoteCreate = z.infer<typeof noteCreate>;
 export type TradeCreate = z.infer<typeof tradeCreate>;

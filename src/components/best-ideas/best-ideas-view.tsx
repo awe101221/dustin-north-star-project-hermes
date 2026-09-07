@@ -109,6 +109,7 @@ export function BestIdeasView({ dashboard, compact = false }: { dashboard: BestI
         <span>·</span>
         <span>Last Hermes refresh {fmtDateTime(dashboard.lastUpdated)}</span>
         {compact ? <Link href="/best-ideas" className="ml-auto inline-flex items-center gap-1 text-cyan hover:underline">View full Top 10 + Watchlist 10 <ArrowUpRight className="size-3" /></Link> : null}
+        <Link href="/learnings" className={compact ? "inline-flex items-center gap-1 text-cyan hover:underline" : "ml-auto inline-flex items-center gap-1 text-cyan hover:underline"}>View Learnings archive <ArrowUpRight className="size-3" /></Link>
       </div>
 
       <div className={cn("grid gap-4", compact ? "grid-cols-1 xl:grid-cols-2" : "grid-cols-1")}>

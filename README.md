@@ -39,9 +39,10 @@ them block the PR; several need a decision from you.
    whether to enable RLS or drop the backups. The advisor's findings on `hermes_*` objects
    (security-definer views, mutable `search_path` on functions) were fixed by the third migration.
 5. **Knowledge migration was applied through the SQL console, not the script** (the sandbox had no
-   service-role key and no route to PostgREST). The row count in *State of the live database*
-   below is what actually landed. `npm run migrate:knowledge` is idempotent (upsert on slug,
-   content hash) and will complete or refresh the set from the two legacy checkouts.
+   service-role key and no route to PostgREST). All 69 documents landed and were verified by
+   re-hashing `body_md` in the database against the hash the script computed from the source
+   files. `npm run migrate:knowledge` is idempotent (upsert on slug, content hash) and is the
+   way to refresh the set when the legacy checkouts change.
 6. **Positions are only partially classified.** 156 of 376 latest IBKR positions join to an
    `investment_companies` row; the rest show without sector/industry. Backfilling
    `investment_companies` (or a symbol alias table) fixes the exposure charts.
@@ -224,7 +225,7 @@ State of the live database after this PR:
 | `hermes_performance_points` | 594 (177 portfolio 2026-01-01 → 2026-09-04, 417 QQQ TR 2025-01-01 → 2026-08-31) | reference DB, cleaned as in ISSUES #2 |
 | `hermes_trades` | 781 IBKR executions 2025-07-01 → 2026-08-28 | reference DB `capital.realized_executions` |
 | `hermes_ideas` | 76 cards (25 live, 24 monitor, 7 diligence, 20 sourcing) | open recommendations, trigger alerts, held names with memos, legacy North Star seeds, master scores |
-| `hermes_knowledge` | 22 of the 69 documents extracted from `awe-capital` and `dustin-awe-capital` (personas, gates, specs, playbooks, prompts, queue-worker contracts, skills, templates, agent instructions); the remaining 47 load with `npm run migrate:knowledge` | `scripts/migrate/import-legacy-knowledge.ts` (`--emit-sql`, pushed through the SQL console) |
+| `hermes_knowledge` | 69 documents extracted from `awe-capital` and `dustin-awe-capital` (personas, gates, specs, playbooks, prompts, queue-worker contracts, skills, templates, agent instructions); every row's `body_md` re-hashed in SQL and matched to its `content_sha256` | `scripts/migrate/import-legacy-knowledge.ts` (`--emit-sql`, pushed through the SQL console) |
 | `hermes_schema_migrations` | 3 rows (file name + sha256 of each applied migration) | `scripts/db/apply-migrations.ts` |
 
 What was **not** copied: memos, rankings, positions, filings and 13F data stay in their legacy

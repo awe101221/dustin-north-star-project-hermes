@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildBestIdeas,
+  getQqqLineInSand,
   HERMES_BEST_IDEAS_MANDATE,
   normalizeBestIdeasSnapshot,
   snapshotMetadataToDashboard,
@@ -111,5 +112,30 @@ describe("best ideas ranking", () => {
     expect(dashboard?.topTen[0]?.ticker).toBe("APP");
     expect(dashboard?.watchlistTen[0]?.ticker).toBe("MELI");
     expect(snapshotMetadataToDashboard({})).toBeNull();
+  });
+
+  it("draws a movable QQQ line in the sand from explicit snapshot fields", () => {
+    const dashboard = snapshotMetadataToDashboard({
+      bestIdeas: {
+        asOf: "2026-09-07T19:54:44.000Z",
+        thesis: "Modeled refresh with daily price updates.",
+        topTen: [
+          { ticker: "MELI", thesis: "Modeled upside", whyBeatQqq: "Probability-weighted return can beat QQQ.", falsifier: "QQQ wins if growth slows.", conviction: 91, risk: 48, qqqLine: "above", qqqLineReason: "PW 5y IRR clears the 12% QQQ hurdle." },
+          { ticker: "TSM", thesis: "Great company, expensive stock", whyBeatQqq: "Bull case can beat QQQ.", falsifier: "QQQ wins if valuation compresses.", conviction: 77, risk: 64, qqqLine: "below", qqqLineReason: "Base/PW model does not clear the QQQ hurdle today." },
+        ],
+        watchlistTen: [
+          { ticker: "VRT", thesis: "AI power beneficiary", whyBeatQqq: "Backlog could surprise.", falsifier: "QQQ wins if valuation already prices it.", conviction: 74, risk: 72, qqqLine: "below" },
+        ],
+      },
+    });
+
+    expect(dashboard?.topTen[0]?.qqqLine).toBe("above");
+    expect(dashboard?.topTen[1]?.qqqLine).toBe("below");
+    const line = getQqqLineInSand(dashboard!);
+    expect(line.hurdleLabel).toBe("12% modeled 5y IRR hurdle");
+    expect(line.above.map((x) => x.ticker)).toEqual(["MELI"]);
+    expect(line.below.map((x) => x.ticker)).toEqual(["TSM", "VRT"]);
+    expect(line.firstBelow?.ticker).toBe("TSM");
+    expect(line.lastPriceRefresh).toBe("2026-09-07T19:54:44.000Z");
   });
 });

@@ -178,6 +178,9 @@ const bestIdeaSnapshotItem = z.object({
   score: z.number().min(0).max(100).nullable().optional(),
   theme: z.string().trim().max(80).nullable().optional(),
   persona: z.string().trim().max(80).nullable().optional(),
+  qqqLine: z.enum(["above", "below"]).nullable().optional(),
+  qqqLineReason: z.string().trim().max(1000).nullable().optional(),
+  modeledReturn: z.number().min(-1).max(10).nullable().optional(),
   tags,
 });
 

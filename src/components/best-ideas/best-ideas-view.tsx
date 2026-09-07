@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight, Eye, ListChecks, Target, Trophy } from "lucide-react";
 import type { BestIdeasDashboard, RankedBestIdea } from "@/lib/best-ideas";
+import { getQqqLineInSand } from "@/lib/best-ideas";
 import { fmtDateTime, fmtPct } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Badge, toneFor } from "@/components/ui/badge";
@@ -21,6 +22,7 @@ function IdeaRow({ idea, dense = false }: { idea: RankedBestIdea; dense?: boolea
             {idea.companyName ? <span className="truncate text-[12px] text-muted">{idea.companyName}</span> : null}
             <Badge variant={toneFor(idea.stage)}>{idea.stage}</Badge>
             {idea.theme ? <Badge variant="outline">{idea.theme}</Badge> : null}
+            <Badge variant={idea.qqqLine === "above" ? "pos" : "warn"}>{idea.qqqLine === "above" ? "above QQQ line" : "below QQQ line"}</Badge>
             <PersonaChip slug={idea.persona} />
           </div>
           <p className="mt-1 text-[12.5px] leading-5 text-foreground-secondary">{idea.thesis || "Needs a fresh Hermes thesis."}</p>
@@ -32,7 +34,7 @@ function IdeaRow({ idea, dense = false }: { idea: RankedBestIdea; dense?: boolea
       </div>
 
       {!dense ? (
-        <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
           <div className="panel-2 p-2.5">
             <p className="eyebrow mb-1">Why this over QQQ?</p>
             <p className="text-[12px] leading-4 text-foreground-secondary">{idea.qqqQuestion}</p>
@@ -40,6 +42,10 @@ function IdeaRow({ idea, dense = false }: { idea: RankedBestIdea; dense?: boolea
           <div className="panel-2 p-2.5">
             <p className="eyebrow mb-1">QQQ is better if…</p>
             <p className="text-[12px] leading-4 text-foreground-secondary">{idea.falsifier || "Falsifier missing — make this the next research task."}</p>
+          </div>
+          <div className="panel-2 p-2.5">
+            <p className="eyebrow mb-1">Line-in-sand reason</p>
+            <p className="text-[12px] leading-4 text-foreground-secondary">{idea.qqqLineReason || "Daily price refresh can move this above or below the QQQ line."}</p>
           </div>
           <div className="panel-2 p-2.5">
             <p className="eyebrow mb-1">Next Hermes action</p>
@@ -78,6 +84,47 @@ function IdeaList({ title, description, icon, ideas, empty, dense = false }: { t
   );
 }
 
+function QqqLinePanel({ dashboard, compact = false }: { dashboard: BestIdeasDashboard; compact?: boolean }) {
+  const line = getQqqLineInSand(dashboard);
+  const aboveTickers = line.above.slice(0, compact ? 8 : 20);
+  const belowTickers = line.below.slice(0, compact ? 8 : 20);
+  return (
+    <Card className="border-gold/30 bg-gold-soft/40">
+      <CardHeader>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <CardTitle className="inline-flex items-center gap-1.5"><Target className="size-3.5 text-gold" /> QQQ-beating line in the sand</CardTitle>
+            <CardDescription>
+              Only names above this line currently clear the QQQ hurdle. Everything below defaults to QQQ until price, fundamentals, or evidence improve.
+            </CardDescription>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted">
+            <Badge variant="gold">{line.hurdleLabel}</Badge>
+            <Badge variant="cyan">daily price refresh</Badge>
+            <span>last refresh {fmtDateTime(line.lastPriceRefresh)}</span>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className={cn("grid gap-3", compact ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-[1fr_auto_1fr]")}>
+        <div className="panel-2 p-3">
+          <p className="eyebrow mb-2">Above line · modeled QQQ beaters ({line.above.length})</p>
+          <div className="flex flex-wrap gap-2">
+            {aboveTickers.length ? aboveTickers.map((idea) => <Badge key={`above-${idea.ticker}`} variant="pos">{idea.ticker}</Badge>) : <span className="text-[12px] text-muted">No names clear the line today.</span>}
+          </div>
+        </div>
+        {!compact ? <div className="flex items-center justify-center"><div className="h-full min-h-10 border-l border-dashed border-gold/60" /></div> : null}
+        <div className="panel-2 p-3">
+          <p className="eyebrow mb-2">Below line · QQQ better by default ({line.below.length})</p>
+          <div className="flex flex-wrap gap-2">
+            {belowTickers.length ? belowTickers.map((idea) => <Badge key={`below-${idea.ticker}`} variant="warn">{idea.ticker}</Badge>) : <span className="text-[12px] text-muted">Every ranked name clears the line today.</span>}
+          </div>
+          {line.firstBelow ? <p className="mt-2 text-[11.5px] text-muted">First below: {line.firstBelow.ticker} — {line.firstBelow.qqqLineReason ?? "needs a better price or stronger evidence."}</p> : null}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function BestIdeasView({ dashboard, compact = false }: { dashboard: BestIdeasDashboard; compact?: boolean }) {
   const visibleTop = compact ? dashboard.topTen.slice(0, 5) : dashboard.topTen;
   const visibleWatch = compact ? dashboard.watchlistTen.slice(0, 5) : dashboard.watchlistTen;
@@ -111,6 +158,8 @@ export function BestIdeasView({ dashboard, compact = false }: { dashboard: BestI
         {compact ? <Link href="/best-ideas" className="ml-auto inline-flex items-center gap-1 text-cyan hover:underline">View full Top 10 + Watchlist 10 <ArrowUpRight className="size-3" /></Link> : null}
         <Link href="/learnings" className={compact ? "inline-flex items-center gap-1 text-cyan hover:underline" : "ml-auto inline-flex items-center gap-1 text-cyan hover:underline"}>View Learnings archive <ArrowUpRight className="size-3" /></Link>
       </div>
+
+      <QqqLinePanel dashboard={dashboard} compact={compact} />
 
       <div className={cn("grid gap-4", compact ? "grid-cols-1 xl:grid-cols-2" : "grid-cols-1")}>
         <IdeaList

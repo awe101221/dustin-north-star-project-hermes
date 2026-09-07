@@ -5,6 +5,9 @@ import type { IdeaStage, NoteRow } from "@/lib/db/types";
 export const BEST_IDEAS_SNAPSHOT_TAG = "best-ideas-snapshot";
 export const HERMES_BEST_IDEAS_MANDATE =
   "Hermes-ranked Top 10 and Watchlist 10: the app exists to surface Dustin North Star Project Hermes's best current ideas to beat QQQ over 10 years.";
+export const QQQ_LINE_HURDLE_LABEL = "12% modeled 5y IRR hurdle";
+
+export type QqqLinePosition = "above" | "below";
 
 export type BestIdeaInput = Pick<
   Idea,
@@ -34,8 +37,20 @@ export type RankedBestIdea = BestIdeaInput & {
   lane: "top-ten" | "watchlist";
   scoreLabel: string;
   qqqQuestion: string;
+  qqqLine: QqqLinePosition;
+  qqqLineReason: string | null;
+  modeledReturn: number | null;
   missing: string[];
   source?: "hermes-snapshot" | "idea-table";
+};
+
+export type QqqLineInSand = {
+  hurdleLabel: string;
+  lastPriceRefresh: string | null;
+  lineIndex: number;
+  above: RankedBestIdea[];
+  below: RankedBestIdea[];
+  firstBelow: RankedBestIdea | null;
 };
 
 export type BestIdeasDashboard = {
@@ -66,6 +81,9 @@ export type SnapshotIdeaInput = {
   score?: number | null;
   theme?: string | null;
   persona?: string | null;
+  qqqLine?: QqqLinePosition | null;
+  qqqLineReason?: string | null;
+  modeledReturn?: number | null;
   tags?: string[];
 };
 
@@ -118,6 +136,19 @@ function missingFields(idea: BestIdeaInput) {
   return missing;
 }
 
+function qqqLineFromTags(tags: string[] | null | undefined): QqqLinePosition | null {
+  const normalized = (tags ?? []).map((tag) => tag.toLowerCase());
+  if (normalized.some((tag) => ["above-qqq-line", "qqq-line-above", "qqq-beating"].includes(tag))) return "above";
+  if (normalized.some((tag) => ["below-qqq-line", "qqq-line-below", "qqq-not-beating"].includes(tag))) return "below";
+  return null;
+}
+
+function inferredQqqLine(idea: BestIdeaInput, score: number): QqqLinePosition {
+  const tagged = qqqLineFromTags(idea.tags);
+  if (tagged) return tagged;
+  return score >= 75 && Boolean(idea.whyBeatQqq?.trim()) ? "above" : "below";
+}
+
 export function scoreBestIdea(idea: BestIdeaInput) {
   const conviction = idea.conviction ?? 0;
   const risk = idea.risk ?? 55;
@@ -141,6 +172,9 @@ function rankIdeas(ideas: BestIdeaInput[], lane: RankedBestIdea["lane"]): Ranked
       lane,
       scoreLabel: `${Math.round(score)}`,
       qqqQuestion: idea.whyBeatQqq?.trim() || "Needs a fresh Hermes QQQ-relative underwrite.",
+      qqqLine: inferredQqqLine(idea, score),
+      qqqLineReason: null,
+      modeledReturn: null,
       missing: missingFields(idea),
       source: "idea-table",
     };
@@ -178,6 +212,9 @@ function rankSnapshotIdeas(ideas: SnapshotIdeaInput[], lane: RankedBestIdea["lan
       lane,
       scoreLabel: `${Math.round(score)}`,
       qqqQuestion: idea.whyBeatQqq ?? "Needs a fresh Hermes QQQ-relative underwrite.",
+      qqqLine: raw.qqqLine ?? qqqLineFromTags(idea.tags) ?? inferredQqqLine(idea, score),
+      qqqLineReason: cleanText(raw.qqqLineReason),
+      modeledReturn: raw.modeledReturn ?? null,
       missing: missingFields(idea),
       source: "hermes-snapshot",
     };
@@ -191,6 +228,20 @@ export function normalizeBestIdeasSnapshot(input: BestIdeasSnapshotInput): Norma
     thesis: cleanText(input.thesis),
     topTen: rankSnapshotIdeas(input.topTen, "top-ten", asOf),
     watchlistTen: rankSnapshotIdeas(input.watchlistTen, "watchlist", asOf),
+  };
+}
+
+export function getQqqLineInSand(dashboard: BestIdeasDashboard): QqqLineInSand {
+  const ordered = [...dashboard.topTen, ...dashboard.watchlistTen];
+  const above = ordered.filter((idea) => idea.qqqLine === "above");
+  const below = ordered.filter((idea) => idea.qqqLine === "below");
+  return {
+    hurdleLabel: QQQ_LINE_HURDLE_LABEL,
+    lastPriceRefresh: dashboard.lastUpdated,
+    lineIndex: above.length,
+    above,
+    below,
+    firstBelow: below[0] ?? null,
   };
 }
 

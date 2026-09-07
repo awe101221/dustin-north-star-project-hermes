@@ -164,6 +164,31 @@ export const agentComplete = z.object({
   summary: z.string().max(4000).optional(),
 });
 
+const bestIdeaSnapshotItem = z.object({
+  ticker,
+  companyName: z.string().trim().max(160).nullable().optional(),
+  thesis: z.string().trim().max(4000).nullable().optional(),
+  whyBeatQqq: z.string().trim().max(4000).nullable().optional(),
+  falsifier: z.string().trim().max(4000).nullable().optional(),
+  nextAction: z.string().trim().max(1000).nullable().optional(),
+  conviction: z.number().min(0).max(100).nullable().optional(),
+  risk: z.number().min(0).max(100).nullable().optional(),
+  targetWeight: z.number().min(-1).max(1).nullable().optional(),
+  currentWeight: z.number().min(-1).max(1).nullable().optional(),
+  score: z.number().min(0).max(100).nullable().optional(),
+  theme: z.string().trim().max(80).nullable().optional(),
+  persona: z.string().trim().max(80).nullable().optional(),
+  tags,
+});
+
+export const bestIdeasSnapshotCreate = z.object({
+  asOf: z.string().datetime({ offset: true }).optional(),
+  thesis: z.string().trim().max(4000).nullable().optional(),
+  topTen: z.array(bestIdeaSnapshotItem).min(1).max(10),
+  watchlistTen: z.array(bestIdeaSnapshotItem).max(10).default([]),
+  actor: z.string().trim().max(64).default("hermes"),
+});
+
 export type IdeaCreate = z.infer<typeof ideaCreate>;
 export type NoteCreate = z.infer<typeof noteCreate>;
 export type TradeCreate = z.infer<typeof tradeCreate>;

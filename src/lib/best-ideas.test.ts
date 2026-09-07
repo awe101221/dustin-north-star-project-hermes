@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { buildBestIdeas, HERMES_BEST_IDEAS_MANDATE, type BestIdeaInput } from "./best-ideas";
+import {
+  buildBestIdeas,
+  HERMES_BEST_IDEAS_MANDATE,
+  normalizeBestIdeasSnapshot,
+  snapshotMetadataToDashboard,
+  type BestIdeaInput,
+} from "./best-ideas";
 
 function idea(overrides: Partial<BestIdeaInput> & { ticker: string }): BestIdeaInput {
   return {
@@ -53,15 +59,57 @@ describe("best ideas ranking", () => {
     expect(new Set([...ranked.topTen, ...ranked.watchlistTen].map((x) => x.ticker)).size).toBe(20);
   });
 
-  it("ranks stronger QQQ-relative ideas ahead of high-risk or incomplete ideas", () => {
-    const ranked = buildBestIdeas([
-      idea({ ticker: "HIGH_RISK", conviction: 99, risk: 95, whyBeatQqq: "Can win, but the drawdown/falsifier risk is severe." }),
-      idea({ ticker: "NO_QQQ_CASE", conviction: 96, risk: 10, whyBeatQqq: null }),
-      idea({ ticker: "BEST", conviction: 91, risk: 15, whyBeatQqq: "Clear evidence-backed reason this can beat QQQ over a decade.", falsifier: "QQQ is better if moat compression shows up in renewal rates." }),
-    ]);
+  it("accepts a fresh Hermes-authored snapshot as the first-class ranked source", () => {
+    const snapshot = normalizeBestIdeasSnapshot({
+      asOf: "2026-09-07T16:45:00.000Z",
+      thesis: "Hermes updated the list from fresh chat research and QQQ-relative review.",
+      topTen: [
+        {
+          ticker: "NVDA",
+          companyName: "NVIDIA",
+          thesis: "Infrastructure leader still compounds if inference demand broadens.",
+          whyBeatQqq: "Direct AI infrastructure exposure can outgrow the index basket.",
+          falsifier: "QQQ is better if margins normalize faster than revenue growth.",
+          nextAction: "Refresh valuation and customer concentration evidence.",
+          conviction: 92,
+          risk: 42,
+          theme: "ai-infrastructure",
+        },
+      ],
+      watchlistTen: [
+        {
+          ticker: "TSM",
+          thesis: "Foundry bottleneck candidate needs geopolitical risk sizing.",
+          whyBeatQqq: "AI capex breadth accrues to leading-edge wafer share.",
+          falsifier: "QQQ is better if Taiwan risk dominates the upside.",
+          conviction: 84,
+          risk: 55,
+        },
+      ],
+    });
 
-    expect(ranked.topTen[0]?.ticker).toBe("BEST");
-    expect(ranked.topTen[0]?.score).toBeGreaterThan(ranked.topTen[1]?.score ?? 0);
-    expect(ranked.lastUpdated).toBe("2026-09-07T12:00:00.000Z");
+    expect(snapshot.asOf).toBe("2026-09-07T16:45:00.000Z");
+    expect(snapshot.topTen[0]?.rank).toBe(1);
+    expect(snapshot.topTen[0]?.scoreLabel).toBe("92");
+    expect(snapshot.topTen[0]?.lane).toBe("top-ten");
+    expect(snapshot.watchlistTen[0]?.lane).toBe("watchlist");
+    expect(snapshot.topTen[0]?.source).toBe("hermes-snapshot");
+  });
+
+  it("turns the latest best-ideas note metadata into the dashboard before falling back to idea-table scoring", () => {
+    const dashboard = snapshotMetadataToDashboard({
+      bestIdeas: {
+        asOf: "2026-09-07T16:45:00.000Z",
+        thesis: "Hermes current view.",
+        topTen: [{ ticker: "APP", thesis: "Adtech compounding candidate", whyBeatQqq: "Faster growth than QQQ", falsifier: "QQQ wins if signal quality fades", conviction: 88, risk: 46 }],
+        watchlistTen: [{ ticker: "MELI", thesis: "Latin America compounder", whyBeatQqq: "Regional fintech/ecommerce exposure", falsifier: "QQQ wins if FX and credit cycle dominate", conviction: 82, risk: 52 }],
+      },
+    });
+
+    expect(dashboard?.sourceMode).toBe("hermes-snapshot");
+    expect(dashboard?.lastUpdated).toBe("2026-09-07T16:45:00.000Z");
+    expect(dashboard?.topTen[0]?.ticker).toBe("APP");
+    expect(dashboard?.watchlistTen[0]?.ticker).toBe("MELI");
+    expect(snapshotMetadataToDashboard({})).toBeNull();
   });
 });

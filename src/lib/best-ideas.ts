@@ -1,7 +1,8 @@
 import { getIdeas, type Idea } from "@/lib/db/pipeline";
-import type { Db } from "@/lib/db/query";
-import type { IdeaStage } from "@/lib/db/types";
+import { unwrap, type Db } from "@/lib/db/query";
+import type { IdeaStage, NoteRow } from "@/lib/db/types";
 
+export const BEST_IDEAS_SNAPSHOT_TAG = "best-ideas-snapshot";
 export const HERMES_BEST_IDEAS_MANDATE =
   "Hermes-ranked Top 10 and Watchlist 10: the app exists to surface Dustin North Star Project Hermes's best current ideas to beat QQQ over 10 years.";
 
@@ -34,6 +35,7 @@ export type RankedBestIdea = BestIdeaInput & {
   scoreLabel: string;
   qqqQuestion: string;
   missing: string[];
+  source?: "hermes-snapshot" | "idea-table";
 };
 
 export type BestIdeasDashboard = {
@@ -42,9 +44,43 @@ export type BestIdeasDashboard = {
   benchmark: "QQQ";
   horizonYears: 10;
   lastUpdated: string | null;
+  sourceMode: "hermes-snapshot" | "idea-table";
+  snapshotThesis: string | null;
+  snapshotId: string | null;
   topTen: RankedBestIdea[];
   watchlistTen: RankedBestIdea[];
   totalActive: number;
+};
+
+export type SnapshotIdeaInput = {
+  ticker: string;
+  companyName?: string | null;
+  thesis?: string | null;
+  whyBeatQqq?: string | null;
+  falsifier?: string | null;
+  nextAction?: string | null;
+  conviction?: number | null;
+  risk?: number | null;
+  targetWeight?: number | null;
+  currentWeight?: number | null;
+  score?: number | null;
+  theme?: string | null;
+  persona?: string | null;
+  tags?: string[];
+};
+
+export type BestIdeasSnapshotInput = {
+  asOf?: string | null;
+  thesis?: string | null;
+  topTen: SnapshotIdeaInput[];
+  watchlistTen: SnapshotIdeaInput[];
+};
+
+export type NormalizedBestIdeasSnapshot = {
+  asOf: string;
+  thesis: string | null;
+  topTen: RankedBestIdea[];
+  watchlistTen: RankedBestIdea[];
 };
 
 const STAGE_BONUS: Record<IdeaStage, number> = {
@@ -57,6 +93,19 @@ const STAGE_BONUS: Record<IdeaStage, number> = {
 
 function textScore(value: string | null | undefined, points: number) {
   return value && value.trim().length >= 12 ? points : 0;
+}
+
+function cleanText(value: string | null | undefined) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+}
+
+function cleanTicker(value: string) {
+  return value.trim().toUpperCase();
+}
+
+function symbolFromTicker(ticker: string) {
+  return ticker.includes(":") ? ticker.split(":").pop()! : ticker;
 }
 
 function missingFields(idea: BestIdeaInput) {
@@ -93,8 +142,84 @@ function rankIdeas(ideas: BestIdeaInput[], lane: RankedBestIdea["lane"]): Ranked
       scoreLabel: `${Math.round(score)}`,
       qqqQuestion: idea.whyBeatQqq?.trim() || "Needs a fresh Hermes QQQ-relative underwrite.",
       missing: missingFields(idea),
+      source: "idea-table",
     };
   });
+}
+
+function rankSnapshotIdeas(ideas: SnapshotIdeaInput[], lane: RankedBestIdea["lane"], asOf: string): RankedBestIdea[] {
+  return ideas.slice(0, 10).map((raw, index) => {
+    const ticker = cleanTicker(raw.ticker);
+    const score = raw.score ?? raw.conviction ?? 0;
+    const idea: BestIdeaInput = {
+      id: `${lane}-${index + 1}-${ticker}`,
+      ticker,
+      symbol: symbolFromTicker(ticker),
+      companyName: cleanText(raw.companyName),
+      stage: lane === "top-ten" ? "diligence" : "sourcing",
+      conviction: raw.conviction ?? null,
+      risk: raw.risk ?? null,
+      targetWeight: raw.targetWeight ?? null,
+      currentWeight: raw.currentWeight ?? null,
+      thesis: cleanText(raw.thesis),
+      whyBeatQqq: cleanText(raw.whyBeatQqq),
+      falsifier: cleanText(raw.falsifier),
+      catalyst: null,
+      nextAction: cleanText(raw.nextAction),
+      persona: cleanText(raw.persona) ?? "hermes-pm",
+      theme: cleanText(raw.theme),
+      tags: raw.tags ?? ["hermes-ranked"],
+      updatedAt: asOf,
+    };
+    return {
+      ...idea,
+      rank: index + 1,
+      score,
+      lane,
+      scoreLabel: `${Math.round(score)}`,
+      qqqQuestion: idea.whyBeatQqq ?? "Needs a fresh Hermes QQQ-relative underwrite.",
+      missing: missingFields(idea),
+      source: "hermes-snapshot",
+    };
+  });
+}
+
+export function normalizeBestIdeasSnapshot(input: BestIdeasSnapshotInput): NormalizedBestIdeasSnapshot {
+  const asOf = input.asOf && !Number.isNaN(Date.parse(input.asOf)) ? new Date(input.asOf).toISOString() : new Date().toISOString();
+  return {
+    asOf,
+    thesis: cleanText(input.thesis),
+    topTen: rankSnapshotIdeas(input.topTen, "top-ten", asOf),
+    watchlistTen: rankSnapshotIdeas(input.watchlistTen, "watchlist", asOf),
+  };
+}
+
+export function snapshotToDashboard(snapshot: NormalizedBestIdeasSnapshot, snapshotId: string | null = null): BestIdeasDashboard {
+  return {
+    mandate: HERMES_BEST_IDEAS_MANDATE,
+    generatedBy: "Hermes",
+    benchmark: "QQQ",
+    horizonYears: 10,
+    lastUpdated: snapshot.asOf,
+    sourceMode: "hermes-snapshot",
+    snapshotThesis: snapshot.thesis,
+    snapshotId,
+    topTen: snapshot.topTen,
+    watchlistTen: snapshot.watchlistTen,
+    totalActive: snapshot.topTen.length + snapshot.watchlistTen.length,
+  };
+}
+
+function isSnapshotInput(value: unknown): value is BestIdeasSnapshotInput {
+  if (!value || typeof value !== "object") return false;
+  const rec = value as Record<string, unknown>;
+  return Array.isArray(rec.topTen) && Array.isArray(rec.watchlistTen);
+}
+
+export function snapshotMetadataToDashboard(metadata: Record<string, unknown>, snapshotId: string | null = null): BestIdeasDashboard | null {
+  const raw = metadata.bestIdeas;
+  if (!isSnapshotInput(raw)) return null;
+  return snapshotToDashboard(normalizeBestIdeasSnapshot(raw), snapshotId);
 }
 
 export function buildBestIdeas(ideas: BestIdeaInput[]): BestIdeasDashboard {
@@ -120,13 +245,67 @@ export function buildBestIdeas(ideas: BestIdeaInput[]): BestIdeasDashboard {
     benchmark: "QQQ",
     horizonYears: 10,
     lastUpdated,
+    sourceMode: "idea-table",
+    snapshotThesis: null,
+    snapshotId: null,
     topTen: rankIdeas(topTenRaw, "top-ten"),
     watchlistTen: rankIdeas(watchlistRaw, "watchlist"),
     totalActive: active.length,
   };
 }
 
+export async function getLatestBestIdeasSnapshot(db: Db): Promise<BestIdeasDashboard | null> {
+  const rows = unwrap(
+    await db
+      .from("hermes_notes")
+      .select("id, metadata")
+      .contains("tags", [BEST_IDEAS_SNAPSHOT_TAG])
+      .eq("kind", "agent")
+      .order("occurred_at", { ascending: false })
+      .limit(1),
+    "best ideas snapshot",
+  ) as Pick<NoteRow, "id" | "metadata">[];
+  const row = rows[0];
+  return row ? snapshotMetadataToDashboard(row.metadata ?? {}, row.id) : null;
+}
+
 export async function getBestIdeasDashboard(db: Db): Promise<BestIdeasDashboard> {
+  const snapshot = await getLatestBestIdeasSnapshot(db);
+  if (snapshot) return snapshot;
   const ideas = await getIdeas(db);
   return buildBestIdeas(ideas);
+}
+
+function snapshotMarkdown(snapshot: NormalizedBestIdeasSnapshot) {
+  const lines = [
+    "# Hermes Best Ideas Snapshot",
+    "",
+    snapshot.thesis ?? HERMES_BEST_IDEAS_MANDATE,
+    "",
+    "## Top 10",
+    ...snapshot.topTen.map((idea) => `${idea.rank}. ${idea.ticker} — ${idea.thesis ?? "Needs thesis"}`),
+    "",
+    "## Watchlist 10",
+    ...snapshot.watchlistTen.map((idea) => `${idea.rank}. ${idea.ticker} — ${idea.thesis ?? "Needs thesis"}`),
+  ];
+  return lines.join("\n");
+}
+
+export function bestIdeasSnapshotNote(input: BestIdeasSnapshotInput, actor = "hermes") {
+  const snapshot = normalizeBestIdeasSnapshot(input);
+  const tickers = [...snapshot.topTen, ...snapshot.watchlistTen].map((idea) => idea.ticker);
+  return {
+    kind: "agent" as const,
+    title: `Hermes Best Ideas Snapshot — ${snapshot.asOf.slice(0, 10)}`,
+    body_md: snapshotMarkdown(snapshot),
+    tickers,
+    tags: [BEST_IDEAS_SNAPSHOT_TAG, "hermes-ranked", "qqq-10y"],
+    persona_slug: "hermes-pm",
+    verdict: "WATCH",
+    author: actor,
+    source_system: "hermes_agent",
+    is_pinned: true,
+    occurred_at: snapshot.asOf,
+    metadata: { bestIdeas: { asOf: snapshot.asOf, thesis: snapshot.thesis, topTen: input.topTen.slice(0, 10), watchlistTen: input.watchlistTen.slice(0, 10) } },
+  };
 }

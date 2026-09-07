@@ -31,8 +31,7 @@ export type NavItem = {
  * or improve those rankings. Portfolio is context, not the product center.
  */
 export const NAV: NavItem[] = [
-  { href: "/", label: "Best Ideas", short: "Best Ideas", icon: Trophy, hotkey: "b", description: "Hermes-ranked Top 10 + Watchlist 10 for beating QQQ over 10 years" },
-  { href: "/best-ideas", label: "Top 10 + Watchlist", short: "Top 10", icon: Trophy, hotkey: "t", description: "Full ranked list, QQQ case, falsifiers, and next Hermes action" },
+  { href: "/", label: "10 + 10", short: "10 + 10", icon: Trophy, hotkey: "b", description: "One ranked Top 10 + Watchlist 10 surface with models and QQQ-relative underwriting" },
   { href: "/learnings", label: "Learnings", short: "Learnings", icon: Brain, hotkey: "l", description: "Archive of Hermes investing philosophy updates that shape the ranked list" },
   { href: "/research", label: "Research", short: "Research", icon: BookOpenText, hotkey: "r", description: "Hermes memos, notes, journal, and source-backed conclusions" },
   { href: "/pipeline", label: "Idea Pipeline", short: "Pipeline", icon: KanbanSquare, hotkey: "i", description: "Sourcing → Diligence → Live → Monitor → Archive" },
@@ -48,6 +47,6 @@ export const NAV: NavItem[] = [
 ];
 
 export function navFor(pathname: string) {
-  if (pathname === "/") return NAV[0];
+  if (pathname === "/" || pathname.startsWith("/best-ideas")) return NAV[0];
   return NAV.slice(1).find((item) => pathname.startsWith(item.href)) ?? null;
 }

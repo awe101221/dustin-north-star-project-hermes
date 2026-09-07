@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight, Eye, ListChecks, Target, Trophy } from "lucide-react";
+import { ArrowUpRight, Calculator, Eye, ListChecks, Target, Trophy } from "lucide-react";
 import type { BestIdeasDashboard, RankedBestIdea } from "@/lib/best-ideas";
 import { getQqqLineInSand } from "@/lib/best-ideas";
 import { fmtDateTime, fmtPct } from "@/lib/format";
@@ -8,18 +8,51 @@ import { Badge, toneFor } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TickerLink, PersonaChip } from "@/components/ticker-link";
 
+function UnderwritingPanels({ idea }: { idea: RankedBestIdea }) {
+  return (
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="panel-2 p-2.5">
+        <p className="eyebrow mb-1">Why this over QQQ?</p>
+        <p className="text-[12px] leading-4 text-foreground-secondary">{idea.qqqQuestion}</p>
+      </div>
+      <div className="panel-2 p-2.5">
+        <p className="eyebrow mb-1">QQQ is better if…</p>
+        <p className="text-[12px] leading-4 text-foreground-secondary">{idea.falsifier || "Falsifier missing — make this the next research task."}</p>
+      </div>
+      <div className="panel-2 p-2.5">
+        <p className="eyebrow mb-1">Line-in-sand reason</p>
+        <p className="text-[12px] leading-4 text-foreground-secondary">{idea.qqqLineReason || "Daily price refresh can move this above or below the QQQ line."}</p>
+      </div>
+      <div className="panel-2 p-2.5">
+        <p className="eyebrow mb-1">Next Hermes action</p>
+        <p className="text-[12px] leading-4 text-foreground-secondary">{idea.nextAction || idea.catalyst || "Refresh evidence, update rank, and compare to QQQ."}</p>
+      </div>
+    </div>
+  );
+}
+
 function IdeaRow({ idea, dense = false }: { idea: RankedBestIdea; dense?: boolean }) {
   const isTop = idea.lane === "top-ten";
   return (
-    <div className={cn("rounded-lg border border-border bg-surface/70 p-3", dense ? "space-y-2" : "space-y-3")}>
+    <div className={cn("rounded-lg border border-border bg-surface/70 p-3 sm:p-4", dense ? "space-y-2" : "space-y-3")}>
       <div className="flex items-start gap-3">
         <div className={cn("num flex h-8 w-8 shrink-0 items-center justify-center rounded-md border text-[13px] font-semibold", isTop ? "border-gold/40 bg-gold-soft text-gold" : "border-cyan/35 bg-cyan-soft text-cyan")}>
           #{idea.rank}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <TickerLink ticker={idea.ticker} className="text-[14px]" />
-            {idea.companyName ? <span className="truncate text-[12px] text-muted">{idea.companyName}</span> : null}
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                <TickerLink ticker={idea.ticker} className="text-[15px]" />
+                {idea.companyName ? <span className="text-[12px] text-muted">{idea.companyName}</span> : null}
+              </div>
+            </div>
+            <div className="shrink-0 text-right">
+              <p className="eyebrow">Score</p>
+              <p className={cn("num text-[18px] font-semibold", isTop ? "text-gold" : "text-cyan")}>{idea.scoreLabel}</p>
+            </div>
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <Badge variant={toneFor(idea.stage)}>{idea.stage}</Badge>
             {idea.theme ? <Badge variant="outline">{idea.theme}</Badge> : null}
             <Badge variant={idea.qqqLine === "above" ? "pos" : "warn"}>{idea.qqqLine === "above" ? "above QQQ line" : "below QQQ line"}</Badge>
@@ -27,34 +60,21 @@ function IdeaRow({ idea, dense = false }: { idea: RankedBestIdea; dense?: boolea
           </div>
           <p className="mt-1 text-[12.5px] leading-5 text-foreground-secondary">{idea.thesis || "Needs a fresh Hermes thesis."}</p>
         </div>
-        <div className="shrink-0 text-right">
-          <p className="eyebrow">Hermes score</p>
-          <p className={cn("num text-[18px] font-semibold", isTop ? "text-gold" : "text-cyan")}>{idea.scoreLabel}</p>
-        </div>
       </div>
 
       {!dense ? (
-        <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
-          <div className="panel-2 p-2.5">
-            <p className="eyebrow mb-1">Why this over QQQ?</p>
-            <p className="text-[12px] leading-4 text-foreground-secondary">{idea.qqqQuestion}</p>
-          </div>
-          <div className="panel-2 p-2.5">
-            <p className="eyebrow mb-1">QQQ is better if…</p>
-            <p className="text-[12px] leading-4 text-foreground-secondary">{idea.falsifier || "Falsifier missing — make this the next research task."}</p>
-          </div>
-          <div className="panel-2 p-2.5">
-            <p className="eyebrow mb-1">Line-in-sand reason</p>
-            <p className="text-[12px] leading-4 text-foreground-secondary">{idea.qqqLineReason || "Daily price refresh can move this above or below the QQQ line."}</p>
-          </div>
-          <div className="panel-2 p-2.5">
-            <p className="eyebrow mb-1">Next Hermes action</p>
-            <p className="text-[12px] leading-4 text-foreground-secondary">{idea.nextAction || idea.catalyst || "Refresh evidence, update rank, and compare to QQQ."}</p>
-          </div>
-        </div>
+        <>
+          <div className="hidden sm:block"><UnderwritingPanels idea={idea} /></div>
+          <details className="group rounded-md border border-border bg-surface-2 sm:hidden">
+            <summary className="flex min-h-10 cursor-pointer list-none items-center justify-between px-3 text-[11.5px] font-medium text-foreground-secondary">
+              Underwriting details <span className="text-muted group-open:rotate-180">⌄</span>
+            </summary>
+            <div className="border-t border-border p-2"><UnderwritingPanels idea={idea} /></div>
+          </details>
+        </>
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-2">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[11px] text-muted-2">
         <span>Conviction {idea.conviction ?? "—"}</span>
         <span>·</span>
         <span>Risk {idea.risk ?? "—"}</span>
@@ -63,6 +83,9 @@ function IdeaRow({ idea, dense = false }: { idea: RankedBestIdea; dense?: boolea
         <span>·</span>
         <span>Current {fmtPct(idea.currentWeight, 1)}</span>
         {idea.missing.length ? <Badge variant="warn">needs {idea.missing.join(", ")}</Badge> : <Badge variant="pos">QQQ case complete</Badge>}
+        <Link href={`/companies/${encodeURIComponent(idea.ticker)}`} className="inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-md border border-border px-2.5 text-[11.5px] font-medium text-foreground-secondary hover:border-gold/40 hover:bg-gold-soft hover:text-gold sm:ml-auto sm:min-h-9 sm:w-auto">
+          <Calculator className="size-3.5" /> Full company model
+        </Link>
       </div>
     </div>
   );
@@ -130,19 +153,19 @@ export function BestIdeasView({ dashboard, compact = false }: { dashboard: BestI
   const visibleWatch = compact ? dashboard.watchlistTen.slice(0, 5) : dashboard.watchlistTen;
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-        <div className="panel p-4 md:col-span-2">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="panel col-span-2 p-4 md:col-span-2">
           <p className="eyebrow">Dustin North Star Project Hermes</p>
-          <h2 className="mt-1 text-[18px] font-semibold text-foreground">Hermes best ideas, ranked now</h2>
-          <p className="mt-1 text-[12.5px] leading-5 text-muted">{dashboard.snapshotThesis ?? dashboard.mandate} Chat remains the main interface; this page is the organized results board.</p>
+          <h2 className="mt-1 text-[18px] font-semibold text-foreground">One ranked 10 + 10 list</h2>
+          <p className="mt-1 text-[12.5px] leading-5 text-muted">{dashboard.snapshotThesis ?? dashboard.mandate} Every name links to its company page and five-year model.</p>
         </div>
         <div className="panel p-4">
-          <p className="eyebrow">Top 10</p>
+          <p className="eyebrow">Top ideas</p>
           <p className="num mt-1 text-[24px] font-semibold text-gold">{dashboard.topTen.length}</p>
           <p className="text-[11px] text-muted">highest ranked active ideas</p>
         </div>
         <div className="panel p-4">
-          <p className="eyebrow">Watchlist 10</p>
+          <p className="eyebrow">Watchlist</p>
           <p className="num mt-1 text-[24px] font-semibold text-cyan">{dashboard.watchlistTen.length}</p>
           <p className="text-[11px] text-muted">next best research candidates</p>
         </div>
@@ -163,7 +186,7 @@ export function BestIdeasView({ dashboard, compact = false }: { dashboard: BestI
 
       <div className={cn("grid gap-4", compact ? "grid-cols-1 xl:grid-cols-2" : "grid-cols-1")}>
         <IdeaList
-          title="Top 10 best ideas"
+          title="Top 10"
           description="Hermes's current highest-conviction candidates for beating QQQ over the next decade. Not a trade recommendation."
           icon={<Trophy className="size-3.5 text-gold" />}
           ideas={visibleTop}

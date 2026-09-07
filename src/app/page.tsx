@@ -5,7 +5,7 @@ import { getBestIdeasDashboard } from "@/lib/best-ideas";
 import { safeLoad } from "@/lib/server/safe";
 import { BestIdeasView } from "@/components/best-ideas/best-ideas-view";
 
-export const metadata: Metadata = { title: "Best Ideas" };
+export const metadata: Metadata = { title: "10 + 10" };
 export const dynamic = "force-dynamic";
 
 const DESCRIPTION =
@@ -16,7 +16,7 @@ export default async function HomePage() {
   if (!db) {
     return (
       <>
-        <PageHeader eyebrow="Hermes Best Ideas" title="Top 10 + Watchlist 10" description={DESCRIPTION} />
+        <PageHeader eyebrow="Hermes ranked research" title="10 + 10" description={DESCRIPTION} />
         <NotConfigured what="the Dustin North Star Hermes brain" />
       </>
     );
@@ -26,7 +26,7 @@ export default async function HomePage() {
   if (!result.ok) {
     return (
       <>
-        <PageHeader eyebrow="Hermes Best Ideas" title="Top 10 + Watchlist 10" description={DESCRIPTION} />
+        <PageHeader eyebrow="Hermes ranked research" title="10 + 10" description={DESCRIPTION} />
         <ErrorPanel detail={result.error} />
       </>
     );
@@ -35,8 +35,8 @@ export default async function HomePage() {
   return (
     <>
       <PageHeader
-        eyebrow="Hermes Best Ideas"
-        title="Top 10 + Watchlist 10"
+        eyebrow="Hermes ranked research"
+        title="10 + 10"
         description={DESCRIPTION}
         meta={
           <>
@@ -46,7 +46,7 @@ export default async function HomePage() {
           </>
         }
       />
-      <BestIdeasView dashboard={result.data} compact />
+      <BestIdeasView dashboard={result.data} />
     </>
   );
 }

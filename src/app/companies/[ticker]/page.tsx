@@ -8,6 +8,8 @@ import { getMemoSummariesForTicker, getNotes } from "@/lib/db/research";
 import { getUniverseForTicker, getGuruSignalForSymbol, getHoldersForSymbol } from "@/lib/db/quant";
 import { getLatestPositions, positionForTicker, getTrades } from "@/lib/db/portfolio";
 import { getIdeaForTicker } from "@/lib/db/pipeline";
+import { getBestIdeasDashboard } from "@/lib/best-ideas";
+import { getCompanyModel } from "@/lib/company-models";
 import { bareSymbol } from "@/lib/utils";
 import { fmtCompactMoney, fmtDate, fmtMoney, fmtNum, fmtPct, fmtPrice } from "@/lib/format";
 import { Badge, toneFor } from "@/components/ui/badge";
@@ -17,6 +19,7 @@ import { KV, Stat } from "@/components/ui/stat";
 import { PersonaChip, personaLabel } from "@/components/ticker-link";
 import { TradeLog } from "@/components/portfolio/trade-log";
 import { CompanyActions } from "@/components/companies/company-actions";
+import { CompanyFinancialModelView } from "@/components/companies/company-financial-model";
 import { isWriteConfigured } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
@@ -44,6 +47,7 @@ export default async function CompanyPage({ params }: { params: Promise<{ ticker
       getHoldersForSymbol(db, symbol, 25).catch(() => []),
       getThemesForTicker(db, raw).catch(() => []),
       getTrades(db, { symbol, limit: 40 }).catch(() => []),
+      getBestIdeasDashboard(db).catch(() => null),
     ]),
   );
   if (!loaded.ok) {
@@ -54,18 +58,22 @@ export default async function CompanyPage({ params }: { params: Promise<{ ticker
       </>
     );
   }
-  const [company, universe, memos, notes, positions, idea, filings, guru, holders, themes, trades] = loaded.data;
+  const [company, universe, memos, notes, positions, idea, filings, guru, holders, themes, trades, bestIdeas] = loaded.data;
   const canonical = company?.ticker ?? universe[0]?.ticker ?? raw;
   const position = positionForTicker(positions, canonical) ?? positionForTicker(positions, symbol);
   const name = company?.name ?? universe[0]?.companyName ?? position?.companyName ?? symbol;
   const latestGuru = guru[0];
+  const rankedIdea = bestIdeas
+    ? [...bestIdeas.topTen, ...bestIdeas.watchlistTen].find((entry) => bareSymbol(entry.ticker) === symbol) ?? null
+    : null;
+  const financialModel = rankedIdea ? getCompanyModel(symbol) : null;
 
   return (
     <>
       <PageHeader
         eyebrow={`${canonical} · ${company?.sector ?? "—"} · ${company?.industry ?? "—"} · ${company?.country ?? "—"}`}
         title={
-          <span className="flex items-center gap-3 flex-wrap">
+          <span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
             <span className="num">{symbol}</span>
             <span className="text-foreground-secondary font-normal">{name}</span>
             {position ? <Badge variant="gold">held {fmtPct(position.weight, 2)}</Badge> : null}
@@ -75,7 +83,7 @@ export default async function CompanyPage({ params }: { params: Promise<{ ticker
         actions={<CompanyActions ticker={canonical} companyName={name} ideaId={idea?.id ?? null} canWrite={isWriteConfigured()} />}
       />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-3 mb-5">
+      <div className="mb-5 grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-4 xl:grid-cols-6">
         <Stat label="Market value" value={fmtMoney(position?.marketValue)} caption={position ? `${fmtNum(position.quantity, 0)} sh @ ${fmtPrice(position.closePrice, position.currency)}` : "not held"} sensitive />
         <Stat label="Unrealized" value={fmtMoney(position?.unrealizedPnl)} tone={position ? (position.unrealizedPnl >= 0 ? "pos" : "neg") : "flat"} sensitive caption={position ? `cost ${fmtPrice(position.costPrice, position.currency)}` : undefined} />
         <Stat label="YTD ROI" value={fmtPct(position?.ytdRoi)} tone={position ? ((position.ytdRoi ?? 0) >= 0 ? "pos" : "neg") : "flat"} />
@@ -83,6 +91,12 @@ export default async function CompanyPage({ params }: { params: Promise<{ ticker
         <Stat label="Best expected IRR" value={fmtPct(universe.reduce<number | null>((m, u) => (u.expectedIrr !== null && (m === null || u.expectedIrr > m) ? u.expectedIrr : m), null))} tone="gold" />
         <Stat label="13F buyers / sellers" value={latestGuru ? `${latestGuru.buyers} / ${latestGuru.sellers}` : "—"} caption={latestGuru ? `quarter ${fmtDate(latestGuru.reportDate)}` : "not in tracked 13F flow"} />
       </div>
+
+      {financialModel && rankedIdea ? (
+        <div className="mb-4">
+          <CompanyFinancialModelView model={financialModel} rankedIdea={rankedIdea} />
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <div className="xl:col-span-2 space-y-4">
@@ -99,7 +113,7 @@ export default async function CompanyPage({ params }: { params: Promise<{ ticker
                     {u.buyPierced ? <Badge variant="pos">buy zone</Badge> : null}
                     {u.triggerPierced ? <Badge variant="neg">trigger pierced</Badge> : null}
                     {u.respawn ? <Badge variant="warn">re-underwrite</Badge> : null}
-                    <span className="ml-auto flex gap-3 num">
+                    <span className="num flex w-full flex-wrap gap-x-3 gap-y-1 sm:ml-auto sm:w-auto">
                       <span>IRR <b className={(u.expectedIrr ?? 0) >= 0.15 ? "text-pos" : ""}>{fmtPct(u.expectedIrr)}</b></span>
                       <span>@quote <b>{fmtPct(u.irrAtQuote)}</b></span>
                       <span>MoS <b>{u.mos !== null ? `${u.mos.toFixed(2)}x` : "—"}</b></span>
@@ -116,13 +130,13 @@ export default async function CompanyPage({ params }: { params: Promise<{ ticker
             <CardHeader><div><CardTitle>Memo history · {memos.length}</CardTitle><CardDescription>Every complete memo across lenses, newest first.</CardDescription></div></CardHeader>
             <CardContent>
               {memos.map((m) => (
-                <Link key={m.id} href={`/research/${m.id}`} className="flex items-center gap-2 py-1.5 hairline-b last:border-b-0 text-[12px] hover:text-foreground">
-                  <span className="num text-muted w-[62px]">{fmtDate(m.analyzedAt)}</span>
+                <div key={m.id} className="flex flex-wrap items-center gap-2 py-2 hairline-b last:border-b-0 text-[12px]">
+                  <Link href={`/research/${m.id}`} className="num w-[62px] text-muted hover:text-gold">{fmtDate(m.analyzedAt)}</Link>
                   <PersonaChip slug={m.persona} />
                   <Badge variant={toneFor(m.verdict)}>{m.verdict}</Badge>
                   <span className="text-muted">{m.sourceSystem}</span>
-                  <span className="ml-auto num text-muted">{fmtPrice(m.price)} · IRR {fmtPct(m.expectedIrr)} · PWV {fmtPrice(m.pwv)}</span>
-                </Link>
+                  <span className="num w-full text-muted sm:ml-auto sm:w-auto">{fmtPrice(m.price)} · IRR {fmtPct(m.expectedIrr)} · PWV {fmtPrice(m.pwv)}</span>
+                </div>
               ))}
               {memos.length === 0 ? <p className="text-[12px] text-muted">No memos.</p> : null}
             </CardContent>
@@ -133,7 +147,7 @@ export default async function CompanyPage({ params }: { params: Promise<{ ticker
             <CardContent>
               {notes.map((n) => (
                 <Link key={n.id} href={`/research/${n.id}`} className="block py-1.5 hairline-b last:border-b-0 text-[12px] hover:text-foreground">
-                  <div className="flex items-center gap-2"><span className="font-medium text-foreground">{n.title}</span><Badge variant="muted">{n.kind}</Badge><span className="ml-auto text-muted">{fmtDate(n.occurredAt)}</span></div>
+                  <div className="flex flex-wrap items-center gap-2"><span className="font-medium text-foreground">{n.title}</span><Badge variant="muted">{n.kind}</Badge><span className="w-full text-muted sm:ml-auto sm:w-auto">{fmtDate(n.occurredAt)}</span></div>
                   <p className="text-muted line-clamp-1">{n.body.replace(/[#*_>`]/g, "").slice(0, 160)}</p>
                 </Link>
               ))}
@@ -166,8 +180,8 @@ export default async function CompanyPage({ params }: { params: Promise<{ ticker
               {latestGuru ? (
                 <p className="text-[11.5px] text-muted mb-2">Buyers: <span className="text-foreground-secondary">{latestGuru.buyerNames.slice(0, 8).join(", ")}{latestGuru.buyerNames.length > 8 ? "…" : ""}</span>{latestGuru.sellerNames.length ? <> · Sellers: <span className="text-foreground-secondary">{latestGuru.sellerNames.slice(0, 6).join(", ")}{latestGuru.sellerNames.length > 6 ? "…" : ""}</span></> : null}</p>
               ) : null}
-              {holders.slice(0, 15).map((h) => (
-                <div key={h.investor} className="flex items-center justify-between gap-2 py-1 hairline-b last:border-b-0 text-[12px]"><span className="text-foreground-secondary truncate">{h.investor}</span><span className="num text-muted">{fmtCompactMoney(h.value ? h.value * 1000 : null)}</span></div>
+              {holders.slice(0, 15).map((h, index) => (
+                <div key={`${h.investor}-${index}`} className="flex items-center justify-between gap-2 py-1 hairline-b last:border-b-0 text-[12px]"><span className="text-foreground-secondary truncate">{h.investor}</span><span className="num text-muted">{fmtCompactMoney(h.value ? h.value * 1000 : null)}</span></div>
               ))}
               {holders.length === 0 ? <p className="text-[12px] text-muted">No tracked holder positions.</p> : null}
             </CardContent>

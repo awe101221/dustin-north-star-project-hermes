@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronsLeft, ChevronsRight, Command, Compass, EyeOff, Search } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, Command, Compass, EyeOff, Menu, Search, X } from "lucide-react";
 import { motion } from "motion/react";
 import { NAV, navFor } from "@/config/nav";
 import { cn } from "@/lib/utils";
@@ -32,7 +32,21 @@ const subscribeNoop = () => () => {};
 export function AppShell({ children, config, bare }: { children: React.ReactNode; config: ShellConfig; bare?: boolean }) {
   const pathname = usePathname();
   const { sidebarCollapsed, toggleSidebar, presentation, setPaletteOpen, setNorthStarOpen } = useUiStore();
+  const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
   const active = navFor(pathname);
+  React.useEffect(() => {
+    if (!mobileNavOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileNavOpen(false);
+    };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [mobileNavOpen]);
   // Persisted UI state only applies after hydration so server and first client render match.
   const hydrated = React.useSyncExternalStore(subscribeNoop, () => true, () => false);
   const collapsed = hydrated && sidebarCollapsed;
@@ -47,7 +61,7 @@ export function AppShell({ children, config, bare }: { children: React.ReactNode
       <div className="flex min-h-dvh">
         <aside
           className={cn(
-            "sticky top-0 h-dvh shrink-0 flex flex-col border-r border-border bg-surface transition-[width] duration-200",
+            "sticky top-0 hidden h-dvh shrink-0 flex-col border-r border-border bg-surface transition-[width] duration-200 md:flex",
             collapsed ? "w-[52px]" : "w-[212px]",
           )}
         >
@@ -131,9 +145,61 @@ export function AppShell({ children, config, bare }: { children: React.ReactNode
           </div>
         </aside>
 
+        {mobileNavOpen ? (
+          <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
+            <button
+              type="button"
+              aria-label="Close navigation"
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+              onClick={() => setMobileNavOpen(false)}
+            />
+            <aside className="relative flex h-dvh w-[min(86vw,320px)] flex-col border-r border-border bg-surface shadow-2xl">
+              <div className="flex h-14 items-center justify-between px-4 hairline-b">
+                <Link href="/" onClick={() => setMobileNavOpen(false)}><Wordmark /></Link>
+                <button type="button" aria-label="Close navigation" onClick={() => setMobileNavOpen(false)} className="flex size-10 items-center justify-center rounded-md border border-border text-muted hover:bg-surface-2 hover:text-foreground">
+                  <X className="size-5" />
+                </button>
+              </div>
+              <nav className="flex-1 overflow-y-auto p-2">
+                {NAV.map((item) => {
+                  const isActive = active?.href === item.href;
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMobileNavOpen(false)}
+                      className={cn(
+                        "my-1 flex min-h-11 items-center gap-3 rounded-lg px-3 text-[14px] transition-colors",
+                        isActive ? "bg-surface-3 text-foreground" : "text-foreground-secondary hover:bg-surface-2 hover:text-foreground",
+                      )}
+                    >
+                      <Icon className={cn("size-4.5 shrink-0", isActive ? "text-gold" : "text-muted")} />
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </nav>
+              <div className="hairline-t p-3 text-[11px] text-muted">
+                <span className={cn("mr-2 inline-block size-2 rounded-full", config.read ? "bg-pos" : "bg-neg")} />
+                {config.read ? "Brain connected" : "Brain not configured"}
+              </div>
+            </aside>
+          </div>
+        ) : null}
+
         <div className="flex-1 min-w-0 flex flex-col">
-          <header className="sticky top-0 z-30 h-12 flex items-center gap-4 px-5 hairline-b bg-background/85 backdrop-blur">
-            <div className="min-w-0 flex items-center gap-2">
+          <header className="sticky top-0 z-30 flex h-14 items-center gap-2 px-3 hairline-b bg-background/90 backdrop-blur md:h-12 md:gap-4 md:px-5">
+            <button
+              type="button"
+              aria-label="Open navigation"
+              aria-expanded={mobileNavOpen}
+              onClick={() => setMobileNavOpen(true)}
+              className="flex size-10 shrink-0 items-center justify-center rounded-md border border-border text-muted hover:bg-surface-2 hover:text-foreground md:hidden"
+            >
+              <Menu className="size-5" />
+            </button>
+            <div className="flex min-w-0 flex-1 items-center gap-2 sm:flex-none">
               <span className="eyebrow">{active?.short ?? "Hermes"}</span>
               {presentation ? (
                 <span className="inline-flex items-center gap-1 rounded-[4px] border border-warn/40 bg-warn-soft px-1.5 py-[1px] text-[10px] font-semibold uppercase tracking-[0.1em] text-warn">
@@ -141,13 +207,13 @@ export function AppShell({ children, config, bare }: { children: React.ReactNode
                 </span>
               ) : null}
             </div>
-            <div className="flex-1 min-w-0 flex justify-center">
+            <div className="hidden flex-1 min-w-0 justify-center sm:flex">
               <NorthStarStrip />
             </div>
             <div className="flex items-center gap-1">
               <Hint label="North Star (.)">
                 <button type="button" onClick={() => setNorthStarOpen(true)} className="inline-flex h-7 items-center gap-1.5 rounded-md border border-border px-2 text-[12px] text-foreground-secondary hover:bg-surface-2 hover:text-foreground">
-                  <Compass className="size-3.5 text-gold" /> North Star
+                  <Compass className="size-3.5 text-gold" /> <span className="hidden sm:inline">North Star</span>
                 </button>
               </Hint>
               <Hint label="Command palette (⌘K)">
@@ -157,7 +223,7 @@ export function AppShell({ children, config, bare }: { children: React.ReactNode
               </Hint>
             </div>
           </header>
-          <main className="flex-1 min-w-0 px-5 py-5 animate-fade-in">{children}</main>
+          <main className="flex-1 min-w-0 px-3 py-4 animate-fade-in sm:px-4 md:px-5 md:py-5">{children}</main>
         </div>
       </div>
       <CommandPalette />

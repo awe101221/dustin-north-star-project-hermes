@@ -17,14 +17,14 @@ export function PageHeader({
   className?: string;
 }) {
   return (
-    <div className={cn("mb-5 flex flex-wrap items-end justify-between gap-3", className)}>
+    <div className={cn("mb-5 flex flex-wrap items-start justify-between gap-3 sm:items-end", className)}>
       <div className="min-w-0">
         {eyebrow ? <p className="eyebrow mb-1">{eyebrow}</p> : null}
-        <h1 className="text-[20px] font-semibold leading-6 text-foreground">{title}</h1>
+        <h1 className="break-words text-[20px] font-semibold leading-6 text-foreground">{title}</h1>
         {description ? <p className="mt-1 max-w-3xl text-[12.5px] leading-5 text-muted">{description}</p> : null}
         {meta ? <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-2">{meta}</div> : null}
       </div>
-      {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
+      {actions ? <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0">{actions}</div> : null}
     </div>
   );
 }

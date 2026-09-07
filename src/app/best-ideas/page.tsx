@@ -9,14 +9,14 @@ export const metadata: Metadata = { title: "Best Ideas" };
 export const dynamic = "force-dynamic";
 
 const DESCRIPTION =
-  "The simplified home base: Hermes's Top 10 ideas plus Watchlist 10, ranked by the current QQQ-relative case. Chat is the main interface; this app organizes the results.";
+  "The canonical ranked list for Dustin North Star Project Hermes: the ten best current ideas and the ten closest watchlist candidates for beating QQQ over a decade.";
 
-export default async function HomePage() {
+export default async function BestIdeasPage() {
   const db = serverReadClient();
   if (!db) {
     return (
       <>
-        <PageHeader eyebrow="Hermes Best Ideas" title="Top 10 + Watchlist 10" description={DESCRIPTION} />
+        <PageHeader eyebrow="Hermes Ranked Research" title="Best Ideas" description={DESCRIPTION} />
         <NotConfigured what="the Dustin North Star Hermes brain" />
       </>
     );
@@ -26,7 +26,7 @@ export default async function HomePage() {
   if (!result.ok) {
     return (
       <>
-        <PageHeader eyebrow="Hermes Best Ideas" title="Top 10 + Watchlist 10" description={DESCRIPTION} />
+        <PageHeader eyebrow="Hermes Ranked Research" title="Best Ideas" description={DESCRIPTION} />
         <ErrorPanel detail={result.error} />
       </>
     );
@@ -35,18 +35,20 @@ export default async function HomePage() {
   return (
     <>
       <PageHeader
-        eyebrow="Hermes Best Ideas"
-        title="Top 10 + Watchlist 10"
+        eyebrow="Hermes Ranked Research"
+        title="Best Ideas"
         description={DESCRIPTION}
         meta={
           <>
+            <span>Top 10 + Watchlist 10</span>
+            <span>·</span>
             <span>Beat QQQ over 10 years</span>
             <span>·</span>
-            <span>not a trade recommendation</span>
+            <span>Dustin approves every trade manually</span>
           </>
         }
       />
-      <BestIdeasView dashboard={result.data} compact />
+      <BestIdeasView dashboard={result.data} />
     </>
   );
 }

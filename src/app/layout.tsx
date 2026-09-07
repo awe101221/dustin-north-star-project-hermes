@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     default: "Dustin North Star Project Hermes",
     template: "%s · Hermes",
   },
-  description: "Quant PM dashboard for beating QQQ over a decade — portfolio hub, research engine, idea pipeline, quant tools and the North Star mandate.",
+  description: "Hermes-ranked investing OS for Dustin: Top 10 best ideas plus Watchlist 10, built to organize research toward beating QQQ over a decade.",
   applicationName: "Dustin North Star Project Hermes",
   icons: { icon: "/icon.svg" },
 };

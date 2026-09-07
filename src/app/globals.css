@@ -1,0 +1,266 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/*
+ * Hermes design system — a single, deliberate dark theme.
+ * The palette is tuned for a data-dense PM terminal: near-black planes, hairline
+ * borders, tabular numerals, one warm accent (Hermes gold) reserved for brand,
+ * emphasis and the portfolio series; a cool accent for the benchmark.
+ * Chart colors were validated with the data-viz palette validator against the
+ * chart surface (#0f1115): see docs/design.md.
+ */
+:root {
+  color-scheme: dark;
+
+  --background: #08090b;
+  --surface: #0f1115;
+  --surface-2: #151821;
+  --surface-3: #1b1f2a;
+  --overlay: #12151c;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --ring: #d4a44c;
+
+  --foreground: #e8e6e1;
+  --foreground-secondary: #b7b4ad;
+  --muted: #8b8f98;
+  --muted-2: #5f636c;
+
+  --gold: #d4a44c;
+  --gold-soft: rgba(212, 164, 76, 0.14);
+  --gold-strong: #f0c46a;
+  --cyan: #46b8d6;
+  --cyan-soft: rgba(70, 184, 214, 0.14);
+
+  --pos: #2fbf71;
+  --pos-soft: rgba(47, 191, 113, 0.14);
+  --neg: #e05a5a;
+  --neg-soft: rgba(224, 90, 90, 0.14);
+  --warn: #f0b429;
+  --warn-soft: rgba(240, 180, 41, 0.14);
+  --info: #6c8cff;
+  --info-soft: rgba(108, 140, 255, 0.14);
+
+  /* Data-viz categorical slots (fixed order, never cycled) */
+  --series-1: #b8892b; /* portfolio / primary — validated on #0f1115 */
+  --series-2: #3987e5; /* benchmark QQQ */
+  --series-3: #199e70;
+  --series-4: #d95926;
+  --series-5: #9085e9;
+  --series-6: #d55181;
+  --series-7: #c98500;
+  --series-8: #e66767;
+  --grid: #22262f;
+  --axis: #383c46;
+
+  --radius: 6px;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-overlay: var(--overlay);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-ring: var(--ring);
+  --color-foreground: var(--foreground);
+  --color-foreground-secondary: var(--foreground-secondary);
+  --color-muted: var(--muted);
+  --color-muted-2: var(--muted-2);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-gold-strong: var(--gold-strong);
+  --color-cyan: var(--cyan);
+  --color-cyan-soft: var(--cyan-soft);
+  --color-pos: var(--pos);
+  --color-pos-soft: var(--pos-soft);
+  --color-neg: var(--neg);
+  --color-neg-soft: var(--neg-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-series-1: var(--series-1);
+  --color-series-2: var(--series-2);
+  --color-series-3: var(--series-3);
+  --color-series-4: var(--series-4);
+  --color-series-5: var(--series-5);
+  --color-series-6: var(--series-6);
+  --color-series-7: var(--series-7);
+  --color-series-8: var(--series-8);
+  --color-grid: var(--grid);
+  --color-axis: var(--axis);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+
+  --animate-fade-in: fade-in 180ms ease-out;
+  --animate-rise: rise 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-pulse-soft: pulse-soft 2.4s ease-in-out infinite;
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse-soft {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
+  }
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background: var(--background);
+    color: var(--foreground);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  ::selection {
+    background: rgba(212, 164, 76, 0.32);
+  }
+  *:focus-visible {
+    outline: 1px solid var(--ring);
+    outline-offset: 1px;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #262a33;
+    border: 3px solid var(--background);
+    border-radius: 8px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #333845;
+  }
+  h1, h2, h3, h4 {
+    letter-spacing: -0.01em;
+  }
+}
+
+@utility num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+@utility eyebrow {
+  font-size: 10.5px;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+@utility panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+@utility panel-2 {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+@utility hairline-b {
+  border-bottom: 1px solid var(--border);
+}
+
+@utility hairline-t {
+  border-top: 1px solid var(--border);
+}
+
+@utility text-pos {
+  color: var(--pos);
+}
+
+@utility text-neg {
+  color: var(--neg);
+}
+
+@utility text-gold {
+  color: var(--gold);
+}
+
+@utility glow-gold {
+  box-shadow: 0 0 0 1px rgba(212, 164, 76, 0.35), 0 0 24px rgba(212, 164, 76, 0.12);
+}
+
+/* Markdown body — memos are the product; make them read like a well-set memo. */
+.prose-hermes {
+  color: var(--foreground-secondary);
+  font-size: 13.5px;
+  line-height: 1.6;
+  max-width: 78ch;
+}
+.prose-hermes h1 { font-size: 20px; font-weight: 600; color: var(--foreground); margin: 1.6em 0 0.6em; letter-spacing: -0.02em; }
+.prose-hermes h2 { font-size: 15px; font-weight: 600; color: var(--foreground); margin: 1.5em 0 0.5em; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
+.prose-hermes h3 { font-size: 13.5px; font-weight: 600; color: var(--foreground); margin: 1.2em 0 0.4em; }
+.prose-hermes h4 { font-size: 12.5px; font-weight: 600; color: var(--gold); margin: 1em 0 0.3em; text-transform: uppercase; letter-spacing: 0.06em; }
+.prose-hermes p { margin: 0.55em 0; }
+.prose-hermes ul, .prose-hermes ol { margin: 0.5em 0 0.5em 1.3em; }
+.prose-hermes li { margin: 0.2em 0; }
+.prose-hermes li::marker { color: var(--muted-2); }
+.prose-hermes strong { color: var(--foreground); font-weight: 600; }
+.prose-hermes a { color: var(--cyan); text-decoration: underline; text-decoration-color: rgba(70, 184, 214, 0.4); text-underline-offset: 2px; }
+.prose-hermes code { font-family: var(--font-mono); font-size: 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; color: var(--foreground); }
+.prose-hermes pre { background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; overflow-x: auto; font-size: 12px; }
+.prose-hermes pre code { background: none; border: none; padding: 0; }
+.prose-hermes blockquote { border-left: 2px solid var(--gold); padding-left: 12px; color: var(--muted); margin: 0.8em 0; }
+.prose-hermes hr { border: none; border-top: 1px solid var(--border); margin: 1.4em 0; }
+.prose-hermes table { border-collapse: collapse; width: 100%; font-size: 12px; margin: 0.8em 0; display: block; overflow-x: auto; }
+.prose-hermes th { text-align: left; color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; padding: 6px 8px; border-bottom: 1px solid var(--border-strong); }
+.prose-hermes td { padding: 5px 8px; border-bottom: 1px solid var(--border); vertical-align: top; font-variant-numeric: tabular-nums; }
+.prose-hermes img { max-width: 100%; border-radius: 6px; }
+
+/* Presentation mode: numbers become blurred bars — the toggle is one click. */
+[data-present="true"] .sensitive {
+  filter: blur(7px);
+  user-select: none;
+  pointer-events: none;
+  transition: filter 160ms ease;
+}
+.sensitive {
+  transition: filter 160ms ease;
+}
+
+/* dnd-kit overlay affordance */
+.drag-overlay {
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(212, 164, 76, 0.5);
+  transform: rotate(0.6deg);
+}
+
+/* Recharts chrome */
+.recharts-cartesian-grid line { stroke: var(--grid); }
+.recharts-cartesian-axis-line, .recharts-cartesian-axis-tick-line { stroke: var(--axis); }
+.recharts-cartesian-axis-tick-value { fill: var(--muted); font-family: var(--font-mono); font-size: 10.5px; }
+.recharts-tooltip-cursor { stroke: var(--border-strong); }
+.recharts-legend-item-text { color: var(--foreground-secondary) !important; font-size: 11px; }

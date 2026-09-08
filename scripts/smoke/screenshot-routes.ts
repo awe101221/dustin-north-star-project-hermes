@@ -9,7 +9,26 @@ import { chromium } from "playwright";
  *
  *   BASE_URL=http://localhost:3000 npm run smoke
  */
-const ROUTES = ["/", "/research", "/research/new", "/pipeline", "/quant", "/quant?tab=guru", "/north-star", "/companies", "/companies/NAS:MU", "/personas", "/personas/brad-gerstner", "/knowledge", "/agents", "/activity", "/settings", "/playground"];
+const ROUTES = [
+  "/",
+  "/learnings",
+  "/research",
+  "/research/new",
+  "/pipeline",
+  "/quant",
+  "/quant?tab=guru",
+  "/north-star",
+  "/companies",
+  "/companies/NAS:MU",
+  "/personas",
+  "/personas/brad-gerstner",
+  "/knowledge",
+  "/agents",
+  "/activity",
+  "/settings",
+  "/playground",
+  "/portfolio",
+];
 
 async function main() {
   const base = (process.env.BASE_URL ?? "http://localhost:3000").replace(/\/$/, "");

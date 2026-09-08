@@ -43,3 +43,6 @@ Read `README.md` first. The rules below are the ones that bite.
 | Route handlers + auth wrappers | `src/app/api/**`, `src/lib/server/{handlers,schemas,safe}.ts` |
 | Shell, palette, hotkeys | `src/components/shell/*`, `src/hooks/use-hotkeys.ts`, `src/config/nav.ts` |
 | Migration / seed scripts | `scripts/{db,migrate,seed,smoke}/*` |
+| Daily engineering audit | `docs/audit/PLAYBOOK.md`, `docs/audit/YYYY-MM-DD.md` |
+
+Daily audits follow `docs/audit/PLAYBOOK.md`. They record freshness, schema drift, CI/Vercel, and ranked recommendations. They do not write the reference DB, touch `kms-brain`, or enable RLS on legacy tables.

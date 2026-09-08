@@ -15,8 +15,31 @@ export function firstSet(...values: Array<string | undefined>) {
 export const HERMES_PROJECT_REF = "cwiaqczpifnxxcucqwvr";
 export const HERMES_SUPABASE_URL_DEFAULT = `https://${HERMES_PROJECT_REF}.supabase.co`;
 
+/** Project ref from a `https://<ref>.supabase.co` URL, or null if the host is not that shape. */
+export function supabaseProjectRefFromUrl(url: string): string | null {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    const match = /^([a-z0-9]+)\.supabase\.co$/.exec(host);
+    return match?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Throws unless `url` points at INVESTING-BRAIN-AG. */
+export function assertHermesProjectUrl(url: string): string {
+  const trimmed = url.replace(/\/$/, "");
+  const ref = supabaseProjectRefFromUrl(trimmed);
+  if (ref !== HERMES_PROJECT_REF) {
+    throw new Error(
+      `Hermes refuses Supabase project ref "${ref ?? "unknown"}"; expected ${HERMES_PROJECT_REF}.`,
+    );
+  }
+  return trimmed;
+}
+
 export function publicSupabaseUrl() {
-  return firstSet(process.env.NEXT_PUBLIC_SUPABASE_URL) ?? HERMES_SUPABASE_URL_DEFAULT;
+  return assertHermesProjectUrl(firstSet(process.env.NEXT_PUBLIC_SUPABASE_URL) ?? HERMES_SUPABASE_URL_DEFAULT);
 }
 
 export function publicSupabaseKey() {

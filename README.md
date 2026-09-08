@@ -14,7 +14,8 @@ for Vercel.
 ## ISSUES / open questions (read first)
 
 These are the things I would want to know before trusting the numbers or the deploy. None of
-them block the PR; several need a decision from you.
+them block a deploy; several need a decision from you. The dated engineering audit is
+`docs/audit/` (start with `docs/audit/PLAYBOOK.md`).
 
 1. **Alpha is measured on time-weighted return, not NAV.** `hermes_performance_points.daily_return`
    is the IBKR TWR chain; NAV (`nav`) includes deposits and withdrawals and is only shown as a
@@ -25,18 +26,20 @@ them block the PR; several need a decision from you.
    benchmark table that mixes the continuous IBKR QQQ total-return index (base 2025-01-01 = 100)
    with a rebased archive copy (duplicate 2026 dates). Only the IBKR series was imported. 1D
    returns were missing for all but two dates, so daily returns are derived from consecutive YTD
-   values (portfolio) and consecutive index values (benchmark). Details in
+   values (portfolio) and consecutive index values (benchmark). The imported QQQ leg is
+   `hermes_performance_points.series = 'benchmark'` (there is no `'qqq'` series). Details in
    `scripts/migrate/import-legacy-performance.ts`.
 3. **The sandbox that built this could not reach `*.supabase.co` directly**, so the UI was
-   smoke-tested only in its degraded "query failed" state (all 16 routes render an `ErrorPanel`,
+   smoke-tested only in its degraded "query failed" state (pages render an `ErrorPanel`,
    no crashes, no error boundary) and every data-layer query was verified at the SQL level instead
    (views executed, every selected column checked against `information_schema`). Rendering against
    live data in a browser is the first thing to check on the Vercel preview:
    `BASE_URL=<preview> npm run smoke`.
-4. **Supabase security advisor flags 25 legacy tables with RLS disabled** (staging/backup tables
+4. **Supabase security advisor flags ~26 tables with RLS disabled** (staging/backup tables
    such as `analyst_memos_archive_backup_20260811`, `stg_*`, `retired_securities`,
-   `ranking_channels`). Hermes did not touch them. They are readable through the API today; decide
-   whether to enable RLS or drop the backups. The advisor's findings on `hermes_*` objects
+   `ranking_channels`, plus `analyst_memo_refreshes` and `hermes_schema_migrations`). Hermes did
+   not create the legacy backups. They are readable through the API today; decide whether to
+   enable RLS or drop the backups. The advisor's findings on the original `hermes_*` views
    (security-definer views, mutable `search_path` on functions) were fixed by the third migration.
 5. **Knowledge migration was applied through the SQL console, not the script** (the sandbox had no
    service-role key and no route to PostgREST). All 69 documents landed and were verified by
@@ -62,11 +65,13 @@ them block the PR; several need a decision from you.
 
 | Route | Module | Notes |
 |---|---|---|
-| `/` | **Portfolio Hub** | live book from `hermes_positions_latest`, sleeves, exposures, P&L, YTD vs QQQ, trade log (781 imported IBKR executions + manual entry), alpha attribution |
-| `/research`, `/research/[id]`, `/research/new` | **Research / Memos / Analyst Engine** | unified stream of 1,838 legacy memos + Hermes notes, latest / timeline / journal modes, full-text search (`hermes_search_research`), facets by persona / verdict / tag, markdown-first editor (`⌘S`), ticker linking |
+| `/` | **10 + 10** | Hermes-ranked Top 10 + Watchlist 10. Company models in `src/lib/company-models.ts` are a dated git seed until they live in `hermes_*`. Portfolio is context, not the home. |
+| `/learnings` | **Learnings** | Investing-philosophy archive (`hermes-investing-philosophy-learning` notes) that shapes the ranked list |
+| `/portfolio` | **Portfolio context** | live book from `hermes_positions_latest`, sleeves, exposures, P&L, YTD vs QQQ, trade log (781 imported IBKR executions + manual entry), alpha attribution |
+| `/research`, `/research/[id]`, `/research/new` | **Research / Memos / Analyst Engine** | unified stream of legacy memos + Hermes notes, latest / timeline / journal modes, full-text search (`hermes_search_research`), facets by persona / verdict / tag, markdown-first editor (`⌘S`), ticker linking |
 | `/personas`, `/personas/[slug]` | **Persona architecture** | editable framework prompts (versioned), boards, artifacts, verdict mix, linked knowledge; create new personas |
 | `/pipeline` | **Idea Pipeline** | Kanban Sourcing → Diligence → Live → Monitor → Archive, drag/drop (dnd-kit), conviction / risk / target weight, thesis / why-beat-QQQ / falsifier, audit trail |
-| `/quant` | **Quant tools** | JSON screener with presets over the memo universe, backtest lab (basket vs QQQ, rebalance, cost bps, exposure overlay), 13F guru crossover, insider/news alt-data, saved jobs |
+| `/quant` | **Quant / Alpha** | JSON screener with presets over the memo universe, backtest lab (basket vs QQQ, rebalance, cost bps, exposure overlay), 13F guru crossover, insider/news alt-data, saved jobs |
 | `/north-star` | **Mandate & stats** | editable mandate (rules, KPIs, sleeves, guardrails, versioned), YoY vs QQQ, rolling Sharpe / Sortino (60/120d), beta, tracking error, information ratio, hit rate, drawdown, decision scorecard |
 | `/companies`, `/companies/[ticker]` | Company dossiers | every lens's latest view, memo history, notes, holders, filings, trades, one-click note / pipeline / underwrite |
 | `/knowledge`, `/knowledge/[slug]` | Knowledge base | migrated persona prompts, playbooks, specs, templates, agent instructions; text search |
@@ -141,6 +146,18 @@ Applied to INVESTING-BRAIN-AG. Nothing legacy was altered.
 | `hermes_decision_scorecard` | `master_decisions` with latest outcomes |
 | `hermes_persona_catalog` | `analyst_personas` with memo / ticker counts |
 
+`20260907000400_underwriting_graph_evaluation.sql` (reconstructed from live DDL; applied on INVESTING-BRAIN-AG before this file landed in git)
+
+| Object | Purpose |
+|---|---|
+| `hermes_prompt_versions` | immutable prompt bodies with sha256 |
+| `hermes_agent_runs` | provenance for graph/forecast writes |
+| `hermes_underwriting_nodes` + `hermes_underwriting_edges` | immutable as-of underwriting graph |
+| `hermes_forecasts` + `hermes_forecast_outcomes` | registered forecasts vs QQQ, graded via `hermes_grade_forecast_outcome` |
+| `hermes_forecast_evaluations` | latest outcome per forecast (error, alpha, directional hit, Brier) |
+
+Live `hermes_sleeves*` tables are still **not** in `supabase/migrations/` (the portfolio page already reads them). See `docs/audit/2026-09-08.md`.
+
 `supabase/seed/hermes_pipeline_seed.sql` is the SQL twin of `scripts/seed/seed-pipeline.ts`
 (runs from the SQL editor without a service key).
 
@@ -148,15 +165,15 @@ Applied to INVESTING-BRAIN-AG. Nothing legacy was altered.
 
 - The browser only ever holds the publishable key. Reads on `hermes_*` tables go through explicit
   `anon` / `authenticated` SELECT policies.
-- The seven `hermes_*` views run with `security_invoker = on`
-  (`supabase/migrations/20260907000300_hermes_hardening.sql`), so they never widen what the
+- Hermes views run with `security_invoker = on`
+  (`supabase/migrations/20260907000300_hermes_hardening.sql` plus the underwriting migration), so they never widen what the
   caller could already read. Every legacy table they touch already grants `anon` SELECT through
   its own policies, which is what makes a read-only deploy with only the publishable key work.
   The same migration pins `search_path = public` on every `hermes_*` function.
 - `hermes_claim_agent_task` is the one SECURITY DEFINER function (it needs `SKIP LOCKED` on the
   task queue); it is not executable by `anon` and is only called from the bearer-token route.
-- The advisor also lists 25 legacy tables with RLS disabled (see ISSUES #4). Hermes did not create
-  or modify them.
+- The advisor also lists ~26 tables with RLS disabled (see ISSUES #4). Hermes did not create
+  the legacy backups.
 - Put `HERMES_ACCESS_PASSWORD` + `HERMES_SESSION_SECRET` on the production deployment. Without
   them the hub, which shows live NAV, is public at the URL.
 
@@ -226,7 +243,7 @@ State of the live database after this PR:
 | `hermes_trades` | 781 IBKR executions 2025-07-01 → 2026-08-28 | reference DB `capital.realized_executions` |
 | `hermes_ideas` | 76 cards (25 live, 24 monitor, 7 diligence, 20 sourcing) | open recommendations, trigger alerts, held names with memos, legacy North Star seeds, master scores |
 | `hermes_knowledge` | 69 documents extracted from `awe-capital` and `dustin-awe-capital` (personas, gates, specs, playbooks, prompts, queue-worker contracts, skills, templates, agent instructions); every row's `body_md` re-hashed in SQL and matched to its `content_sha256` | `scripts/migrate/import-legacy-knowledge.ts` (`--emit-sql`, pushed through the SQL console) |
-| `hermes_schema_migrations` | 3 rows (file name + sha256 of each applied migration) | `scripts/db/apply-migrations.ts` |
+| `hermes_schema_migrations` | 4 rows (file name + sha256 of each applied migration) | `scripts/db/apply-migrations.ts` |
 
 What was **not** copied: memos, rankings, positions, filings and 13F data stay in their legacy
 tables and are read through the `hermes_*` views. Persona prompts stay in
@@ -300,7 +317,7 @@ versioned on every edit.
   advisor reports no errors on `hermes_*` objects after the hardening migration.
 - Every `(table, column)` pair selected anywhere in `src/` was checked against
   `information_schema` on the live database: no missing objects.
-- Playwright smoke run over all 16 routes against a production build: 200 responses, no error
+- Playwright smoke run over the original 16 routes against a production build: 200 responses, no error
   overlay, no page errors, no React error boundary. Because the sandbox could not reach Supabase,
   the pages rendered their "query failed" `ErrorPanel` state; see ISSUES #3.
 

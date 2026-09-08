@@ -1,0 +1,17 @@
+{
+  "name": "Dustin North Star Project Hermes",
+  "install": "npm ci",
+  "terminals": [
+    {
+      "name": "dev",
+      "command": "npm run dev",
+      "description": "Next.js dev server on http://localhost:3000. Reads live data from Supabase when NEXT_PUBLIC_SUPABASE_ANON_KEY is set; otherwise renders 'not connected' panels."
+    }
+  ],
+  "ports": [
+    {
+      "name": "web",
+      "port": 3000
+    }
+  ]
+}

@@ -233,9 +233,9 @@
 .prose-hermes li::marker { color: var(--muted-2); }
 .prose-hermes strong { color: var(--foreground); font-weight: 600; }
 .prose-hermes a { color: var(--cyan); text-decoration: underline; text-decoration-color: rgba(70, 184, 214, 0.4); text-underline-offset: 2px; }
-.prose-hermes code { font-family: var(--font-mono); font-size: 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; color: var(--foreground); }
+.prose-hermes code { overflow-wrap: anywhere; word-break: break-word; font-family: var(--font-mono); font-size: 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; color: var(--foreground); }
 .prose-hermes pre { max-width: 100%; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; overflow-x: auto; font-size: 12px; }
-.prose-hermes pre code { background: none; border: none; padding: 0; }
+.prose-hermes pre code { overflow-wrap: normal; word-break: normal; background: none; border: none; padding: 0; }
 .prose-hermes blockquote { border-left: 2px solid var(--gold); padding-left: 12px; color: var(--muted); margin: 0.8em 0; }
 .prose-hermes hr { border: none; border-top: 1px solid var(--border); margin: 1.4em 0; }
 .prose-hermes table { border-collapse: collapse; width: max-content; min-width: 100%; font-size: 12px; margin: 0.8em 0; }

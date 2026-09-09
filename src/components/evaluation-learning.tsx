@@ -15,7 +15,7 @@ export function EvaluationLearning({ learning }: { learning: Awaited<ReturnType<
         <p>{open.length} open · {forecasts.length - open.length} graded · {due.length} due awaiting evidence · {unreviewed.length} misses awaiting review</p>
         {learning.missingTickers.length ? <p className="text-warn">Missing short-horizon coverage: {learning.missingTickers.join(", ")}. These conclusions are not yet testable through this loop.</p> : null}
         {forecasts.length === 0 ? <p className="text-warn">No short-horizon forecasts registered yet. The next 10+10 refresh must supply evidence-backed ladder contracts; five-year returns are never extrapolated into quarterly predictions.</p> : <p className="text-muted">Next open deadline: {next ? fmtDate(next.due_date) : "none"}. Missing or ambiguous evidence leaves a forecast open, never silently failed.</p>}
-        <p className="text-xs text-muted">Market alpha uses split/dividend-adjusted closes, first common completed session on/after the next UTC day following registration and maturity (maximum 7-day gap). Cumulative return, not annualized. Overlapping forecasts are correlated—not independent investment results.</p>
+        <p className="text-xs text-muted">Market policy price-return-split-v1 uses licensed GuruFocus split-adjusted closes for both stock and QQQ. Dividends excluded; cumulative price return, not annualized total return. Exact registered session dates only: missing, stale, ambiguous or non-trading-day evidence stays pending. Policy adoption is recorded separately; original forecasts and prompt versions remain unchanged. Overlapping forecasts are correlated—not independent investment results.</p>
         {learning.qqqBetter.length ? <div className="space-y-1 border-t border-border pt-2"><p>QQQ was the better decision for these measured horizons:</p>{learning.qqqBetter.map((f) => <p key={f.id} className="text-xs"><Link href={`/companies/${f.ticker}`} className="text-gold">{f.ticker}</Link> · {f.horizon} · alpha {fmtPct(Number(f.alpha), 1)} · {f.contract.probability < .5 ? "underperformance was correctly anticipated" : "outperformance probability call missed"}. This is not a verdict on the five-year thesis.</p>)}</div> : null}
       </CardContent>
     </Card>
@@ -24,7 +24,7 @@ export function EvaluationLearning({ learning }: { learning: Awaited<ReturnType<
       <CardContent className="space-y-3">
         {due.map((f) => <div key={f.id} className="rounded border border-border p-3 text-sm">
           <Link href={`/companies/${f.ticker}`} className="text-gold">{f.ticker}</Link> · {f.horizon} · due {fmtDate(f.due_date)}
-          <p className="text-muted">{f.horizon !== "quarter" ? "Awaiting authoritative common-session adjusted stock and QQQ prices." : (f.contract as OperatingContract).kind === "sec_kpi" ? "Awaiting exact fiscal-quarter filing fact; no YTD, proxy, or restatement substitution." : "Evidence review needed: verify the pre-registered milestone resolution rule in filings or earnings materials."}</p>
+          <p className="text-muted">{f.horizon !== "quarter" ? "Awaiting licensed GuruFocus split-adjusted stock and QQQ closes on the exact registered session dates; no fallback." : (f.contract as OperatingContract).kind === "sec_kpi" ? "Awaiting exact fiscal-quarter filing fact; no YTD, proxy, or restatement substitution." : "Evidence review needed: verify the pre-registered milestone resolution rule in filings or earnings materials."}</p>
           <p className="text-xs">Forecast {f.id} · {f.contract.falsifier}</p>
         </div>)}
         {misses.slice(0, 30).map((f) => {
@@ -43,7 +43,7 @@ export function EvaluationLearning({ learning }: { learning: Awaited<ReturnType<
       </CardContent>
     </Card>
     <Card className="overflow-hidden">
-      <CardHeader><div><CardTitle>Horizon accuracy & calibration</CardTitle><CardDescription>Separate cohorts by horizon, forecast type, agent, exact prompt version, and model. Small samples are descriptive, not evidence of skill.</CardDescription></div></CardHeader>
+      <CardHeader><div><CardTitle>Horizon accuracy & calibration</CardTitle><CardDescription>Separate cohorts by horizon, measurement policy, forecast type, agent, exact prompt version, and model. Small samples are descriptive, not evidence of skill.</CardDescription></div></CardHeader>
       <CardContent className="overflow-x-auto">
         <table className="w-full min-w-[760px] text-xs"><thead><tr className="text-left text-muted"><th className="p-2">Cohort</th><th className="p-2">Graded / registered</th><th className="p-2">Event accuracy</th><th className="p-2">Mean alpha</th><th className="p-2">Alpha MAE</th><th className="p-2">Brier</th><th className="p-2">Calibration: predicted → observed (n)</th></tr></thead><tbody>
           {cohorts.map((c) => <tr key={c.cohort} className="border-t border-border"><td className="p-2 max-w-72 break-words">{c.cohort}</td><td className="p-2">{c.n} / {c.registered}{c.n < 20 ? " · small sample" : ""}</td><td className="p-2">{fmtPct(c.accuracy, 0)}</td><td className="p-2">{fmtPct(c.alpha, 1)}</td><td className="p-2">{fmtPct(c.alphaMae, 1)}</td><td className="p-2">{c.brier?.toFixed(3) ?? "—"}</td><td className="p-2">{c.bins.filter((b) => b.n).map((b) => `${fmtPct(b.predicted, 0)} → ${fmtPct(b.observed, 0)} (${b.n})`).join("; ") || "Awaiting outcomes"}</td></tr>)}
@@ -55,6 +55,7 @@ export function EvaluationLearning({ learning }: { learning: Awaited<ReturnType<
         <p>{f.ticker} · {f.horizon} · {fmtDate(f.due_date)} · {f.outcome_id ? "graded" : "open"} · probability {fmtPct(f.contract.probability, 0)} · confidence {fmtPct(f.contract.confidence, 0)}</p>
         <p className="text-muted">{"expected_alpha" in f.contract ? `Expected alpha ${fmtPct(f.contract.expected_alpha, 1)}` : f.contract.label} · {f.contract.falsifier}</p>
         <p className="text-xs">{f.payload.ranking.lane} #{f.payload.ranking.rank} · {f.payload.ranking.reason} · {f.agent_name} · {f.prompt_id}@{f.prompt_version} · {f.model_version}</p>
+        {f.horizon !== "quarter" ? <p className="text-xs text-muted">Measurement policy: {String(f.observation?.policy_version ?? f.measurement_policy ?? "legacy / unbound — requires review")}</p> : null}
         <div className="flex flex-wrap gap-3 text-xs">{f.contract.evidence_urls.map((u, i) => <a href={u} key={u} target="_blank" rel="noreferrer" className="text-cyan underline">Original source {i + 1}</a>)}</div>
       </div>)}</div>
     </details>

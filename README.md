@@ -70,7 +70,8 @@ materiality rules, grading policy, protected local credentials and replay proced
 `npm run learning -- grade` runs deterministic market/SEC grading; `feedback` feeds
 prior errors into underwriting; `publish FILE` requires a complete 20-company ladder
 check and publishes the snapshot atomically. Provider failures leave outcomes pending.
-Price grading needs an entitled `ALPHA_VANTAGE_API_KEY`; SEC requests need a configured
+Price grading uses the existing licensed `GURUFOCUS_API_KEY` (also read from the protected
+Hermes environment with `--hermes-env`); SEC requests need a configured
 `SEC_USER_AGENT`. Milestones need explicit evidence review. Neither unavailable data
 nor old five-year modeled returns are used to manufacture short-horizon outcomes.
 
@@ -200,7 +201,7 @@ Environment Variables. Never commit values.
 | `HERMES_ACCESS_PASSWORD` | server | required app access password and privileged-read gate |
 | `HERMES_SESSION_SECRET` | server | required independent access-cookie signing secret |
 | `HERMES_AGENT_TOKEN` | server | enables `/api/agent/*` |
-| `GURUFOCUS_API_KEY` | server | optional insider/news provider (SEC EDGAR fallback otherwise) |
+| `GURUFOCUS_API_KEY` | server/local job | licensed split-adjusted price-return grading; also news provider |
 | `HERMES_PRICE_PROVIDER` | server | `stooq` (default) or `none` for the backtest lab |
 | `DATABASE_URL` | scripts | `npm run db:migrate` / `db:verify` |
 | `LEGACY_INVESTMENT_BRAIN_URL`, `LEGACY_INVESTMENT_BRAIN_SERVICE_ROLE_KEY` | scripts | one-time imports from the reference DB |

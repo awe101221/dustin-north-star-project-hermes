@@ -72,12 +72,29 @@ exists after a cohort matures, report expired coverage rather than silently rene
 
 ## Grading and review
 
-Market grading uses Alpha Vantage TIME_SERIES_DAILY_ADJUSTED with entitled API key,
-same response vintage for each symbol's start/end adjusted closes, and the first
-COMMON completed trading session on/after the next UTC day after registration and
-the maturity date. Maximum 7 calendar days slippage; missing/delisted/extreme data
-stays pending for investigation. Alpha is cumulative return stock minus QQQ over
-the same sessions. Never use a live quote, unadjusted price or stale last-price carry.
+Market policy `price-return-split-v1` uses the existing licensed GuruFocus
+`/public/user/{credential}/stock/{symbol}/price` endpoint and `GURUFOCUS_API_KEY`.
+The adapter sits behind `HistoricalPriceProvider`; grading is provider-neutral.
+Both stock and QQQ use split-adjusted closing PRICE returns, excluding dividends;
+alpha is cumulative stock return minus QQQ return, not annualized total return.
+Use one fresh historical response per symbol for both endpoints. Persist provider,
+retrieval time, adjustment/return basis, source URL, latest completed source date,
+and both endpoint source dates. Never expose the credential-bearing request URL.
+
+Require the EXACT registered entry and maturity dates to be completed US sessions.
+Non-trading/unknown dates, missing endpoints, stale history/retrieval, duplicate or
+ambiguous rows, extreme moves, and mixed bases remain pending—no carry or date shift.
+The reviewed regular-session calendar covers 2026–2028; later years require review.
+Ad hoc closures/halted/delisted instruments require evidence review, not synthetic prices.
+There is NO fallback to Stooq, Yahoo, Alpha Vantage, or Massive. Future licensed
+adapters must satisfy the same interface and be explicitly approved in the provider
+registry; changing the adapter must not change grading mathematics or basis.
+
+The 2026-09-09 policy adoption is append-only, separate from original forecasts and
+prompt versions. Old adjusted-return instructions remain in original provenance;
+cohorts are separated by measurement policy. Five-year forecasts are untouched.
+Read-only provider check: `npm run learning -- --hermes-env prices-check MELI 2026-06-08 2026-09-08`.
+This checks real evidence but NEVER creates a retrospective forecast or outcome.
 
 SEC grading selects the earliest original filing containing the EXACT discrete
 quarter, concept, CIK and unit. No YTD, currency conversion, inferred Q4 subtraction,

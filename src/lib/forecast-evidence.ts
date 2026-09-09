@@ -1,20 +1,8 @@
-import { EvidencePending, marketObservation, type LadderEvaluation, type PriceSeries, type OperatingContract } from "./forecast-ladder";
+import { EvidencePending, type LadderEvaluation, type OperatingContract } from "./forecast-ladder";
+import { MARKET_POLICY_VERSION, priceReturnEvidence, type HistoricalPriceProvider } from "./market-price-provider";
 
 type Json = Record<string, unknown>;
 const object = (v: unknown): Json => v !== null && typeof v === "object" && !Array.isArray(v) ? v as Json : {};
-export function parseAdjustedPrices(raw: unknown, symbol: string): PriceSeries {
-  const root = object(raw);
-  if (object(root["Meta Data"])["2. Symbol"] !== symbol) throw new EvidencePending("Provider missing or mismatched symbol; check entitlement/rate limit");
-  const series = object(root["Time Series (Daily)"]);
-  const result: PriceSeries = {};
-  for (const [day, row] of Object.entries(series)) {
-    const adjusted = Number(object(row)["5. adjusted close"]);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !Number.isFinite(adjusted) || adjusted <= 0) throw new EvidencePending("Invalid adjusted price series");
-    result[day] = adjusted;
-  }
-  if (!Object.keys(result).length) throw new EvidencePending("No adjusted-price history available");
-  return result;
-}
 
 /** First filed exact discrete quarter only; never substitute YTD, amended or restated facts. */
 export function secObservation(raw: unknown, contract: Extract<OperatingContract, { kind: "sec_kpi" }>, today: string) {
@@ -41,7 +29,7 @@ export function secObservation(raw: unknown, contract: Extract<OperatingContract
   };
 }
 
-export function createEvidenceProvider(config: { alphaVantageKey?: string; secUserAgent?: string }, request: typeof fetch = fetch) {
+export function createEvidenceProvider(config: { prices?: HistoricalPriceProvider; secUserAgent?: string }, request: typeof fetch = fetch, clock = () => new Date()) {
   // Promise cache is per sweep, never persistent across grading vintages.
   const cache = new Map<string, Promise<unknown>>();
   const read = (url: string, headers?: Record<string, string>) => {
@@ -61,12 +49,11 @@ export function createEvidenceProvider(config: { alphaVantageKey?: string; secUs
   return async (forecast: LadderEvaluation, today = new Date().toISOString().slice(0, 10)) => {
     if (forecast.due_date >= today) throw new EvidencePending("Forecast not due");
     if (forecast.horizon !== "quarter") {
-      if (!config.alphaVantageKey) throw new EvidencePending("ALPHA_VANTAGE_API_KEY with daily-adjusted entitlement is not configured");
-      const url = (symbol: string, withKey: boolean) => `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol=${encodeURIComponent(symbol)}&outputsize=full${withKey ? `&apikey=${encodeURIComponent(config.alphaVantageKey!)}` : ""}`;
-      const stock = parseAdjustedPrices(await read(url(forecast.ticker, true)), forecast.ticker);
-      const qqq = parseAdjustedPrices(await read(url("QQQ", true)), "QQQ");
-      return { observation: { ...marketObservation(stock, qqq, forecast.start_date, forecast.due_date, today), provider: "alpha-vantage-adjusted" },
-        evidence_urls: [url(forecast.ticker, false), url("QQQ", false)] };
+      if (!config.prices) throw new EvidencePending("Historical-price provider is not configured");
+      if (forecast.measurement_policy !== MARKET_POLICY_VERSION) throw new EvidencePending("Forecast measurement policy not bound; evidence review required");
+      const now = clock();
+      if (now.toISOString().slice(0, 10) !== today) throw new EvidencePending("Grading clock and source-date cutoff disagree");
+      return priceReturnEvidence(config.prices, forecast.ticker, forecast.start_date, forecast.due_date, now);
     }
     const contract = forecast.contract as OperatingContract;
     if (contract.kind === "milestone") throw new EvidencePending("Milestone needs an evidence-backed earnings/filing review; no automatic false on missing text");

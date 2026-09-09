@@ -9,6 +9,8 @@ import { bestIdeasSnapshotCreate } from "../../src/lib/server/schemas";
 import { forecastLadderCreate, ladderReviewCreate, ladderMetrics, type LadderEvaluation } from "../../src/lib/forecast-ladder";
 import { assertLadderRanking } from "../../src/lib/forecast-ranking";
 import { createEvidenceProvider, gradeDueLadders } from "../../src/lib/forecast-evidence";
+import { createGuruFocusPriceProvider } from "../../src/lib/providers/gurufocus-prices";
+import { MARKET_POLICY_VERSION, priceReturnEvidence } from "../../src/lib/market-price-provider";
 
 const args = process.argv.slice(2).filter((a) => a !== "--hermes-env");
 const [command, ...rest] = args;
@@ -16,7 +18,7 @@ if (process.argv.includes("--hermes-env")) {
   // Opt-in protected local credentials, read only. Never write an env file or
   // expose credentials to the model. Canonical destination is guarded by Rest.
   const file = path.join(os.homedir(), ".hermes", ".env");
-  const allowed = new Set(["SUPABASE_SERVICE_ROLE_KEY", "ALPHA_VANTAGE_API_KEY", "SEC_USER_AGENT"]);
+  const allowed = new Set(["SUPABASE_SERVICE_ROLE_KEY", "GURUFOCUS_API_KEY", "SEC_USER_AGENT"]);
   for (const line of fs.readFileSync(file, "utf8").split(/\r?\n/)) {
     const match = line.match(/^([A-Z0-9_]+)=(.*)$/);
     if (!match || !allowed.has(match[1]!)) continue;
@@ -52,6 +54,11 @@ async function startRun(model: string, agent: string, externalKey: string, workf
   return rows[0]!.id;
 }
 async function main() {
+  if (command === "prices-check") {
+    const [ticker, start, due] = rest;
+    if (!ticker || !start || !due) throw new Error("prices-check requires ticker, start date, and end date; read-only, never grades a forecast");
+    return output(await priceReturnEvidence(createGuruFocusPriceProvider(optionalEnv("GURUFOCUS_API_KEY")), ticker, start, due));
+  }
   if (command === "start") {
     const [model, agent, externalKey] = rest;
     if (!model || !agent || !externalKey) throw new Error("start requires actual model version, agent name, and stable invocation key");
@@ -75,12 +82,14 @@ async function main() {
   }
   if (command === "grade") {
     const forecasts = await db.selectAll<LadderEvaluation>("hermes_ladder_evaluations", "select=*&outcome_id=is.null&order=due_date.asc,id.asc");
-    const runId = await startRun("deterministic-evidence-grader-v1", "hermes-outcome-grader", `ladder-grade:${new Date().toISOString()}`, "forecast-outcome-grading");
-    const results = await gradeDueLadders(forecasts, createEvidenceProvider({ alphaVantageKey: optionalEnv("ALPHA_VANTAGE_API_KEY"), secUserAgent: optionalEnv("SEC_USER_AGENT") }),
+    const runId = await startRun("deterministic-evidence-grader-v2", "hermes-outcome-grader", `ladder-grade:${new Date().toISOString()}`, "forecast-outcome-grading");
+    const providerConfig = { provider: "gurufocus", policy_version: MARKET_POLICY_VERSION,
+      configured: !!optionalEnv("GURUFOCUS_API_KEY") && !/SENSITIVE/.test(optionalEnv("GURUFOCUS_API_KEY")!), sec: !!optionalEnv("SEC_USER_AGENT") };
+    const results = await gradeDueLadders(forecasts, createEvidenceProvider({ prices: createGuruFocusPriceProvider(optionalEnv("GURUFOCUS_API_KEY")), secUserAgent: optionalEnv("SEC_USER_AGENT") }),
       (id, observation, evidence) => db.rpc("hermes_grade_ladder", { p_forecast_id: id, p_observation: observation, p_evidence_urls: evidence }));
     await db.patch("hermes_agent_runs", `id=eq.${runId}`, { status: results.some((r) => r.status === "failed") ? "failed" : "succeeded", completed_at: "now",
-      output_ref: { results, provider_ready: { adjusted_prices: !!optionalEnv("ALPHA_VANTAGE_API_KEY"), sec: !!optionalEnv("SEC_USER_AGENT") } }, metrics: { due: results.length, graded: results.filter((r) => r.status === "graded").length, pending: results.filter((r) => r.status === "pending").length } });
-    output({ run_id: runId, results, provider_ready: { adjusted_prices: !!optionalEnv("ALPHA_VANTAGE_API_KEY"), sec: !!optionalEnv("SEC_USER_AGENT") } });
+      output_ref: { results, provider_config: providerConfig }, metrics: { due: results.length, graded: results.filter((r) => r.status === "graded").length, pending: results.filter((r) => r.status === "pending").length } });
+    output({ run_id: runId, results, provider_config: providerConfig });
     if (results.some((r) => r.status === "failed")) process.exitCode = 1;
     return;
   }

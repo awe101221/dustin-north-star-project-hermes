@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isMarketSession } from "./market-calendar";
 
 const text = z.string().trim().min(1).max(4000);
 const key = z.string().regex(/^[a-zA-Z0-9_.:-]{1,100}$/);
@@ -58,16 +59,13 @@ export const ladderReviewCreate = z.object({
 
 export type PriceSeries = Record<string, number>;
 export class EvidencePending extends Error {}
-const days = (a: string, b: string) => (Date.parse(b) - Date.parse(a)) / 86400000;
-
-/** First common completed session ON/AFTER registration day + 1 and maturity.
+/** Exact completed sessions at registration day + 1 and maturity.
  * Entry is future to registration: no look-ahead selection of an already known close.
  * Both endpoints come from one adjusted-history response per symbol. */
 export function marketObservation(stock: PriceSeries, qqq: PriceSeries, start: string, due: string, today: string) {
-  const dates = Object.keys(stock).filter((d) => d < today && qqq[d] !== undefined).sort();
-  const first = dates.find((d) => d >= start);
-  const last = dates.find((d) => d >= due);
-  if (!first || !last || first >= last || days(start, first) > 7 || days(due, last) > 7) throw new EvidencePending("Missing common adjusted-price sessions; no stale-price or delisting substitution");
+  const first = start;
+  const last = due;
+  if (!isMarketSession(first) || !isMarketSession(last) || first >= last || last >= today) throw new EvidencePending("Non-trading, unknown or incomplete endpoint date; keep pending without date substitution");
   const values = [stock[first], stock[last], qqq[first], qqq[last]];
   if (values.some((n) => n === undefined || !Number.isFinite(n) || n <= 0)) throw new EvidencePending("Invalid adjusted-price evidence");
   const stockReturn = stock[last]! / stock[first]! - 1;
@@ -86,6 +84,7 @@ export type LadderEvaluation = {
   outcome_id: string | null; actual_value: number | string | null; alpha: number | string | null;
   hit: boolean | null; brier: number | string | null; absolute_error: number | string | null;
   evidence_urls: string[] | null; observation: Record<string, unknown> | null;
+  measurement_policy?: string | null;
 };
 
 export function forecastMisses(forecasts: LadderEvaluation[]) {
@@ -97,7 +96,8 @@ export function ladderMetrics(rows: LadderEvaluation[]) {
   const groups = new Map<string, LadderEvaluation[]>();
   for (const r of rows) {
     const type = r.horizon === "quarter" ? (r.contract as OperatingContract).kind : "market_alpha";
-    const group = [r.horizon, type, r.agent_name, r.prompt_id, r.prompt_version, r.model_version].join(" · ");
+    const basis = r.horizon === "quarter" ? "operating" : String(r.observation?.policy_version ?? r.measurement_policy ?? "legacy-unspecified");
+    const group = [r.horizon, type, basis, r.agent_name, r.prompt_id, r.prompt_version, r.model_version].join(" · ");
     groups.set(group, [...(groups.get(group) ?? []), r]);
   }
   return [...groups].map(([cohort, forecasts]) => {

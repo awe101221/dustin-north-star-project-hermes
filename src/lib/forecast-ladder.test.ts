@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { forecastLadderCreate, forecastMisses, marketObservation, ladderMetrics, type LadderEvaluation } from "./forecast-ladder";
-import { parseAdjustedPrices, secObservation, createEvidenceProvider, gradeDueLadders } from "./forecast-evidence";
+import { secObservation, createEvidenceProvider, gradeDueLadders } from "./forecast-evidence";
 import { assertLadderRanking } from "./forecast-ranking";
 
 import { ladderFixture } from "./test-fixtures/forecast-ladder";
@@ -22,17 +22,15 @@ describe("forecast ladder contracts", () => {
   });
 });
 describe("authoritative outcome extraction", () => {
-  it("uses common forward sessions and keeps raw endpoints for audit", () => {
-    expect(marketObservation({ "2026-01-05": 100, "2026-04-06": 120 }, { "2026-01-05": 100, "2026-04-06": 110 }, "2026-01-03", "2026-04-04", "2026-04-07")).toMatchObject({ stock_start: 100, stock_end: 120, qqq_start: 100, qqq_end: 110, start_date: "2026-01-05" });
+  it("uses exact completed sessions and keeps raw endpoints for audit", () => {
+    expect(marketObservation({ "2026-01-05": 100, "2026-04-06": 120 }, { "2026-01-05": 100, "2026-04-06": 110 }, "2026-01-05", "2026-04-06", "2026-04-07")).toMatchObject({ stock_start: 100, stock_end: 120, qqq_start: 100, qqq_end: 110, start_date: "2026-01-05" });
   });
   it("refuses stale, missing, intraday, invalid, and extreme prices", () => {
     const s = { "2026-01-05": 100, "2026-04-06": 120 };
     expect(() => marketObservation(s, s, "2025-12-01", "2026-04-04", "2026-04-07")).toThrow();
     expect(() => marketObservation(s, s, "2026-01-03", "2026-04-04", "2026-04-06")).toThrow();
     expect(() => marketObservation(s, {}, "2026-01-03", "2026-04-04", "2026-04-07")).toThrow();
-    expect(() => marketObservation({ ...s, "2026-04-06": 10000 }, s, "2026-01-03", "2026-04-04", "2026-04-07")).toThrow();
-    expect(() => parseAdjustedPrices({ Note: "rate limit" }, "MELI")).toThrow();
-    expect(() => parseAdjustedPrices({ "Meta Data": { "2. Symbol": "MELI" }, "Time Series (Daily)": { "2026-01-01": { "4. close": 100 } } }, "MELI")).toThrow();
+    expect(() => marketObservation({ ...s, "2026-04-06": 10000 }, s, "2026-01-05", "2026-04-06", "2026-04-07")).toThrow();
   });
   it("uses exact SEC period/unit and earliest non-amended filing, not YTD or restatement", () => {
     const contract = ladderFixture().operating;

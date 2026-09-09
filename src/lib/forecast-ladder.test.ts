@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { forecastLadderCreate, marketObservation, ladderMetrics, type LadderEvaluation } from "./forecast-ladder";
+import { forecastLadderCreate, forecastMisses, marketObservation, ladderMetrics, type LadderEvaluation } from "./forecast-ladder";
 import { parseAdjustedPrices, secObservation, createEvidenceProvider, gradeDueLadders } from "./forecast-evidence";
 import { assertLadderRanking } from "./forecast-ranking";
 
@@ -60,5 +60,11 @@ describe("authoritative outcome extraction", () => {
   it("assigns probability boundaries to exactly one calibration bin", () => {
     const rows = [0, .2, .4, .6, .8, 1].map((probability) => ({ horizon: "90d", agent_name: "hermes", prompt_id: "refresh", prompt_version: "1", model_version: "a", outcome_id: "out", hit: true, brier: 0, alpha: 0, absolute_error: 0, contract: { probability } } as LadderEvaluation));
     expect(ladderMetrics(rows)[0]!.bins.map((b) => b.n)).toEqual([1, 1, 1, 1, 2]);
+  });
+  it("does not call correctly anticipated QQQ underperformance a forecasting error", () => {
+    const correct = { outcome_id: "out", hit: false, alpha: -.05, absolute_error: 0, brier: .16, contract: { probability: .4 } } as LadderEvaluation;
+    expect(forecastMisses([correct])).toHaveLength(0);
+    expect(forecastMisses([{ ...correct, contract: { ...correct.contract, probability: .8 } }])).toHaveLength(1);
+    expect(forecastMisses([{ ...correct, absolute_error: .2 }])).toHaveLength(1);
   });
 });

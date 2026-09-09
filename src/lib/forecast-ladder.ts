@@ -88,6 +88,11 @@ export type LadderEvaluation = {
   evidence_urls: string[] | null; observation: Record<string, unknown> | null;
 };
 
+export function forecastMisses(forecasts: LadderEvaluation[]) {
+  return forecasts.filter((f) => f.outcome_id && ((f.contract.probability >= .5) !== f.hit || (f.alpha !== null && Number(f.absolute_error) >= .1)))
+    .sort((a, b) => Number(b.brier) - Number(a.brier));
+}
+
 export function ladderMetrics(rows: LadderEvaluation[]) {
   const groups = new Map<string, LadderEvaluation[]>();
   for (const r of rows) {

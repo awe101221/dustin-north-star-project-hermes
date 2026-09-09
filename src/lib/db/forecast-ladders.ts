@@ -1,5 +1,5 @@
 import { unwrap, type Db } from "./query";
-import { ladderMetrics, type LadderEvaluation } from "../forecast-ladder";
+import { forecastMisses, ladderMetrics, type LadderEvaluation } from "../forecast-ladder";
 
 export type LadderReview = { id: string; forecast_id: string; created_at: string; payload: { reviewer: string; failed_assumption_ids: string[]; finding: string; recommended_change: string; disposition: string; evidence_urls: string[] } };
 
@@ -29,9 +29,9 @@ export async function getForecastLearning(db: Db, ticker?: string) {
   const snapshot = latest[0]?.metadata.bestIdeas;
   const ranked = [...(snapshot?.topTen ?? []), ...(snapshot?.watchlistTen ?? [])].map((i) => i.ticker.split(":").at(-1)!);
   const missingTickers = ranked.filter((t) => (!ticker || t === ticker.split(":").at(-1)) && !forecasts.some((f) => f.ticker === t));
-  const misses = forecasts.filter((f) => f.outcome_id && ((f.contract.probability >= .5) !== f.hit || (f.alpha !== null && (Number(f.alpha) < 0 || Number(f.absolute_error) >= .1))))
-    .sort((a, b) => Number(b.brier) - Number(a.brier));
+  const misses = forecastMisses(forecasts);
   return { forecasts, reviews, cohorts: ladderMetrics(forecasts), misses, missingTickers,
+    qqqBetter: forecasts.filter((f) => f.outcome_id && f.alpha !== null && Number(f.alpha) < 0),
     due: forecasts.filter((f) => !f.outcome_id && f.due_date < today),
     unreviewed: misses.filter((f) => !reviews.some((r) => r.forecast_id === f.id)),
     feedback_policy: "Review evidenced assumption failures; propose versioned prompt/model experiments. No causal attribution from price alone; no automatic production prompt changes. Overlapping forecasts are not independent trials.",

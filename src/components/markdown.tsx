@@ -18,6 +18,11 @@ export function Markdown({ children, className }: { children: string; className?
               {c}
             </a>
           ),
+          table: ({ children: c }) => (
+            <div className="max-w-full overflow-x-auto">
+              <table>{c}</table>
+            </div>
+          ),
         }}
       >
         {children}

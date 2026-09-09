@@ -238,7 +238,7 @@
 .prose-hermes pre code { background: none; border: none; padding: 0; }
 .prose-hermes blockquote { border-left: 2px solid var(--gold); padding-left: 12px; color: var(--muted); margin: 0.8em 0; }
 .prose-hermes hr { border: none; border-top: 1px solid var(--border); margin: 1.4em 0; }
-.prose-hermes table { border-collapse: collapse; width: 100%; max-width: 100%; font-size: 12px; margin: 0.8em 0; display: block; overflow-x: auto; }
+.prose-hermes table { border-collapse: collapse; width: max-content; min-width: 100%; font-size: 12px; margin: 0.8em 0; }
 .prose-hermes th { text-align: left; color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; padding: 6px 8px; border-bottom: 1px solid var(--border-strong); }
 .prose-hermes td { padding: 5px 8px; border-bottom: 1px solid var(--border); vertical-align: top; font-variant-numeric: tabular-nums; }
 .prose-hermes img { max-width: 100%; border-radius: 6px; }

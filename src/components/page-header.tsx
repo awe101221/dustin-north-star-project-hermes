@@ -43,7 +43,7 @@ export function NotConfigured({ what = "the Awe Capital brain" }: { what?: strin
 
 export function ErrorPanel({ title = "Query failed", detail }: { title?: string; detail?: string }) {
   return (
-    <div className="rounded-md border border-neg/40 bg-neg-soft px-4 py-3 text-[12px]">
+    <div role="alert" data-testid="error-panel" className="rounded-md border border-neg/40 bg-neg-soft px-4 py-3 text-[12px]">
       <p className="font-medium text-neg">{title}</p>
       {detail ? <p className="mt-0.5 text-foreground-secondary num break-all">{detail}</p> : null}
     </div>

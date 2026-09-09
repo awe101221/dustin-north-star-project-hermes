@@ -204,8 +204,10 @@ npm run check                # lint + typecheck + vitest + build
 BASE_URL=http://localhost:3000 npm run smoke   # Playwright screenshots of every route → scripts/smoke/output
 ```
 
-`npm run smoke` accepts `CHROMIUM_PATH=/path/to/chrome` when Playwright's bundled browser is
-not installed, and `HERMES_ACCESS_PASSWORD` to log in through the gate first.
+`npm run smoke` loads `.env.local`, accepts `CHROMIUM_PATH=/path/to/chrome` when Playwright's
+bundled browser is not installed, logs in through the password gate, and checks 24 live route
+states at desktop and 390px mobile widths (48 total checks). Keep the current
+`HERMES_ACCESS_PASSWORD` in `.env.local`; never put it on the command line or send it through chat.
 
 ---
 

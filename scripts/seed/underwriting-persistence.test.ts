@@ -121,6 +121,43 @@ function exactReadback(table: string) {
   return [];
 }
 
+function legacyExactReadback(table: string) {
+  const promptProvenance = { prompt_id: null, prompt_version: null };
+  if (table === "hermes_underwriting_nodes") {
+    return legacyNodes.map((node, index) => ({
+      ...node,
+      ...promptProvenance,
+      id: `legacy-node-id-${index}`,
+      agent_run_id: legacyRunId,
+      created_at: "2026-09-08T00:00:10Z",
+      updated_at: "2026-09-08T00:00:20Z",
+    }));
+  }
+  if (table === "hermes_underwriting_edges") {
+    return legacyEdges.map((edge, index) => ({
+      ...edge,
+      id: `legacy-edge-id-${index}`,
+      from_node_id: `legacy-node-id-${index}`,
+      to_node_id: `legacy-node-id-${index + 1}`,
+      agent_run_id: legacyRunId,
+      created_at: "2026-09-08T00:00:25Z",
+    }));
+  }
+  if (table === "hermes_forecasts") {
+    return legacyForecasts.map((forecast, index) => ({
+      ...forecast,
+      ...promptProvenance,
+      id: `legacy-forecast-id-${index}`,
+      agent_run_id: legacyRunId,
+      as_of: "2026-09-08T00:00:30Z",
+      status: "open",
+      created_at: "2026-09-08T00:00:30Z",
+      updated_at: "2026-09-08T00:00:30Z",
+    }));
+  }
+  return [];
+}
+
 function succeededRun(overrides: Record<string, unknown> = {}) {
   return {
     id: runId,
@@ -427,6 +464,32 @@ describe("underwriting seed persistence", () => {
 
     await expect(persistUnderwritingSeedOutput(db, args)).resolves.toEqual({ nodes: 2, edges: 1, forecasts_inserted: 1, recovered: false });
     expect(db.rpc).toHaveBeenCalledWith("hermes_complete_underwriting_seed", args);
+    expect(db.patch).not.toHaveBeenCalled();
+  });
+
+  it("recovers a lost response after the exact allowlisted historical null-provenance replay commits", async () => {
+    const replayArgs = {
+      ...legacyArgs,
+      p_nodes: legacyNodes.map((row) => ({ ...row, prompt_id: null, prompt_version: null })),
+      p_forecasts: legacyForecasts.map((row) => ({ ...row, prompt_id: null, prompt_version: null })),
+      p_output_ref: legacyOutputRef,
+      p_metrics: legacyMetrics,
+    };
+    const db = lostResponseDb({
+      run: succeededRun({
+        id: legacyRunId,
+        output_ref: legacyOutputRef,
+        metrics: legacyMetrics,
+      }),
+      readback: legacyExactReadback,
+    });
+
+    await expect(persistUnderwritingSeedOutput(db, replayArgs)).resolves.toEqual({
+      nodes: 460,
+      edges: 440,
+      forecasts_inserted: 60,
+      recovered: true,
+    });
     expect(db.patch).not.toHaveBeenCalled();
   });
 

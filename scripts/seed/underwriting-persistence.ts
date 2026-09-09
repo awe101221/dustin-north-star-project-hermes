@@ -144,6 +144,24 @@ function exactCurrentCompletionRequest(args: UnderwritingSeedArgs) {
     });
 }
 
+function expectedSeedPromptProvenance(args: UnderwritingSeedArgs, run: RunReadback) {
+  const expectedRows = [...args.p_nodes, ...args.p_forecasts];
+  if (expectedRows.every((row) => promptPairMatches(row, run))) return true;
+
+  // One immutable production seed predates row-level prompt provenance. The
+  // terminal replay selector and database RPC independently pin this
+  // compatibility path to the same UUID and exact seed contract. Keep lost-
+  // response recovery aligned with that path so a committed replay is not
+  // reported as failed merely because the run has provenance and its legacy
+  // graph rows intentionally do not.
+  return run.id === legacyNullProvenanceCompletion.runId
+    && args.p_agent_run_id === legacyNullProvenanceCompletion.runId
+    && run.prompt_id === "company-underwrite"
+    && run.prompt_version === "1.0.0"
+    && expectedRows.length > 0
+    && expectedRows.every((row) => row.prompt_id === null && row.prompt_version === null);
+}
+
 export async function selectUnderwritingTerminalReplayArgs(
   db: Rest,
   args: UnderwritingSeedArgs,
@@ -492,8 +510,7 @@ async function readBack(db: Rest, args: UnderwritingSeedArgs) {
     createdAt: run === null ? Number.NaN : (auditInstant(run.created_at, now) ?? Number.NaN),
     completedAt: run === null ? Number.NaN : (pastOrPresentInstant(run.completed_at, now) ?? Number.NaN),
   };
-  const expectedPromptProvenance = run !== null
-    && [...args.p_nodes, ...args.p_forecasts].every((row) => promptPairMatches(row, run));
+  const expectedPromptProvenance = run !== null && expectedSeedPromptProvenance(args, run);
   const validChronology = run !== null
     && run.id === args.p_agent_run_id
     && validRunChronology(run, now)

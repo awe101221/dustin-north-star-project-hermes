@@ -1,5 +1,5 @@
 import { bareSymbol } from "@/lib/utils";
-import { unwrap, type Db } from "./query";
+import { num, selectAll, unwrap, type Db } from "./query";
 import type { CompanyFilingRow, CompanyRow, ThemeRow } from "./types";
 
 export type Company = {
@@ -64,6 +64,56 @@ export async function listCompanies(db: Db, opts: { sector?: string; limit?: num
   if (opts.sector) q = q.eq("sector", opts.sector);
   const rows = unwrap(await q, "companies") as CompanyRow[];
   return rows.map(mapCompany);
+}
+
+export type CompanyCoverage = {
+  memoId: string;
+  persona: string;
+  ticker: string;
+  symbol: string;
+  companyName: string;
+  verdict: string;
+  analyzedAt: string | null;
+  expectedIrr: number | null;
+};
+
+/**
+ * Latest memo coverage for the company index. This intentionally reads the
+ * narrow research stream rather than hermes_screener_universe: the company
+ * index already loads positions separately and does not need the screener's
+ * live-price, score, health, or lateral position joins.
+ */
+export async function getCompanyCoverage(db: Db): Promise<CompanyCoverage[]> {
+  type CoverageRow = {
+    id: string;
+    ticker: string;
+    company_name: string | null;
+    persona_slug: string | null;
+    verdict: string | null;
+    occurred_at: string | null;
+    expected_irr: number | string | null;
+  };
+  const rows = await selectAll<CoverageRow>((from, to) => db
+    .from("hermes_research_stream")
+    .select("id,ticker,company_name,persona_slug,verdict,occurred_at,expected_irr")
+    .eq("source_table", "analyst_memos")
+    .eq("is_latest", true)
+    .order("occurred_at", { ascending: false })
+    .range(from, to), 1000, 5000);
+  return rows
+    .filter((row): row is CoverageRow & { ticker: string; persona_slug: string; verdict: string } => (
+      Boolean(row.ticker && row.persona_slug && row.verdict)
+    ))
+    .map((row) => ({
+      memoId: row.id,
+      persona: row.persona_slug,
+      ticker: row.ticker,
+      symbol: bareSymbol(row.ticker),
+      companyName: row.company_name ?? row.ticker,
+      verdict: row.verdict,
+      analyzedAt: row.occurred_at,
+      expectedIrr: num(row.expected_irr),
+    }));
 }
 
 export type Filing = { id: string; form: string | null; date: string | null; accession: string | null; url: string | null; status: string | null };

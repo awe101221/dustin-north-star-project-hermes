@@ -63,15 +63,15 @@ export function ResearchStream({
           </TabsList>
         </Tabs>
         <form
-          className="flex items-center gap-2"
+          className="flex w-full flex-wrap items-center gap-2 lg:w-auto"
           onSubmit={(e) => {
             e.preventDefault();
             update({ q, ticker });
           }}
         >
-          <div className="relative">
+          <div className="relative w-full sm:w-auto">
             <Search className="absolute left-2 top-2 size-3.5 text-muted" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Full-text search memos & notes…" className="pl-7 w-72" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Full-text search memos & notes…" className="w-full pl-7 sm:w-72" />
           </div>
           <Input value={ticker} onChange={(e) => setTicker(e.target.value.toUpperCase())} placeholder="Ticker" className="w-24" />
           <Button type="submit" variant="secondary" size="sm">Search</Button>
@@ -149,12 +149,12 @@ export function ResearchStream({
   );
 }
 
-function StreamCard({ item }: { item: StreamItem }) {
+export function StreamCard({ item }: { item: StreamItem }) {
   return (
-    <Link href={`/research/${item.id}`} className="block panel px-4 py-3 hover:border-border-strong transition-colors animate-rise">
+    <div className="block panel px-4 py-3 hover:border-border-strong transition-colors animate-rise">
       <div className="flex items-center gap-2 flex-wrap">
         {item.ticker ? <TickerLink ticker={item.ticker} className="text-[13px]" /> : null}
-        <span className="text-[13px] font-medium text-foreground truncate">{item.title}</span>
+        <Link href={`/research/${item.id}`} className="text-[13px] font-medium text-foreground truncate hover:text-gold">{item.title}</Link>
         {item.verdict ? <Badge variant={toneFor(item.verdict)}>{item.verdict}</Badge> : null}
         <Badge variant="muted">{item.kind}</Badge>
         {!item.isLatest ? <Badge variant="outline">superseded</Badge> : null}
@@ -171,7 +171,7 @@ function StreamCard({ item }: { item: StreamItem }) {
         {item.tags.filter((t) => t !== item.persona && t !== item.verdict?.toLowerCase()).slice(0, 4).map((t) => <span key={t} className="rounded-[3px] bg-surface-2 px-1 text-[10px]">{t}</span>)}
       </div>
       {item.excerpt ? <p className="mt-1.5 text-[12px] text-foreground-secondary line-clamp-2">{item.excerpt.replace(/[#*_>`]/g, "").slice(0, 260)}</p> : null}
-    </Link>
+    </div>
   );
 }
 

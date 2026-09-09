@@ -173,10 +173,12 @@ export function PipelineBoard({ initial, personas, canWrite, openIdeaId, openNew
       </div>
 
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={() => setActiveId(null)}>
-        <div className={cn("grid gap-3 overflow-x-auto pb-3", showArchive ? "grid-cols-5" : "grid-cols-4")} style={{ minWidth: showArchive ? 1180 : 960 }}>
-          {stages.map((stage) => (
-            <Column key={stage} stage={stage} ideas={visible(columns[stage])} total={columns[stage].length} onSelect={select} />
-          ))}
+        <div className="max-w-full overflow-x-auto pb-3">
+          <div className={cn("grid gap-3", showArchive ? "grid-cols-5" : "grid-cols-4")} style={{ minWidth: showArchive ? 1180 : 960 }}>
+            {stages.map((stage) => (
+              <Column key={stage} stage={stage} ideas={visible(columns[stage])} total={columns[stage].length} onSelect={select} />
+            ))}
+          </div>
         </div>
         <DragOverlay dropAnimation={{ duration: 150, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" }}>
           {activeIdea ? <div className="drag-overlay rounded-md"><IdeaCard idea={activeIdea} overlay /></div> : null}

@@ -76,7 +76,7 @@ export function LearningsView({ archive }: { archive: LearningArchive }) {
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="gold">#{change.rank}</Badge>
                 <p className="text-[13px] font-semibold text-foreground">{change.title}</p>
-                {change.source ? <Badge variant="outline">{change.source}</Badge> : null}
+                {change.source ? <Badge variant="outline" className="max-w-full whitespace-normal break-words">{change.source}</Badge> : null}
               </div>
               <p className="mt-2 text-[12.5px] leading-5 text-foreground-secondary">{change.learning}</p>
               <div className="mt-2 panel-2 p-2.5">

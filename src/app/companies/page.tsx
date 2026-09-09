@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { PageHeader, NotConfigured, ErrorPanel } from "@/components/page-header";
 import { serverReadClient } from "@/lib/supabase/server";
-import { listCompanies } from "@/lib/db/company";
-import { getUniverse } from "@/lib/db/quant";
+import { getCompanyCoverage, listCompanies } from "@/lib/db/company";
 import { getLatestPositions } from "@/lib/db/portfolio";
 import { getIdeas } from "@/lib/db/pipeline";
 import { safeLoad } from "@/lib/server/safe";
@@ -17,16 +16,16 @@ export default async function CompaniesPage() {
   const header = <PageHeader eyebrow="Universe" title="Companies" description="Every company the brain knows about: memo coverage per lens, latest verdicts, live weight, pipeline stage. Click through for the full dossier." />;
   if (!db) return <>{header}<NotConfigured /></>;
   const result = await safeLoad(async () => {
-    const [companies, universe, positions, ideas] = await Promise.all([listCompanies(db, { limit: 2000 }), getUniverse(db), getLatestPositions(db), getIdeas(db)]);
+    const [companies, coverage, positions, ideas] = await Promise.all([listCompanies(db, { limit: 2000 }), getCompanyCoverage(db), getLatestPositions(db), getIdeas(db)]);
     const byTicker = new Map<string, CompanyListRow>();
     for (const c of companies) {
       byTicker.set(c.ticker.toUpperCase(), { ticker: c.ticker, symbol: c.symbol, name: c.name, sector: c.sector, industry: c.industry, country: c.country, lenses: [], bestVerdict: null, bestIrr: null, latestMemoAt: null, weight: null, stage: null, memoCount: 0 });
     }
-    for (const u of universe) {
+    for (const u of coverage) {
       const key = u.ticker.toUpperCase();
       let row = byTicker.get(key);
       if (!row) {
-        row = { ticker: u.ticker, symbol: u.symbol, name: u.companyName, sector: u.sector, industry: u.industry, country: u.country, lenses: [], bestVerdict: null, bestIrr: null, latestMemoAt: null, weight: null, stage: null, memoCount: 0 };
+        row = { ticker: u.ticker, symbol: u.symbol, name: u.companyName, sector: null, industry: null, country: null, lenses: [], bestVerdict: null, bestIrr: null, latestMemoAt: null, weight: null, stage: null, memoCount: 0 };
         byTicker.set(key, row);
       }
       row.lenses.push(`${u.persona}:${u.verdict}`);

@@ -57,4 +57,8 @@ describe("authoritative outcome extraction", () => {
     expect(groups[1]!.alpha).toBeNull();
     expect(groups[0]!.bins[4]).toMatchObject({ n: 1, predicted: .9, observed: 0 });
   });
+  it("assigns probability boundaries to exactly one calibration bin", () => {
+    const rows = [0, .2, .4, .6, .8, 1].map((probability) => ({ horizon: "90d", agent_name: "hermes", prompt_id: "refresh", prompt_version: "1", model_version: "a", outcome_id: "out", hit: true, brier: 0, alpha: 0, absolute_error: 0, contract: { probability } } as LadderEvaluation));
+    expect(ladderMetrics(rows)[0]!.bins.map((b) => b.n)).toEqual([1, 1, 1, 1, 2]);
+  });
 });

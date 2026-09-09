@@ -101,8 +101,9 @@ export function ladderMetrics(rows: LadderEvaluation[]) {
       const values = graded.filter((f) => field !== "absolute_error" || f.horizon !== "quarter").map((f) => f[field]).filter((v) => v !== null).map(Number);
       return values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;
     };
-    const bins = [0, 0.2, 0.4, 0.6, 0.8].map((lo) => {
-      const subset = graded.filter((f) => f.contract.probability >= lo && (lo === 0.8 || f.contract.probability < lo + 0.2));
+    const bins = [0, 0.2, 0.4, 0.6, 0.8].map((lo, index) => {
+      // Integer bin assignment avoids overlapping float boundaries (0.4 + 0.2).
+      const subset = graded.filter((f) => Math.min(4, Math.floor(f.contract.probability * 5)) === index);
       return { lo, n: subset.length, predicted: subset.length ? subset.reduce((n, f) => n + f.contract.probability, 0) / subset.length : null,
         observed: subset.length ? subset.filter((f) => f.hit).length / subset.length : null };
     });

@@ -40,6 +40,13 @@ export function optionalEnv(name: string): string | undefined {
   return v || undefined;
 }
 
+/** Return a configured destination exactly as supplied so lexical guards run before normalization. */
+export function optionalRawEnv(name: string): string | undefined {
+  loadEnv();
+  const value = process.env[name];
+  return value === undefined || value.trim() === "" ? undefined : value;
+}
+
 export const HERMES_PROJECT_REF = "cwiaqczpifnxxcucqwvr";
 export const LEGACY_PROJECT_REF = "vnxypnpepwxurhbdtswn";
 

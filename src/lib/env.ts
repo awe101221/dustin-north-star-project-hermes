@@ -1,3 +1,5 @@
+import { requireCanonicalSupabaseUrl } from "@/lib/supabase-url";
+
 /**
  * Environment access. Every read is lazy and blank-tolerant: `vercel env pull`
  * writes unset keys as KEY="" and a plain `??` chain would stop on the blank.
@@ -16,7 +18,12 @@ export const HERMES_PROJECT_REF = "cwiaqczpifnxxcucqwvr";
 export const HERMES_SUPABASE_URL_DEFAULT = `https://${HERMES_PROJECT_REF}.supabase.co`;
 
 export function publicSupabaseUrl() {
-  return firstSet(process.env.NEXT_PUBLIC_SUPABASE_URL) ?? HERMES_SUPABASE_URL_DEFAULT;
+  const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  return requireCanonicalSupabaseUrl(
+    rawUrl === undefined || rawUrl.trim() === "" ? HERMES_SUPABASE_URL_DEFAULT : rawUrl,
+    HERMES_PROJECT_REF,
+    "NEXT_PUBLIC_SUPABASE_URL",
+  );
 }
 
 export function publicSupabaseKey() {

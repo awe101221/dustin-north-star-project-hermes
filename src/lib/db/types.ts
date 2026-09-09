@@ -425,6 +425,98 @@ export type TopRankingRow = {
   snapshot_age_days: number | null;
 };
 
+export type ForecastEvaluationRow = {
+  forecast_id: string;
+  stable_key: string;
+  ticker: string;
+  scenario: "Bear" | "Base" | "Bull" | "Probability-weighted";
+  forecast_type: string;
+  model_version: string;
+  as_of: string;
+  horizon_date: string;
+  probability: string | number | null;
+  predicted_value: string | number;
+  unit: string;
+  benchmark_symbol: string;
+  benchmark_value: string | number | null;
+  status: "open" | "graded" | "superseded" | "cancelled";
+  outcome_id: string | null;
+  observed_at: string | null;
+  actual_value: string | number | null;
+  qqq_value: string | number | null;
+  outcome_occurred: boolean | null;
+  absolute_error: string | number | null;
+  alpha: string | number | null;
+  directional_hit: boolean | null;
+  brier_component: string | number | null;
+  agent_run_id: string | null;
+};
+
+export type UnderwritingNodeRow = {
+  id: string;
+  stable_key: string;
+  node_type: string;
+  ticker: string | null;
+  title: string;
+  body: string | null;
+  status: string;
+  confidence: string | number | null;
+  as_of: string;
+  valid_until: string | null;
+  supersedes_id: string | null;
+  agent_run_id: string | null;
+  payload: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+};
+
+export type UnderwritingEdgeRow = {
+  id: string;
+  from_node_id: string;
+  to_node_id: string;
+  relationship: string;
+  strength: string | number | null;
+  note: string | null;
+  agent_run_id: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+};
+
+export type AgentRunRow = {
+  id: string;
+  workflow_id: string;
+  workflow_version: string;
+  external_key: string | null;
+  prompt_id: string | null;
+  prompt_version: string | null;
+  agent_name: string;
+  status: string;
+  ticker: string | null;
+  task_id: string | null;
+  tools_used: string[];
+  source_count: number;
+  input_ref: Record<string, unknown>;
+  output_ref: Record<string, unknown>;
+  started_at: string;
+  completed_at: string | null;
+  error: string | null;
+  metrics: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+};
+
+export type PromptVersionRow = {
+  prompt_id: string;
+  version: string;
+  role: string;
+  schema_version: string;
+  prompt_body: string;
+  content_sha256: string | null;
+  status: string;
+  description: string | null;
+  metadata: Record<string, unknown>;
+  released_at: string;
+};
+
 // ── Hermes extension ───────────────────────────────────────────────────────
 
 export type IdeaStage = "sourcing" | "diligence" | "live" | "monitor" | "archive";

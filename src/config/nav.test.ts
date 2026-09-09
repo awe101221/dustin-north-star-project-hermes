@@ -8,4 +8,13 @@ describe("primary navigation", () => {
     expect(rankingItems[0]).toMatchObject({ href: "/", label: "10 + 10" });
     expect(navFor("/best-ideas")?.href).toBe("/");
   });
+
+  it("links the underwriting evaluation loop and the system reality map", () => {
+    expect(NAV).toEqual(expect.arrayContaining([
+      expect.objectContaining({ href: "/evaluation", label: "Evaluation" }),
+      expect.objectContaining({ href: "/system", label: "System Map" }),
+    ]));
+    expect(navFor("/evaluation")?.href).toBe("/evaluation");
+    expect(navFor("/system")?.href).toBe("/system");
+  });
 });

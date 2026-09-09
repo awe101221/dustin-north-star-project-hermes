@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader, NotConfigured, ErrorPanel } from "@/components/page-header";
-import { serverReadClient } from "@/lib/supabase/server";
+import { serverReadClient, underwritingReadClient } from "@/lib/supabase/server";
 import { safeLoad } from "@/lib/server/safe";
 import { getCompany, getFilings, getThemesForTicker } from "@/lib/db/company";
 import { getMemoSummariesForTicker, getNotes } from "@/lib/db/research";
@@ -10,6 +10,8 @@ import { getLatestPositions, positionForTicker, getTrades } from "@/lib/db/portf
 import { getIdeaForTicker } from "@/lib/db/pipeline";
 import { getBestIdeasDashboard } from "@/lib/best-ideas";
 import { getCompanyModel } from "@/lib/company-models";
+import { getCompanyUnderwriting } from "@/lib/db/underwriting";
+import { resolvePersistedGraphTimestampState } from "@/lib/underwriting";
 import { bareSymbol } from "@/lib/utils";
 import { fmtCompactMoney, fmtDate, fmtMoney, fmtNum, fmtPct, fmtPrice } from "@/lib/format";
 import { Badge, toneFor } from "@/components/ui/badge";
@@ -20,6 +22,7 @@ import { PersonaChip, personaLabel } from "@/components/ticker-link";
 import { TradeLog } from "@/components/portfolio/trade-log";
 import { CompanyActions } from "@/components/companies/company-actions";
 import { CompanyFinancialModelView } from "@/components/companies/company-financial-model";
+import { CompanyUnderwritingGraph } from "@/components/companies/company-underwriting-graph";
 import { isWriteConfigured } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
@@ -32,10 +35,11 @@ export async function generateMetadata({ params }: { params: Promise<{ ticker: s
 export default async function CompanyPage({ params }: { params: Promise<{ ticker: string }> }) {
   const raw = decodeURIComponent((await params).ticker).toUpperCase();
   const db = serverReadClient();
+  const underwritingDb = await underwritingReadClient();
   if (!db) return <NotConfigured />;
   const symbol = bareSymbol(raw);
-  const loaded = await safeLoad(() =>
-    Promise.all([
+  const [loaded, underwritingLoaded] = await Promise.all([
+    safeLoad(() => Promise.all([
       getCompany(db, raw),
       getUniverseForTicker(db, raw).catch(() => []),
       getMemoSummariesForTicker(db, raw).catch(() => []),
@@ -48,8 +52,11 @@ export default async function CompanyPage({ params }: { params: Promise<{ ticker
       getThemesForTicker(db, raw).catch(() => []),
       getTrades(db, { symbol, limit: 40 }).catch(() => []),
       getBestIdeasDashboard(db).catch(() => null),
-    ]),
-  );
+    ])),
+    safeLoad(() => underwritingDb
+      ? getCompanyUnderwriting(underwritingDb, raw)
+      : Promise.reject(new Error("Confidential underwriting reads require server credentials."))),
+  ]);
   if (!loaded.ok) {
     return (
       <>
@@ -67,6 +74,10 @@ export default async function CompanyPage({ params }: { params: Promise<{ ticker
     ? [...bestIdeas.topTen, ...bestIdeas.watchlistTen].find((entry) => bareSymbol(entry.ticker) === symbol) ?? null
     : null;
   const financialModel = rankedIdea ? getCompanyModel(symbol) : null;
+  const graphTimestampState = underwritingLoaded.ok
+    ? resolvePersistedGraphTimestampState(underwritingLoaded.data?.nodes ?? [])
+    : null;
+  const modelOutputAvailable = !graphTimestampState?.hasUnavailablePersistedTimestamp;
 
   return (
     <>
@@ -92,11 +103,16 @@ export default async function CompanyPage({ params }: { params: Promise<{ ticker
         <Stat label="13F buyers / sellers" value={latestGuru ? `${latestGuru.buyers} / ${latestGuru.sellers}` : "—"} caption={latestGuru ? `quarter ${fmtDate(latestGuru.reportDate)}` : "not in tracked 13F flow"} />
       </div>
 
-      {financialModel && rankedIdea ? (
+      {financialModel && rankedIdea && modelOutputAvailable ? (
         <div className="mb-4">
           <CompanyFinancialModelView model={financialModel} rankedIdea={rankedIdea} />
         </div>
       ) : null}
+
+      {financialModel ? underwritingLoaded.ok
+        ? <CompanyUnderwritingGraph model={financialModel} underwriting={underwritingLoaded.data} timestampState={graphTimestampState ?? undefined} />
+        : <div className="mb-4"><ErrorPanel title="Underwriting record unavailable" detail={underwritingLoaded.error} /></div>
+      : null}
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <div className="xl:col-span-2 space-y-4">

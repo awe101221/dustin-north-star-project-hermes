@@ -1,4 +1,5 @@
-import { env, optionalEnv, HERMES_PROJECT_REF, LEGACY_PROJECT_REF } from "./env";
+import { env, optionalEnv, optionalRawEnv, HERMES_PROJECT_REF, LEGACY_PROJECT_REF } from "./env";
+import { requireCanonicalSupabaseUrl } from "../../src/lib/supabase-url";
 
 /**
  * Minimal PostgREST client for scripts. Four verbs with the service role,
@@ -61,15 +62,13 @@ function makeClient(url: string, key: string, readOnly: boolean): Rest {
 }
 
 export function hermesClient(): Rest {
-  const url = (optionalEnv("NEXT_PUBLIC_SUPABASE_URL") ?? `https://${HERMES_PROJECT_REF}.supabase.co`).replace(/\/$/, "");
-  if (!url.includes(HERMES_PROJECT_REF)) throw new Error(`WRONG_DATABASE_TARGET: NEXT_PUBLIC_SUPABASE_URL does not point at ${HERMES_PROJECT_REF}`);
+  const url = requireCanonicalSupabaseUrl(optionalRawEnv("NEXT_PUBLIC_SUPABASE_URL") ?? `https://${HERMES_PROJECT_REF}.supabase.co`, HERMES_PROJECT_REF, "NEXT_PUBLIC_SUPABASE_URL");
   return makeClient(url, env("SUPABASE_SERVICE_ROLE_KEY"), false);
 }
 
 /** Read-only client on the live project using the publishable (anon) key — for `--emit-sql` modes that only need RLS-visible reads. */
 export function publicClient(): Rest {
-  const url = (optionalEnv("NEXT_PUBLIC_SUPABASE_URL") ?? `https://${HERMES_PROJECT_REF}.supabase.co`).replace(/\/$/, "");
-  if (!url.includes(HERMES_PROJECT_REF)) throw new Error(`WRONG_DATABASE_TARGET: NEXT_PUBLIC_SUPABASE_URL does not point at ${HERMES_PROJECT_REF}`);
+  const url = requireCanonicalSupabaseUrl(optionalRawEnv("NEXT_PUBLIC_SUPABASE_URL") ?? `https://${HERMES_PROJECT_REF}.supabase.co`, HERMES_PROJECT_REF, "NEXT_PUBLIC_SUPABASE_URL");
   const key = optionalEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY") ?? optionalEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY");
   if (!key) throw new Error("Missing NEXT_PUBLIC_SUPABASE_ANON_KEY (or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)");
   return makeClient(url, key, true);
@@ -93,8 +92,7 @@ export function toInsertSql(table: string, rows: Record<string, unknown>[], suff
 }
 
 export function legacyClient(): Rest {
-  const url = (optionalEnv("LEGACY_INVESTMENT_BRAIN_URL") ?? `https://${LEGACY_PROJECT_REF}.supabase.co`).replace(/\/$/, "");
-  if (!url.includes(LEGACY_PROJECT_REF)) throw new Error(`WRONG_DATABASE_TARGET: LEGACY_INVESTMENT_BRAIN_URL does not point at ${LEGACY_PROJECT_REF}`);
+  const url = requireCanonicalSupabaseUrl(optionalRawEnv("LEGACY_INVESTMENT_BRAIN_URL") ?? `https://${LEGACY_PROJECT_REF}.supabase.co`, LEGACY_PROJECT_REF, "LEGACY_INVESTMENT_BRAIN_URL");
   return makeClient(url, env("LEGACY_INVESTMENT_BRAIN_SERVICE_ROLE_KEY"), true);
 }
 

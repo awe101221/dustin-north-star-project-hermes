@@ -5,7 +5,12 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   const env = { password: process.env.HERMES_ACCESS_PASSWORD, secret: process.env.HERMES_SESSION_SECRET };
-  if (!gateEnabled(env)) return NextResponse.json({ ok: true, gate: false });
+  if (!gateEnabled(env)) {
+    return NextResponse.json(
+      { ok: false, error: "Access gate is not configured. Set HERMES_ACCESS_PASSWORD and HERMES_SESSION_SECRET." },
+      { status: 503 },
+    );
+  }
   const body = (await request.json().catch(() => ({}))) as { password?: string };
   const supplied = typeof body.password === "string" ? body.password : "";
   if (!timingSafeEqual(supplied.padEnd(256, "\0"), env.password!.padEnd(256, "\0"))) {

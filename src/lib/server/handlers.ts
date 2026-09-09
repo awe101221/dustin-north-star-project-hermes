@@ -6,6 +6,7 @@ import { adminClient, WriteNotConfiguredError } from "@/lib/supabase/server";
 import { agentToken } from "@/lib/env";
 import { timingSafeEqual } from "@/lib/auth";
 import { DbError } from "@/lib/db/query";
+import { domainDbErrorResponse } from "@/lib/server/domain-errors";
 
 /**
  * Route-handler plumbing shared by /api/hermes/* (UI writes) and /api/agent/*
@@ -36,6 +37,12 @@ export async function parseBody<T>(request: NextRequest, schema: ZodType<T>): Pr
   return { ok: true, data: parsed.data };
 }
 
+export function parseQuery<T>(searchParams: URLSearchParams, schema: ZodType<T>): { ok: true; data: T } | { ok: false; res: NextResponse } {
+  const parsed = schema.safeParse(Object.fromEntries(searchParams.entries()));
+  if (!parsed.success) return { ok: false, res: fail("Invalid query parameters.", 400, parsed.error.issues) };
+  return { ok: true, data: parsed.data };
+}
+
 type Handler<P> = (args: { request: NextRequest; params: P; db: SupabaseClient }) => Promise<NextResponse>;
 
 /** Wraps a handler with the admin client and uniform error mapping. */
@@ -47,9 +54,11 @@ export function withAdmin<P = Record<string, string>>(handler: Handler<P>) {
       const params = await ctx.params;
       return await handler({ request, params, db });
     } catch (e) {
-      if (e instanceof DbError) return fail(e.message, 500, e.code);
-      const message = e instanceof Error ? e.message : String(e);
-      return fail(message, 500);
+      const domainResponse = domainDbErrorResponse(e, "Database operation");
+      if (domainResponse) return domainResponse;
+      if (e instanceof DbError) return fail("Database operation failed.", 500, e.code);
+      console.error("Unhandled privileged route error", e);
+      return fail("Internal server error.", 500);
     }
   };
 }

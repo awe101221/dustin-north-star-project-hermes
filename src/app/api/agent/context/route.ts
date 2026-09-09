@@ -5,6 +5,7 @@ import { getUniverseForTicker, getGuruSignalForSymbol } from "@/lib/db/quant";
 import { getLatestPositions, positionForTicker, getTrades } from "@/lib/db/portfolio";
 import { getIdeaForTicker } from "@/lib/db/pipeline";
 import { getMandate } from "@/lib/db/northstar";
+import { getCompanyUnderwriting } from "@/lib/db/underwriting";
 import { bareSymbol } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +22,7 @@ export const GET = withAgent(async ({ request, db }) => {
   const symbol = bareSymbol(ticker);
   const company = await getCompany(db, ticker);
   const canonical = company?.ticker ?? ticker;
-  const [mandate, universe, memos, notes, positions, idea, filings, guru, trades] = await Promise.all([
+  const [mandate, universe, memos, notes, positions, idea, filings, guru, trades, underwriting] = await Promise.all([
     getMandate(db),
     getUniverseForTicker(db, canonical),
     getMemoSummariesForTicker(db, canonical, 20),
@@ -31,6 +32,7 @@ export const GET = withAgent(async ({ request, db }) => {
     getFilings(db, canonical, 10),
     getGuruSignalForSymbol(db, symbol),
     getTrades(db, { symbol, limit: 20 }),
+    getCompanyUnderwriting(db, canonical),
   ]);
   return json({
     ticker: company?.ticker ?? ticker,
@@ -45,6 +47,7 @@ export const GET = withAgent(async ({ request, db }) => {
     filings,
     guru_flow: guru,
     trades,
+    underwriting,
     reference_tokens: {
       filings_archive: `company_filings/${company?.ticker ?? ticker}/archive`,
       latest_memo: universe.map((u) => `analyst_memos/${u.persona}/latest/${u.ticker}`),

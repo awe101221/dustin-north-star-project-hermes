@@ -19,7 +19,8 @@
     "migrate:trades": "tsx scripts/migrate/import-legacy-trades.ts",
     "seed:mandate": "tsx scripts/seed/seed-mandate.ts",
     "seed:pipeline": "tsx scripts/seed/seed-pipeline.ts",
-    "migrate:all": "npm run seed:mandate && npm run migrate:knowledge && npm run seed:pipeline && npm run db:verify",
+    "seed:underwriting": "tsx scripts/seed/seed-underwriting.ts",
+    "migrate:all": "npm run seed:mandate && npm run migrate:knowledge && npm run seed:pipeline && npm run seed:underwriting && npm run db:verify",
     "smoke": "tsx scripts/smoke/screenshot-routes.ts"
   },
   "dependencies": {
@@ -48,6 +49,7 @@
     "zustand": "5.0.15"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "^22.19.0",
     "@types/pg": "8.23.1",

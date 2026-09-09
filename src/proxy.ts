@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { ACCESS_COOKIE, gateEnabled, verifyCookie } from "@/lib/auth";
 
 /**
- * Next.js 16 request proxy (formerly middleware). Enforces the optional
+ * Next.js 16 request proxy (formerly middleware). Enforces the fail-closed
  * password gate for every page and every /api/hermes route. The agent API
  * (/api/agent/*) authenticates with its own bearer token and is exempt here;
  * /api/health and /api/auth are always reachable.
@@ -11,12 +11,10 @@ const PUBLIC_PATHS = ["/login", "/api/auth/login", "/api/auth/logout", "/api/hea
 
 export async function proxy(request: NextRequest) {
   const env = { password: process.env.HERMES_ACCESS_PASSWORD, secret: process.env.HERMES_SESSION_SECRET };
-  if (!gateEnabled(env)) return NextResponse.next();
-
   const { pathname } = request.nextUrl;
   if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return NextResponse.next();
 
-  const ok = await verifyCookie(request.cookies.get(ACCESS_COOKIE)?.value, env);
+  const ok = gateEnabled(env) && await verifyCookie(request.cookies.get(ACCESS_COOKIE)?.value, env);
   if (ok) return NextResponse.next();
 
   if (pathname.startsWith("/api/")) {

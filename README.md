@@ -51,7 +51,7 @@ them block the PR; several need a decision from you.
    database when the benchmark sync writes year-end marks.
 8. **Backtests are illustrative.** Prices come from stooq (free, end-of-day, no survivorship
    handling, no corporate-action audit). The backtest lab is for shape and sanity, not attribution.
-9. **Single shared agent token, single optional password.** There is no per-user auth. That is
+9. **Single shared agent token, single shared password.** There is no per-user auth. That is
    fine for one PM plus agents; it is not fine for a team.
 10. **Options exposure.** IBKR option rows are listed under the underlying symbol in the trade log
     and dossiers; notional for non-USD trades (EUR/GBP lines) is left null rather than guessed.
@@ -104,8 +104,9 @@ Next.js 16 App Router (server components read via serverReadClient; client compo
   (503 if the key is missing, so a read-only deploy still works). `/api/agent/*` run behind
   `withAgent` (timing-safe bearer check, then the same admin client). All bodies are zod schemas
   in `src/lib/server/schemas.ts`. Every mutation logs to `hermes_activity`.
-- **Auth.** Optional whole-app password gate: HMAC-signed cookie (`src/lib/auth.ts`,
-  `src/proxy.ts`, `/login`). `/api/health`, `/api/auth/*` and `/api/agent/*` are exempt.
+- **Auth.** Fail-closed whole-app password gate: HMAC-signed cookie (`src/lib/auth.ts`,
+  `src/proxy.ts`, `/login`) using an independent session-signing secret. `/api/health`,
+  `/api/auth/*` and bearer-authenticated `/api/agent/*` are exempt.
 - **Project-ref guard.** `src/lib/env.ts` throws if `NEXT_PUBLIC_SUPABASE_URL` does not point at
   `cwiaqczpifnxxcucqwvr`; the reference DB client in `scripts/lib/rest.ts` refuses any non-GET.
 
@@ -157,8 +158,11 @@ Applied to INVESTING-BRAIN-AG. Nothing legacy was altered.
   task queue); it is not executable by `anon` and is only called from the bearer-token route.
 - The advisor also lists 25 legacy tables with RLS disabled (see ISSUES #4). Hermes did not create
   or modify them.
-- Put `HERMES_ACCESS_PASSWORD` + `HERMES_SESSION_SECRET` on the production deployment. Without
-  them the hub, which shows live NAV, is public at the URL.
+- `HERMES_ACCESS_PASSWORD` and the independent `HERMES_SESSION_SECRET` are required. Missing or
+  blank values fail closed, including inside the service-role underwriting read client.
+- Service-role clients accept only HTTPS to the exact `cwiaqczpifnxxcucqwvr.supabase.co`
+  hostname; URL credentials, alternate hosts, ports, paths, queries, and fragments are rejected
+  before a privileged client is built.
 
 ---
 
@@ -174,7 +178,8 @@ Environment Variables. Never commit values.
 | `NEXT_PUBLIC_SUPABASE_URL` | public | everything (must be the INVESTING-BRAIN-AG URL) |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | public | reads, realtime |
 | `SUPABASE_SERVICE_ROLE_KEY` | server | every write (pipeline, notes, trades, mandate, personas, quant jobs, agent API) |
-| `HERMES_ACCESS_PASSWORD`, `HERMES_SESSION_SECRET` | server | optional password gate (recommended in production) |
+| `HERMES_ACCESS_PASSWORD` | server | required app access password and privileged-read gate |
+| `HERMES_SESSION_SECRET` | server | required independent access-cookie signing secret |
 | `HERMES_AGENT_TOKEN` | server | enables `/api/agent/*` |
 | `GURUFOCUS_API_KEY` | server | optional insider/news provider (SEC EDGAR fallback otherwise) |
 | `HERMES_PRICE_PROVIDER` | server | `stooq` (default) or `none` for the backtest lab |

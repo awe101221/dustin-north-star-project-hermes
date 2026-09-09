@@ -39,7 +39,7 @@ export default async function ArtifactPage({ params, searchParams }: { params: P
             <Badge variant="muted">{artifact.type.replace(/_/g, " ")}</Badge>
             <span>{artifact.format}</span>
             <span>· updated {fmtDate(artifact.updatedAt, "long")}</span>
-            {artifact.sourcePath ? <span className="num">· {artifact.sourcePath}</span> : null}
+            {artifact.sourcePath ? <span className="num min-w-0 max-w-full break-all">· {artifact.sourcePath}</span> : null}
             <span className="num">· {artifact.content.length.toLocaleString()} chars</span>
           </>
         }

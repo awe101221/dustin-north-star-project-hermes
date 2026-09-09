@@ -42,7 +42,7 @@ export default async function KnowledgeDocPage({ params }: { params: Promise<{ s
           <>
             {doc.persona_slug ? <Link href={`/personas/${doc.persona_slug}`}><Badge variant="gold">{personaLabel(doc.persona_slug)}</Badge></Link> : null}
             {doc.tags.map((t) => <Badge key={t} variant="outline">{t}</Badge>)}
-            <span className="num">{doc.source_repo}{doc.source_path ? ` · ${doc.source_path}` : ""}</span>
+            <span className="num min-w-0 max-w-full break-all">{doc.source_repo}{doc.source_path ? ` · ${doc.source_path}` : ""}</span>
             <span>· updated {fmtDate(doc.updated_at, "long")}</span>
             <span className="num">· sha {doc.content_sha256?.slice(0, 10)}</span>
           </>

@@ -119,7 +119,7 @@ export function NoteEditor({
         <div className="col-span-2"><Label>Tickers</Label><Input value={tickers} onChange={(e) => setTickers(e.target.value)} placeholder="NAS:MU, TSM" /></div>
         <div className="col-span-2"><Label>Tags</Label><Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="ai-bottleneck, earnings, thesis-check" /></div>
         <div><Label>Conviction 1–5</Label><Input type="number" min={1} max={5} value={conviction} onChange={(e) => setConviction(e.target.value)} /></div>
-        <div className="flex items-end gap-1">
+        <div className="col-span-2 flex flex-wrap items-end gap-1 md:col-span-1 md:flex-nowrap">
           <Button variant={view === "write" ? "secondary" : "ghost"} size="sm" onClick={() => setView("write")}><PenLine /> Write</Button>
           <Button variant={view === "split" ? "secondary" : "ghost"} size="sm" onClick={() => setView("split")}>Split</Button>
           <Button variant={view === "preview" ? "secondary" : "ghost"} size="sm" onClick={() => setView("preview")}><Eye /> Preview</Button>

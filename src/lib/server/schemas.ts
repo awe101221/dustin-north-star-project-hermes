@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { IDEA_STAGES, NOTE_KINDS } from "@/lib/db/types";
+import { forecastLadderCreate } from "@/lib/forecast-ladder";
+export { forecastLadderCreate, ladderReviewCreate } from "@/lib/forecast-ladder";
 
 /** Shared zod schemas for UI + agent writes. Numbers are decimal ratios. */
 const ticker = z.string().trim().min(1).max(24).transform((s) => s.toUpperCase());
@@ -427,6 +429,7 @@ const bestIdeaSnapshotItem = z.object({
 }).strict();
 
 export const bestIdeasSnapshotCreate = z.object({
+  forecastLadders: z.array(forecastLadderCreate).min(1).max(20).optional(),
   asOf: z.string().datetime({ offset: true }).optional(),
   thesis: z.string().trim().max(4000).nullable().optional(),
   topTen: z.array(bestIdeaSnapshotItem).min(1).max(10),

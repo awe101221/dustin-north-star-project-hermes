@@ -60,6 +60,25 @@ them block the PR; several need a decision from you.
 
 ## What shipped
 
+### Short-horizon forecast learning
+
+The weekday 10+10 workflow now has an additive immutable 90-day / 12-month / next-quarter
+ledger, separate from the existing five-year Bear/Base/Bull forecasts. `/evaluation`
+shows due evidence, calibration cohorts, QQQ-relative outcomes and assumption reviews.
+See [the exact refresh contract](docs/workflows/short-horizon-refresh.md) for payloads,
+materiality rules, grading policy, protected local credentials and replay procedures.
+`npm run learning -- grade` runs deterministic market/SEC grading; `feedback` feeds
+prior errors into underwriting; `publish FILE` requires a complete 20-company ladder
+check and publishes the snapshot atomically. Provider failures leave outcomes pending.
+Price grading needs an entitled `ALPHA_VANTAGE_API_KEY`; SEC requests need a configured
+`SEC_USER_AGENT`. Milestones need explicit evidence review. Neither unavailable data
+nor old five-year modeled returns are used to manufacture short-horizon outcomes.
+
+All new ledger tables have RLS enabled and no anonymous/authenticated grants. Even
+service_role has SELECT only; narrowly scoped, service-role-only transaction RPCs own
+insertion. Update/delete is rejected. Original forecast contracts, outcomes, checks,
+and reviews are append-only; prompt/model recommendations are never auto-promoted.
+
 | Route | Module | Notes |
 |---|---|---|
 | `/` | **Portfolio Hub** | live book from `hermes_positions_latest`, sleeves, exposures, P&L, YTD vs QQQ, trade log (781 imported IBKR executions + manual entry), alpha attribution |

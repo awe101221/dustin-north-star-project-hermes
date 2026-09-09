@@ -4,6 +4,7 @@
   "private": true,
   "description": "Dustin North Star Project Hermes — quant PM dashboard for beating QQQ over a decade. Next.js + TypeScript + Tailwind + shadcn/ui + Supabase.",
   "scripts": {
+    "learning": "tsx scripts/learning/cli.ts",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

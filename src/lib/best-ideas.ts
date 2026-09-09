@@ -1,6 +1,7 @@
 import { getIdeas, type Idea } from "@/lib/db/pipeline";
 import { unwrap, type Db } from "@/lib/db/query";
 import type { IdeaStage, NoteRow } from "@/lib/db/types";
+import type { ForecastLadderInput } from "@/lib/forecast-ladder";
 
 export const BEST_IDEAS_SNAPSHOT_TAG = "best-ideas-snapshot";
 export const HERMES_BEST_IDEAS_MANDATE =
@@ -88,6 +89,7 @@ export type SnapshotIdeaInput = {
 };
 
 export type BestIdeasSnapshotInput = {
+  forecastLadders?: ForecastLadderInput[];
   asOf?: string | null;
   thesis?: string | null;
   topTen: SnapshotIdeaInput[];

@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Stat } from "@/components/ui/stat";
 import { getDecisionScorecard } from "@/lib/db/portfolio";
 import { getEvaluationDashboard } from "@/lib/db/underwriting";
+import { getForecastLearning } from "@/lib/db/forecast-ladders";
+import { EvaluationLearning } from "@/components/evaluation-learning";
 import { num } from "@/lib/db/query";
 import { fmtDate, fmtDateTime, fmtPct } from "@/lib/format";
 import { safeLoad } from "@/lib/server/safe";
@@ -21,9 +23,10 @@ export default async function EvaluationPage() {
   const underwritingDb = await underwritingReadClient();
   const header = <PageHeader eyebrow="Closed learning loop" title="Forecast evaluation" description="The scorecard for whether North Star's predictions, prompts, and agent workflows become better calibrated over time—and whether active conclusions actually outperform QQQ." meta={<><span>Original forecasts remain immutable by model version</span><span>·</span><span>Research measurement, not trade automation</span></>} />;
   if (!underwritingDb) return <>{header}<NotConfigured /></>;
-  const [evaluationLoaded, decisionsLoaded] = await Promise.all([
+  const [evaluationLoaded, decisionsLoaded, learningLoaded] = await Promise.all([
     safeLoad(() => getEvaluationDashboard(underwritingDb)),
     safeLoad(() => db ? getDecisionScorecard(db) : Promise.reject(new Error("Public database reads are not configured."))),
+    safeLoad(() => getForecastLearning(underwritingDb)),
   ]);
   if (!evaluationLoaded.ok) return <>{header}<ErrorPanel title="Evaluation data failed to load" detail={evaluationLoaded.error} /></>;
   const evaluation = evaluationLoaded.data;
@@ -49,6 +52,7 @@ export default async function EvaluationPage() {
     <>
       {header}
       <div className="space-y-5">
+        {learningLoaded.ok ? <EvaluationLearning learning={learningLoaded.data} /> : <ErrorPanel title="Short-horizon learning unavailable" detail={learningLoaded.error} />}
         <div className="grid grid-cols-2 gap-2 lg:grid-cols-6">
           <Stat label="Open forecasts" value={evaluation.openForecasts} tone="cyan" caption="pre-registered" />
           <Stat label="Due now" value={evaluation.dueForecasts} tone={evaluation.dueForecasts ? "neg" : "pos"} caption="need outcome close" />

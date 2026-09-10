@@ -73,7 +73,9 @@ export default async function CompanyPage({ params }: { params: Promise<{ ticker
   const rankedIdea = bestIdeas
     ? [...bestIdeas.topTen, ...bestIdeas.watchlistTen].find((entry) => bareSymbol(entry.ticker) === symbol) ?? null
     : null;
-  const financialModel = rankedIdea ? getCompanyModel(symbol) : null;
+  const revisitIdea = bestIdeas?.revisit?.find((entry) => bareSymbol(entry.idea.ticker) === symbol) ?? null;
+  const modelIdea = rankedIdea ?? revisitIdea?.idea ?? null;
+  const financialModel = getCompanyModel(symbol);
   const graphTimestampState = underwritingLoaded.ok
     ? resolvePersistedGraphTimestampState(underwritingLoaded.data?.nodes ?? [])
     : null;
@@ -103,9 +105,17 @@ export default async function CompanyPage({ params }: { params: Promise<{ ticker
         <Stat label="13F buyers / sellers" value={latestGuru ? `${latestGuru.buyers} / ${latestGuru.sellers}` : "—"} caption={latestGuru ? `quarter ${fmtDate(latestGuru.reportDate)}` : "not in tracked 13F flow"} />
       </div>
 
-      {financialModel && rankedIdea && modelOutputAvailable ? (
+      {revisitIdea && !rankedIdea ? (
+        <div className="mb-4 panel p-3 text-[12px] text-muted">
+          <Badge variant="cyan">Revisit · Former 10 + 10</Badge>
+          <p className="mt-2">Moved out of the ranked list {fmtDate(revisitIdea.removedAt)}. Research and models remain available for a fresh QQQ-relative review.</p>
+          <Link href="/#revisit" className="mt-2 inline-block text-cyan hover:underline">Back to Revisit</Link>
+        </div>
+      ) : null}
+
+      {financialModel && modelOutputAvailable ? (
         <div className="mb-4">
-          <CompanyFinancialModelView model={financialModel} rankedIdea={rankedIdea} />
+          <CompanyFinancialModelView model={financialModel} rankedIdea={modelIdea} formerSelection={!rankedIdea && Boolean(revisitIdea)} />
         </div>
       ) : null}
 

@@ -24,7 +24,7 @@ function ModelList({ title, icon, items, tone }: { title: string; icon: React.Re
   );
 }
 
-export function CompanyFinancialModelView({ model, rankedIdea }: { model: CompanyFinancialModel; rankedIdea: RankedBestIdea }) {
+export function CompanyFinancialModelView({ model, rankedIdea, formerSelection = false }: { model: CompanyFinancialModel; rankedIdea: RankedBestIdea | null; formerSelection?: boolean }) {
   const baseRows = buildForecastRows(model, "Base");
   const base = model.scenarios.find((scenario) => scenario.name === "Base")!;
   const excess = model.probabilityWeightedReturn - model.qqqHurdle;
@@ -33,8 +33,8 @@ export function CompanyFinancialModelView({ model, rankedIdea }: { model: Compan
       <CardHeader className="flex-col gap-3 border-b border-border bg-gold-soft/25 sm:flex-row">
         <div className="min-w-0">
           <div className="mb-1.5 flex flex-wrap items-center gap-2">
-            <Badge variant="gold">{rankedIdea.lane === "top-ten" ? `Top 10 · #${rankedIdea.rank}` : `Watchlist · #${rankedIdea.rank}`}</Badge>
-            <Badge variant={rankedIdea.qqqLine === "above" ? "pos" : "warn"}>{rankedIdea.qqqLine === "above" ? "Above QQQ line" : "QQQ better by default"}</Badge>
+            {rankedIdea ? <Badge variant={formerSelection ? "outline" : "gold"}>{formerSelection ? "Former " : ""}{rankedIdea.lane === "top-ten" ? `Top 10 · #${rankedIdea.rank}` : `Watchlist · #${rankedIdea.rank}`}</Badge> : <Badge variant="outline">Company model · no current rank</Badge>}
+            {rankedIdea && !formerSelection ? <Badge variant={rankedIdea.qqqLine === "above" ? "pos" : "warn"}>{rankedIdea.qqqLine === "above" ? "Above QQQ line" : "QQQ better by default"}</Badge> : <Badge variant="muted">QQQ case needs a fresh ranked review</Badge>}
             <Badge variant="outline">5-year model</Badge>
           </div>
           <CardTitle className="text-[15px]">Forward financial model</CardTitle>

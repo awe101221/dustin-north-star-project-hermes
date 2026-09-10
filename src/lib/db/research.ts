@@ -60,6 +60,7 @@ export type StreamFilter = {
   kind?: string | null; // memo | note | journal | ...
   ticker?: string | null;
   tag?: string | null;
+  excludeTag?: string;
   latestOnly?: boolean;
   limit?: number;
   offset?: number;
@@ -77,9 +78,28 @@ export async function getResearchStream(db: Db, filter: StreamFilter = {}): Prom
     q = q.or(`ticker.eq.${filter.ticker.toUpperCase()},ticker.ilike.%:${sym},ticker.eq.${sym}`);
   }
   if (filter.tag) q = q.contains("tags", [filter.tag]);
+  if (filter.excludeTag) q = q.not("tags", "cs", `{${filter.excludeTag}}`);
   q = q.range(filter.offset ?? 0, (filter.offset ?? 0) + limit - 1);
   const rows = unwrap(await q, "research stream") as ResearchStreamRow[];
   return rows.map(mapStreamRow);
+}
+
+export type LatestResearchUpdate = { item: StreamItem | null; unavailable: boolean };
+
+/** Bound concurrent reads and distinguish missing research from failed reads. */
+export async function getLatestResearchForTickers(db: Db, tickers: string[], excludeTag: string): Promise<Record<string, LatestResearchUpdate>> {
+  const updates: Record<string, LatestResearchUpdate> = {};
+  for (let offset = 0; offset < tickers.length; offset += 10) {
+    await Promise.all(tickers.slice(offset, offset + 10).map(async (ticker) => {
+      try {
+        const rows = await getResearchStream(db, { ticker, latestOnly: false, limit: 1, excludeTag });
+        updates[ticker] = { item: rows[0] ?? null, unavailable: false };
+      } catch {
+        updates[ticker] = { item: null, unavailable: true };
+      }
+    }));
+  }
+  return updates;
 }
 
 export async function searchResearch(db: Db, query: string, limit = 40): Promise<SearchHit[]> {

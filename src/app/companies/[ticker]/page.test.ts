@@ -148,4 +148,24 @@ describe("CompanyPage persisted underwriting model suppression", () => {
     expect(markup).toContain("Code-model preview");
     expect(markup).toContain("Model scenario preview");
   });
+
+  it("retains a former selection's model without presenting its old rank or QQQ verdict as current", async () => {
+    harness.getBestIdeasDashboard.mockResolvedValue({
+      topTen: [], watchlistTen: [],
+      revisit: [{ idea: { ticker: "MU", lane: "watchlist", rank: 3, qqqLine: "above" }, removedAt: "2026-09-08T00:00:00.000Z" }],
+    });
+    const markup = await renderPage(underwritingWith());
+    expect(markup).toContain("Forward financial model");
+    expect(markup).toContain("Former Watchlist · #3");
+    expect(markup).toContain("QQQ case needs a fresh ranked review");
+    expect(markup).not.toContain("Above QQQ line");
+    expect(markup).toContain('href="/#revisit"');
+  });
+
+  it("keeps an existing company model accessible even if ranking history cannot be loaded", async () => {
+    harness.getBestIdeasDashboard.mockResolvedValue(null);
+    const markup = await renderPage(underwritingWith());
+    expect(markup).toContain("Forward financial model");
+    expect(markup).toContain("Company model · no current rank");
+  });
 });

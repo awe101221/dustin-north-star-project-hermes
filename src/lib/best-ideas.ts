@@ -2,6 +2,7 @@ import { getIdeas, type Idea } from "@/lib/db/pipeline";
 import { unwrap, type Db } from "@/lib/db/query";
 import type { IdeaStage, NoteRow } from "@/lib/db/types";
 import type { ForecastLadderInput } from "@/lib/forecast-ladder";
+import { bareSymbol } from "@/lib/utils";
 
 export const BEST_IDEAS_SNAPSHOT_TAG = "best-ideas-snapshot";
 export const HERMES_BEST_IDEAS_MANDATE =
@@ -65,7 +66,15 @@ export type BestIdeasDashboard = {
   snapshotId: string | null;
   topTen: RankedBestIdea[];
   watchlistTen: RankedBestIdea[];
+  revisit: RevisitIdea[];
+  revisitError: string | null;
   totalActive: number;
+};
+
+export type RevisitIdea = {
+  idea: RankedBestIdea;
+  removedAt: string;
+  lastSnapshotId: string | null;
 };
 
 export type SnapshotIdeaInput = {
@@ -259,6 +268,8 @@ export function snapshotToDashboard(snapshot: NormalizedBestIdeasSnapshot, snaps
     snapshotId,
     topTen: snapshot.topTen,
     watchlistTen: snapshot.watchlistTen,
+    revisit: [],
+    revisitError: null,
     totalActive: snapshot.topTen.length + snapshot.watchlistTen.length,
   };
 }
@@ -303,6 +314,8 @@ export function buildBestIdeas(ideas: BestIdeaInput[]): BestIdeasDashboard {
     snapshotId: null,
     topTen: rankIdeas(topTenRaw, "top-ten"),
     watchlistTen: rankIdeas(watchlistRaw, "watchlist"),
+    revisit: [],
+    revisitError: null,
     totalActive: active.length,
   };
 }
@@ -315,6 +328,8 @@ export async function getLatestBestIdeasSnapshot(db: Db): Promise<BestIdeasDashb
       .contains("tags", [BEST_IDEAS_SNAPSHOT_TAG])
       .eq("kind", "agent")
       .order("occurred_at", { ascending: false })
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
       .limit(1),
     "best ideas snapshot",
   ) as Pick<NoteRow, "id" | "metadata">[];
@@ -324,9 +339,69 @@ export async function getLatestBestIdeasSnapshot(db: Db): Promise<BestIdeasDashb
 
 export async function getBestIdeasDashboard(db: Db): Promise<BestIdeasDashboard> {
   const snapshot = await getLatestBestIdeasSnapshot(db);
-  if (snapshot) return snapshot;
+  if (snapshot) {
+    try {
+      const history = await getBestIdeasSnapshotHistory(db, snapshot.lastUpdated!);
+      // Pin history to the selected snapshot if another publication with the
+      // same as-of time arrives while this request is loading.
+      const currentIndex = history.findIndex((entry) => entry.snapshotId === snapshot.snapshotId);
+      if (currentIndex < 0) throw new Error("Current snapshot is absent from history");
+      return { ...snapshot, revisit: buildRevisitIdeas(history.slice(currentIndex)) };
+    } catch {
+      return { ...snapshot, revisitError: "Revisit history could not be loaded. Refresh to try again; saved company research and models remain available." };
+    }
+  }
   const ideas = await getIdeas(db);
   return buildBestIdeas(ideas);
+}
+
+/** Newest first, with the same ordering as the current list. Read every page so
+ * companies remain visible even after years outside the 10 + 10. */
+async function getBestIdeasSnapshotHistory(db: Db, through: string): Promise<BestIdeasDashboard[]> {
+  const history: BestIdeasDashboard[] = [];
+  const pageSize = 100;
+  for (let offset = 0; ; offset += pageSize) {
+    const rows = unwrap(await db.from("hermes_notes")
+      .select("id, metadata")
+      .contains("tags", [BEST_IDEAS_SNAPSHOT_TAG])
+      .eq("kind", "agent")
+      .lte("occurred_at", through)
+      .order("occurred_at", { ascending: false })
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .range(offset, offset + pageSize - 1), "best ideas history") as Pick<NoteRow, "id" | "metadata">[];
+    for (const row of rows) {
+      const raw = row.metadata?.bestIdeas as BestIdeasSnapshotInput | undefined;
+      if (!raw?.asOf || !Number.isFinite(Date.parse(raw.asOf))) throw new Error("Snapshot history has an unavailable date");
+      const snapshot = snapshotMetadataToDashboard(row.metadata ?? {}, row.id);
+      if (!snapshot) throw new Error("Snapshot history is unavailable");
+      history.push(snapshot);
+    }
+    if (rows.length < pageSize) return history;
+  }
+}
+
+/** A move between Top 10 and Watchlist is not a removal. Re-entry clears the
+ * revisit entry; a later departure preserves the most recent ranked thesis. */
+export function buildRevisitIdeas(history: BestIdeasDashboard[]): RevisitIdea[] {
+  const revisit = new Map<string, RevisitIdea>();
+  let previous: BestIdeasDashboard | undefined;
+  for (const snapshot of [...history].reverse()) {
+    const current = new Set([...snapshot.topTen, ...snapshot.watchlistTen].map((idea) => bareSymbol(idea.ticker)));
+    for (const ticker of current) revisit.delete(ticker);
+    if (previous && snapshot.lastUpdated) {
+      for (const idea of [...previous.topTen, ...previous.watchlistTen]) {
+        const ticker = bareSymbol(idea.ticker);
+        if (!current.has(ticker)) revisit.set(ticker, {
+          idea,
+          removedAt: snapshot.lastUpdated,
+          lastSnapshotId: previous.snapshotId,
+        });
+      }
+    }
+    previous = snapshot;
+  }
+  return [...revisit.values()].sort((a, b) => Date.parse(b.removedAt) - Date.parse(a.removedAt) || a.idea.ticker.localeCompare(b.idea.ticker));
 }
 
 function snapshotMarkdown(snapshot: NormalizedBestIdeasSnapshot) {

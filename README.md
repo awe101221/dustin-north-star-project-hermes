@@ -60,6 +60,22 @@ them block the PR; several need a decision from you.
 
 ## What shipped
 
+### Revisit former 10 + 10 companies
+
+The home page's **Revisit · Former 10 + 10** section derives departures from saved
+Hermes ranking snapshots. It retains the last ranked thesis, lane, rank and exit
+date, links to the original snapshot and company model, and highlights research
+published after the exit. Moving between the two active lanes is not an exit;
+returning to either lane removes the company from Revisit automatically.
+
+**Request re-entry review** queues a `reunderwrite` task to refresh evidence and
+models and compare the company with the current selections. It does not promote
+the company or schedule background monitoring. Research dates refresh on page load.
+Existing company models remain accessible outside the active 10 + 10. Historical
+ranking figures are labelled as historical, not current recommendations. Tracking
+requires saved snapshots; the scored pipeline fallback cannot reconstruct past ranks.
+No schema migration is required, and existing snapshots must be retained.
+
 ### Short-horizon forecast learning
 
 The weekday 10+10 workflow now has an additive immutable 90-day / 12-month / next-quarter

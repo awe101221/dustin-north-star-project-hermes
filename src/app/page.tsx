@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { PageHeader, NotConfigured, ErrorPanel } from "@/components/page-header";
 import { serverReadClient } from "@/lib/supabase/server";
-import { getBestIdeasDashboard } from "@/lib/best-ideas";
+import { BEST_IDEAS_SNAPSHOT_TAG, getBestIdeasDashboard } from "@/lib/best-ideas";
+import { getLatestResearchForTickers } from "@/lib/db/research";
+import { isWriteConfigured } from "@/lib/env";
 import { safeLoad } from "@/lib/server/safe";
 import { BestIdeasView } from "@/components/best-ideas/best-ideas-view";
 
@@ -32,6 +34,8 @@ export default async function HomePage() {
     );
   }
 
+  const revisitResearch = await getLatestResearchForTickers(db, result.data.revisit.map(({ idea }) => idea.ticker), BEST_IDEAS_SNAPSHOT_TAG);
+
   return (
     <>
       <PageHeader
@@ -46,7 +50,7 @@ export default async function HomePage() {
           </>
         }
       />
-      <BestIdeasView dashboard={result.data} />
+      <BestIdeasView dashboard={result.data} revisitResearch={revisitResearch} canWrite={isWriteConfigured()} />
     </>
   );
 }

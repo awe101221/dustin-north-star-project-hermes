@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 import { Badge, toneFor } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TickerLink, PersonaChip } from "@/components/ticker-link";
+import { RevisitList } from "@/components/best-ideas/revisit-list";
+import type { LatestResearchUpdate } from "@/lib/db/research";
 
 function UnderwritingPanels({ idea }: { idea: RankedBestIdea }) {
   return (
@@ -148,7 +150,7 @@ function QqqLinePanel({ dashboard, compact = false }: { dashboard: BestIdeasDash
   );
 }
 
-export function BestIdeasView({ dashboard, compact = false }: { dashboard: BestIdeasDashboard; compact?: boolean }) {
+export function BestIdeasView({ dashboard, compact = false, revisitResearch = {}, canWrite = false }: { dashboard: BestIdeasDashboard; compact?: boolean; revisitResearch?: Record<string, LatestResearchUpdate>; canWrite?: boolean }) {
   const visibleTop = compact ? dashboard.topTen.slice(0, 5) : dashboard.topTen;
   const visibleWatch = compact ? dashboard.watchlistTen.slice(0, 5) : dashboard.watchlistTen;
   return (
@@ -203,12 +205,14 @@ export function BestIdeasView({ dashboard, compact = false }: { dashboard: BestI
         />
       </div>
 
+      {!compact ? <RevisitList dashboard={dashboard} research={revisitResearch} canWrite={canWrite} /> : null}
+
       {!compact ? (
         <Card>
           <CardHeader>
             <div>
               <CardTitle className="inline-flex items-center gap-1.5"><ListChecks className="size-3.5 text-gold" /> How Hermes ranks this list</CardTitle>
-              <CardDescription>The list is intentionally simple: own the few ideas with the strongest QQQ-relative case, watch the next best, and push everything else into research backlog.</CardDescription>
+              <CardDescription>Rank the strongest QQQ-relative cases, watch the next best, and keep former selections in Revisit for fresh evidence and a possible return.</CardDescription>
             </div>
           </CardHeader>
           <CardContent className="grid grid-cols-1 gap-3 md:grid-cols-4 text-[12px] text-foreground-secondary">

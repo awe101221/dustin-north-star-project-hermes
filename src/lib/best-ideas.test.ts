@@ -1,12 +1,16 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   buildBestIdeas,
+  buildRevisitIdeas,
+  getBestIdeasDashboard,
+  snapshotToDashboard,
   getQqqLineInSand,
   HERMES_BEST_IDEAS_MANDATE,
   normalizeBestIdeasSnapshot,
   snapshotMetadataToDashboard,
   type BestIdeaInput,
 } from "./best-ideas";
+import type { Db } from "./db/query";
 
 function idea(overrides: Partial<BestIdeaInput> & { ticker: string }): BestIdeaInput {
   return {
@@ -137,5 +141,79 @@ describe("best ideas ranking", () => {
     expect(line.below.map((x) => x.ticker)).toEqual(["TSM", "VRT"]);
     expect(line.firstBelow?.ticker).toBe("TSM");
     expect(line.lastPriceRefresh).toBe("2026-09-07T19:54:44.000Z");
+  });
+});
+
+function snapshot(day: number, topTen: string[], watchlistTen: string[] = []) {
+  return snapshotToDashboard(normalizeBestIdeasSnapshot({
+    asOf: new Date(Date.UTC(2026, 0, day)).toISOString(),
+    topTen: topTen.map((ticker) => ({ ticker, thesis: `Thesis ${day}: ${ticker}`, nextAction: `Review ${ticker}` })),
+    watchlistTen: watchlistTen.map((ticker) => ({ ticker })),
+  }), `snapshot-${day}`);
+}
+
+describe("former 10 + 10 revisit history", () => {
+  it("retains departures from both lanes with their last rank, thesis and exit date", () => {
+    const old = snapshot(1, ["MU", "META"], ["ASML"]);
+    const next = snapshot(2, ["META"], ["TSM"]);
+    const entries = buildRevisitIdeas([next, old]);
+    expect(entries.map(({ idea }) => idea.ticker)).toEqual(["ASML", "MU"]);
+    expect(entries.find(({ idea }) => idea.ticker === "MU")).toMatchObject({
+      idea: { rank: 1, lane: "top-ten", thesis: "Thesis 1: MU", nextAction: "Review MU" },
+      removedAt: next.lastUpdated,
+      lastSnapshotId: old.snapshotId,
+    });
+    expect(entries[0]?.idea.lane).toBe("watchlist");
+  });
+
+  it("does not retire lane moves or equivalent exchange-prefixed tickers", () => {
+    expect(buildRevisitIdeas([snapshot(2, ["ASML"], ["NAS:MU"]), snapshot(1, ["mu"], ["ASML"])])).toEqual([]);
+  });
+
+  it("removes re-entries and records the newest departure after a second exit", () => {
+    const history = [snapshot(3, [], ["MU"]), snapshot(2, ["META"]), snapshot(1, ["MU"])];
+    expect(buildRevisitIdeas(history).map(({ idea }) => idea.ticker)).toEqual(["META"]);
+    const later = buildRevisitIdeas([snapshot(5, ["META"]), snapshot(4, ["MU"]), ...history]);
+    expect(later).toHaveLength(1);
+    expect(later[0]).toMatchObject({ idea: { ticker: "MU", thesis: "Thesis 4: MU", lane: "top-ten" }, removedAt: snapshot(5, []).lastUpdated, lastSnapshotId: "snapshot-4" });
+  });
+
+  it("keeps old departures through unchanged refreshes without adding never-ranked companies", () => {
+    const entries = buildRevisitIdeas([snapshot(4, ["META"]), snapshot(3, ["META"]), snapshot(2, ["META"]), snapshot(1, ["MU"])]);
+    expect(entries).toHaveLength(1);
+    expect(entries[0]?.removedAt).toBe(snapshot(2, []).lastUpdated);
+    expect(buildRevisitIdeas([snapshot(1, ["MU"])])).toEqual([]);
+    expect(buildBestIdeas([idea({ ticker: "ARCH", stage: "archive" })]).revisit).toEqual([]);
+  });
+
+  function database(history: ReturnType<typeof snapshot>[], failPage = -1) {
+    const rows = history.map((entry) => ({ id: entry.snapshotId, metadata: { bestIdeas: { asOf: entry.lastUpdated, topTen: entry.topTen, watchlistTen: entry.watchlistTen } } }));
+    const query = {
+      select: vi.fn().mockReturnThis(), contains: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(), lte: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue({ data: rows.slice(0, 1), error: null }),
+      range: vi.fn((from: number, to: number) => Promise.resolve(from === failPage
+        ? { data: null, error: { message: "History unavailable", code: "NETWORK" } }
+        : { data: rows.slice(from, to + 1), error: null })),
+    };
+    return { db: { from: vi.fn(() => query) } as unknown as Db, query };
+  }
+
+  it("loads past the first history page so long-absent companies stay visible", async () => {
+    const history = Array.from({ length: 102 }, (_, index) => snapshot(102 - index, index === 101 ? ["MU"] : ["META"]));
+    const { db, query } = database(history);
+    const dashboard = await getBestIdeasDashboard(db);
+    expect(query.range.mock.calls).toEqual([[0, 99], [100, 199]]);
+    expect(dashboard.topTen[0]?.ticker).toBe("META");
+    expect(dashboard.revisit[0]?.idea.ticker).toBe("MU");
+    expect(dashboard.revisitError).toBeNull();
+  });
+
+  it("keeps current rankings and shows a history error instead of a partial or empty success", async () => {
+    const { db } = database([snapshot(2, ["META"]), snapshot(1, ["MU"])], 0);
+    const dashboard = await getBestIdeasDashboard(db);
+    expect(dashboard.topTen[0]?.ticker).toBe("META");
+    expect(dashboard.revisit).toEqual([]);
+    expect(dashboard.revisitError).toContain("could not be loaded");
   });
 });

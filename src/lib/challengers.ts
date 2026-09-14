@@ -4,7 +4,7 @@ import { bareSymbol, clamp, toRecord } from "@/lib/utils";
 
 export const CHALLENGER_HURDLE = 0.15;
 const DAY = 86_400_000;
-export const CHALLENGER_DISPOSITIONS = ["admit", "first alternate", "watch / price trigger", "owned-position review", "reject"] as const;
+export const CHALLENGER_DISPOSITIONS = ["admit", "first alternate", "owned-position review", "watch / price trigger", "reject"] as const;
 export type ChallengerDisposition = typeof CHALLENGER_DISPOSITIONS[number];
 export type ChallengerGate = "clear" | "evidence blocked" | "stale model" | "pending refresh";
 type Comparison = "above" | "equal" | "below" | "unavailable";

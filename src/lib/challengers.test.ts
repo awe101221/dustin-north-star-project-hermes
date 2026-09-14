@@ -141,6 +141,7 @@ describe("10 + 10 challenger board", () => {
     expect(board.candidates.find((x) => x.ticker === "WATCH")?.disposition).toBe("watch / price trigger");
     expect(board.candidates.find((x) => x.ticker === "REJECT")?.disposition).toBe("reject");
     expect(board.candidates.find((x) => x.ticker === "APPROVED")?.disposition).toBe("admit");
+    expect(board.candidates.map((x) => x.ticker)).toEqual(["APPROVED", "OWNED", "WATCH", "REJECT"]);
   });
 
   it("summarizes source lanes and gates for PM triage", () => {

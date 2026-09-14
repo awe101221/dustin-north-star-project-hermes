@@ -6,6 +6,7 @@ import type { ChallengerBoard, ChallengerCandidate } from "@/lib/challengers";
 import { fmtDate, fmtNum, fmtPct } from "@/lib/format";
 
 const workflowLink = "inline-flex min-h-10 items-center justify-center gap-1 rounded-md border border-border px-3 text-[12px] text-cyan hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-cyan";
+const VISIBLE_CANDIDATES = 10;
 
 function Detail({ label, children }: { label: string; children: React.ReactNode }) {
   return <div className="panel-2 min-w-0 p-3"><dt className="eyebrow mb-1">{label}</dt><dd className="break-words text-[12px] leading-5 text-foreground-secondary">{children}</dd></div>;
@@ -47,10 +48,9 @@ function CandidateCard({ candidate }: { candidate: ChallengerCandidate }) {
       <Detail label="vs. weakest Top 10">{candidate.topTenComparison}</Detail>
       <Detail label="vs. weakest Watchlist">{candidate.watchlistComparison}</Detail>
     </dl>
-    <UnderwritingDetails candidate={candidate} className="hidden sm:grid sm:grid-cols-2 gap-2 xl:grid-cols-4" />
-    <details className="rounded-md border border-border sm:hidden">
+    <details className="rounded-md border border-border">
       <summary className="min-h-11 cursor-pointer px-3 py-3 text-[12px] font-medium">Underwriting gates and details</summary>
-      <UnderwritingDetails candidate={candidate} className="grid gap-2 border-t border-border p-2" />
+      <UnderwritingDetails candidate={candidate} className="grid gap-2 border-t border-border p-2 sm:grid-cols-2 xl:grid-cols-4" />
     </details>
     <div className="flex flex-wrap items-center gap-2">
       <Link className={workflowLink} href={`/companies/${encodeURIComponent(candidate.ticker)}`}>Company model <ArrowUpRight aria-hidden="true" className="size-3.5" /></Link>
@@ -62,6 +62,8 @@ function CandidateCard({ candidate }: { candidate: ChallengerCandidate }) {
 
 export function ChallengerBoardView({ board }: { board: ChallengerBoard }) {
   const floors = board.incumbentFloors;
+  const visibleCandidates = board.candidates.slice(0, VISIBLE_CANDIDATES);
+  const backlog = board.candidates.slice(VISIBLE_CANDIDATES);
   return <>
     <PageHeader eyebrow="Hermes · comparative underwriting" title="10 + 10 Challenger Board"
       description="Challengers must earn a place against the current selections. QQQ remains the default until evidence, price and comparative review support a change."
@@ -94,7 +96,16 @@ export function ChallengerBoardView({ board }: { board: ChallengerBoard }) {
       </section>
       <section aria-label="Challenger candidates" className="space-y-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2"><h2 className="text-[15px] font-semibold">Candidate review queue</h2><p className="text-[11px] text-muted">{board.summary.admitted} admit · {board.summary.ownedReviews} owned reviews · {board.summary.rejected} reject</p></div>
-        {board.candidates.map((candidate) => <CandidateCard key={candidate.id} candidate={candidate} />)}
+        {visibleCandidates.map((candidate) => <CandidateCard key={candidate.id} candidate={candidate} />)}
+        {backlog.length ? <details className="panel overflow-hidden">
+          <summary className="min-h-11 cursor-pointer px-4 py-3 text-[12px] font-semibold text-cyan">
+            Show {backlog.length} more challenger{backlog.length === 1 ? "" : "s"}
+          </summary>
+          <div className="space-y-3 border-t border-border p-3 sm:p-4">
+            <p className="text-[11px] leading-5 text-muted">Backlog is collapsed to keep PM triage usable. Opening it does not change any review or admission state.</p>
+            {backlog.map((candidate) => <CandidateCard key={candidate.id} candidate={candidate} />)}
+          </div>
+        </details> : null}
         {!board.candidates.length ? <div className="panel p-6 text-[13px] text-muted">No challengers outside the current 10 + 10. <Link href="/pipeline" className="text-cyan hover:underline">Open the idea pipeline</Link> to review discovery research.</div> : null}
       </section>
       <p className="text-[11px] leading-5 text-muted">Triage score: up to 40 points for expected / required IRR (capped at 2×), 40 for evidence grade, and 20 for portfolio fit. Missing components leave the score unavailable. Scores never override gates or PM decisions. Source-lane counts exclude current members and duplicate symbols.</p>

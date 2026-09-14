@@ -35,13 +35,13 @@ const idea: Idea = {
   updatedAt: "2026-09-10T00:00:00Z",
 };
 
-function board() {
+function board(ideas: Idea[] = [idea]) {
   const dashboard = snapshotToDashboard(normalizeBestIdeasSnapshot({
     asOf: "2026-09-10T00:00:00Z",
     topTen: [{ ticker: "META", modeledReturn: 0.16, score: 84 }],
     watchlistTen: [{ ticker: "CRM", modeledReturn: 0.12, score: 72 }],
   }));
-  return buildChallengerBoard({ dashboard, ideas: [idea], now: "2026-09-14T00:00:00Z" });
+  return buildChallengerBoard({ dashboard, ideas, now: "2026-09-14T00:00:00Z" });
 }
 
 describe("Challenger Board view", () => {
@@ -58,10 +58,24 @@ describe("Challenger Board view", () => {
     expect(markup).toContain('href="/quant"');
   });
 
-  it("keeps dense underwriting details behind a mobile disclosure", () => {
+  it("keeps dense underwriting details behind a candidate disclosure at every viewport", () => {
     const markup = renderToStaticMarkup(<ChallengerBoardView board={board()} />);
-    expect(markup).toContain("Underwriting gates");
-    expect(markup).toContain("sm:hidden");
-    expect(markup).toContain("hidden sm:grid");
+    expect(markup).toContain("Underwriting gates and details");
+    expect(markup).not.toContain("sm:hidden");
+    expect(markup).not.toContain("hidden sm:grid");
+    expect(markup).toContain("sm:grid-cols-2");
+  });
+
+  it("keeps the long candidate backlog collapsed after the first ten rows", () => {
+    const ideas = Array.from({ length: 11 }, (_, index) => ({
+      ...idea,
+      id: `idea-${index}`,
+      ticker: `CH${index}`,
+      symbol: `CH${index}`,
+      companyName: `Challenger ${index}`,
+    }));
+    const markup = renderToStaticMarkup(<ChallengerBoardView board={board(ideas)} />);
+    expect(markup).toContain("Show 1 more challenger");
+    expect(markup).toContain("Backlog is collapsed to keep PM triage usable");
   });
 });

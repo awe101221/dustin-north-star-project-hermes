@@ -13,6 +13,7 @@ import {
   Library,
   Network,
   Settings,
+  Scale,
   Trophy,
   Users,
 } from "lucide-react";
@@ -34,6 +35,7 @@ export type NavItem = {
  */
 export const NAV: NavItem[] = [
   { href: "/", label: "10 + 10", short: "10 + 10", icon: Trophy, hotkey: "b", description: "One ranked Top 10 + Watchlist 10 surface with models and QQQ-relative underwriting" },
+  { href: "/challengers", label: "Challengers", short: "Challengers", icon: Scale, hotkey: "h", description: "Compare challengers with the current 10 + 10 through evidence and admission gates" },
   { href: "/learnings", label: "Learnings", short: "Learnings", icon: Brain, hotkey: "l", description: "Archive of Hermes investing philosophy updates that shape the ranked list" },
   { href: "/research", label: "Research", short: "Research", icon: BookOpenText, hotkey: "r", description: "Hermes memos, notes, journal, and source-backed conclusions" },
   { href: "/pipeline", label: "Idea Pipeline", short: "Pipeline", icon: KanbanSquare, hotkey: "i", description: "Sourcing → Diligence → Live → Monitor → Archive" },

@@ -1,0 +1,103 @@
+import Link from "next/link";
+import { ArrowUpRight, Scale } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
+import { Badge } from "@/components/ui/badge";
+import type { ChallengerBoard, ChallengerCandidate } from "@/lib/challengers";
+import { fmtDate, fmtNum, fmtPct } from "@/lib/format";
+
+const workflowLink = "inline-flex min-h-10 items-center justify-center gap-1 rounded-md border border-border px-3 text-[12px] text-cyan hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-cyan";
+
+function Detail({ label, children }: { label: string; children: React.ReactNode }) {
+  return <div className="panel-2 min-w-0 p-3"><dt className="eyebrow mb-1">{label}</dt><dd className="break-words text-[12px] leading-5 text-foreground-secondary">{children}</dd></div>;
+}
+
+function UnderwritingDetails({ candidate, className }: { candidate: ChallengerCandidate; className: string }) {
+  return <dl className={className}>
+    <Detail label="Why this over QQQ?">{candidate.whyBeatQqq || "QQQ case missing"}</Detail>
+    <Detail label="QQQ is better if…">{candidate.falsifier || "Falsifier missing"}</Detail>
+    <Detail label="Underwriting gates">
+      {candidate.gateReasons.length ? <ul className="list-disc space-y-1 pl-4">{candidate.gateReasons.map((reason) => <li key={reason}>{reason}</li>)}</ul> : "Evidence and freshness gates clear. Comparative PM review still governs admission."}
+    </Detail>
+    <Detail label="Model / next event">Model: {fmtDate(candidate.modelAsOf)}<br />Next event: {candidate.nextEventAt ? fmtDate(candidate.nextEventAt) : candidate.missing.includes("next event date or explicit none") ? "Unknown" : "None scheduled"}<br />Review: {candidate.reviewStatus ?? "Not recorded"}</Detail>
+    <Detail label="Price trigger">Recorded price: <span className="num">{fmtNum(candidate.currentPrice, 2)}</span><br />Hurdle price: <span className="num">{fmtNum(candidate.hurdlePrice, 2)}</span><br /><span className="text-muted">Same quote currency; supplied model inputs, not live quotes.</span></Detail>
+    <Detail label="Portfolio fit">{fmtPct(candidate.portfolioFit, 0)}<br />Recorded position weight: {fmtPct(candidate.currentWeight)}<br />Sizing requires separate review.</Detail>
+    <Detail label="Catalyst / next action">{candidate.catalyst || "Catalyst not recorded"}<br />{candidate.nextAction || "Refresh evidence and complete independent underwriting."}</Detail>
+    <Detail label="Recorded decision">{candidate.admissionDecision ?? "No explicit admission decision"}<br /><span className="text-muted">Decisions cannot override blocked gates.</span></Detail>
+  </dl>;
+}
+
+function CandidateCard({ candidate }: { candidate: ChallengerCandidate }) {
+  return <article className="panel space-y-3 p-3 sm:p-5" aria-label={`${candidate.symbol} challenger`}>
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <h3 className="flex flex-wrap items-baseline gap-x-2 gap-y-1"><Link className="num text-[17px] font-semibold text-gold hover:underline" href={`/companies/${encodeURIComponent(candidate.ticker)}`}>{candidate.symbol}</Link><span className="text-[12px] text-muted">{candidate.companyName}</span></h3>
+        <p className="mt-1 break-words text-[11px] text-muted">{candidate.discoveryLane} · {candidate.source} · {candidate.stage}</p>
+      </div>
+      <div className="shrink-0 text-right"><p className="eyebrow">Triage score</p><p className="num text-[20px] font-semibold">{fmtNum(candidate.score, 1)}<span className="text-[11px] text-muted"> / 100</span></p></div>
+    </div>
+    <div className="flex flex-wrap gap-2">
+      <Badge variant={candidate.disposition === "reject" ? "neg" : candidate.disposition === "admit" ? "pos" : "cyan"}>{candidate.disposition}</Badge>
+      <Badge variant={candidate.gateStatus === "clear" ? "pos" : "warn"}>{candidate.gateStatus}</Badge>
+      <Badge variant="outline">{`Evidence grade ${candidate.evidenceGrade ?? "ungraded"}`}</Badge>
+    </div>
+    <p className="text-[13px] leading-5 text-foreground-secondary">{candidate.thesis || "Thesis missing — complete underwriting before comparative review."}</p>
+    <dl className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+      <Detail label="Expected / required IRR"><span className="num font-semibold">{fmtPct(candidate.expectedIrr)} / {fmtPct(candidate.requiredIrr)}</span></Detail>
+      <Detail label="Admission hurdle">{candidate.clearsHurdle ? "Clears return and evidence gates" : "Not cleared"}</Detail>
+      <Detail label="vs. weakest Top 10">{candidate.topTenComparison}</Detail>
+      <Detail label="vs. weakest Watchlist">{candidate.watchlistComparison}</Detail>
+    </dl>
+    <UnderwritingDetails candidate={candidate} className="hidden sm:grid sm:grid-cols-2 gap-2 xl:grid-cols-4" />
+    <details className="rounded-md border border-border sm:hidden">
+      <summary className="min-h-11 cursor-pointer px-3 py-3 text-[12px] font-medium">Underwriting gates and details</summary>
+      <UnderwritingDetails candidate={candidate} className="grid gap-2 border-t border-border p-2" />
+    </details>
+    <div className="flex flex-wrap items-center gap-2">
+      <Link className={workflowLink} href={`/companies/${encodeURIComponent(candidate.ticker)}`}>Company model <ArrowUpRight aria-hidden="true" className="size-3.5" /></Link>
+      <Link className={workflowLink} href={`/pipeline?idea=${encodeURIComponent(candidate.id)}`}>Review pipeline card <ArrowUpRight aria-hidden="true" className="size-3.5" /></Link>
+      <span className="text-[11px] text-muted sm:ml-auto">Idea updated {fmtDate(candidate.updatedAt)}</span>
+    </div>
+  </article>;
+}
+
+export function ChallengerBoardView({ board }: { board: ChallengerBoard }) {
+  const floors = board.incumbentFloors;
+  return <>
+    <PageHeader eyebrow="Hermes · comparative underwriting" title="10 + 10 Challenger Board"
+      description="Challengers must earn a place against the current selections. QQQ remains the default until evidence, price and comparative review support a change."
+      actions={<><Link href="/" className={workflowLink}>Current 10 + 10</Link><Link href="/quant" className={workflowLink}>Source with Quant <ArrowUpRight aria-hidden="true" className="size-3.5" /></Link></>}
+      meta={<><span>As of {fmtDate(board.asOf)}</span><span>Research triage · not a trade recommendation</span></>} />
+    <div className="space-y-5">
+      <section className="rounded-lg border border-gold/30 bg-gold-soft/30 p-4 sm:p-5" aria-label="Admission standard">
+        <h2 className="flex items-center gap-2 text-[16px] font-semibold text-gold"><Scale aria-hidden="true" className="size-5" />15% admission hurdle</h2>
+        <p className="mt-2 text-[12px] leading-5 text-foreground-secondary">The candidate-specific required IRR can raise this minimum. Models expire at 45 days; events within 14 days or already passed require a refresh. First alternate is a research disposition. Admit requires an explicit PM-approved decision and clear gates.</p>
+        <p className="mt-2 text-[12px] leading-5 text-muted">This board does not add names to the 10 + 10, change positions, or authorize trades.</p>
+      </section>
+      <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Detail label="Challengers"><span className="num text-[24px] font-semibold">{board.summary.total}</span></Detail>
+        <Detail label="Clears hurdle"><span className="num text-[24px] font-semibold text-gold">{board.summary.clearsHurdle}</span></Detail>
+        <Detail label="First alternates"><span className="num text-[24px] font-semibold text-cyan">{board.summary.firstAlternates}</span></Detail>
+        <Detail label="Blocked / refresh"><span className="num text-[24px] font-semibold text-warn">{board.summary.blocked}</span></Detail>
+      </dl>
+      <section className="panel p-4" aria-label="Incumbent floors">
+        <h2 className="mb-3 text-[14px] font-semibold">The incumbents to beat</h2>
+        <dl className="grid gap-3 sm:grid-cols-2">
+          <Detail label="Weakest Top 10"><span className="num text-[17px] font-semibold">{floors.topTenTicker ?? "Unavailable"} · {fmtPct(floors.topTenReturn)}</span></Detail>
+          <Detail label="Weakest Watchlist 10"><span className="num text-[17px] font-semibold">{floors.watchlistTicker ?? "Unavailable"} · {fmtPct(floors.watchlistReturn)}</span></Detail>
+        </dl>
+        <p className="mt-3 text-[11px] leading-5 text-muted">Lowest recorded modeled return in each lane · ranking as of {fmtDate(board.rankingAsOf)} · {board.sourceMode === "hermes-snapshot" ? "Hermes snapshot" : "scored idea table"}. Incomplete return coverage leaves a floor unavailable. Return comparisons inform review; they do not establish a superior investment case.</p>
+      </section>
+      <section aria-label="Source lanes" className="panel p-4">
+        <h2 className="mb-3 text-[14px] font-semibold">Source lanes</h2>
+        <ul className="flex flex-wrap gap-2">{board.lanes.map(({ lane, count }) => <li key={lane} className="rounded-md border border-border px-3 py-2 text-[12px]"><span className="break-all text-foreground-secondary">{lane}</span> <span className="num ml-2 font-semibold text-cyan">{count}</span></li>)}</ul>
+        {!board.lanes.length ? <p className="text-[12px] text-muted">No candidate source lanes recorded.</p> : null}
+      </section>
+      <section aria-label="Challenger candidates" className="space-y-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-2"><h2 className="text-[15px] font-semibold">Candidate review queue</h2><p className="text-[11px] text-muted">{board.summary.admitted} admit · {board.summary.ownedReviews} owned reviews · {board.summary.rejected} reject</p></div>
+        {board.candidates.map((candidate) => <CandidateCard key={candidate.id} candidate={candidate} />)}
+        {!board.candidates.length ? <div className="panel p-6 text-[13px] text-muted">No challengers outside the current 10 + 10. <Link href="/pipeline" className="text-cyan hover:underline">Open the idea pipeline</Link> to review discovery research.</div> : null}
+      </section>
+      <p className="text-[11px] leading-5 text-muted">Triage score: up to 40 points for expected / required IRR (capped at 2×), 40 for evidence grade, and 20 for portfolio fit. Missing components leave the score unavailable. Scores never override gates or PM decisions. Source-lane counts exclude current members and duplicate symbols.</p>
+    </div>
+  </>;
+}

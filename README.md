@@ -60,6 +60,14 @@ them block the PR; several need a decision from you.
 
 ## What shipped
 
+### 10 + 10 Challenger Board
+
+`/challengers` compares existing pipeline candidates with the current Top 10 and
+Watchlist floors, using a 15% minimum admission hurdle and fail-closed evidence,
+model freshness, and event gates. Explicit PM decisions remain separate from gate
+status; the board never changes membership or authorizes trades. See the
+[metadata contract and scoring rules](docs/challengers.md). No migration is required.
+
 ### Revisit former 10 + 10 companies
 
 The home page's **Revisit · Former 10 + 10** section derives departures from saved

@@ -9,11 +9,13 @@ describe("primary navigation", () => {
     expect(navFor("/best-ideas")?.href).toBe("/");
   });
 
-  it("links the underwriting evaluation loop and the system reality map", () => {
+  it("links the challenger tournament, underwriting evaluation loop, and system reality map", () => {
     expect(NAV).toEqual(expect.arrayContaining([
+      expect.objectContaining({ href: "/challengers", label: "Challengers" }),
       expect.objectContaining({ href: "/evaluation", label: "Evaluation" }),
       expect.objectContaining({ href: "/system", label: "System Map" }),
     ]));
+    expect(navFor("/challengers")?.href).toBe("/challengers");
     expect(navFor("/evaluation")?.href).toBe("/evaluation");
     expect(navFor("/system")?.href).toBe("/system");
   });

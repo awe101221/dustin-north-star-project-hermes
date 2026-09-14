@@ -186,6 +186,11 @@ export function BestIdeasView({ dashboard, compact = false, revisitResearch = {}
 
       <QqqLinePanel dashboard={dashboard} compact={compact} />
 
+      <Link href="/challengers" className="panel flex min-h-11 flex-wrap items-center justify-between gap-2 p-4 hover:border-cyan/40 focus-visible:outline-2 focus-visible:outline-cyan">
+        <span><span className="block text-[14px] font-semibold text-cyan">10 + 10 Challenger Board</span><span className="mt-1 block text-[12px] text-muted">Review challengers against the incumbents, the 15% admission hurdle, and evidence gates.</span></span>
+        <ArrowUpRight aria-hidden="true" className="size-4 text-cyan" />
+      </Link>
+
       <div className={cn("grid gap-4", compact ? "grid-cols-1 xl:grid-cols-2" : "grid-cols-1")}>
         <IdeaList
           title="Top 10"

@@ -24,3 +24,10 @@ scripts/smoke/output/
 .vscode/
 .idea/
 *.log
+
+# Supabase CLI local state
+supabase/.temp/
+
+# Python caches
+__pycache__/
+*.py[cod]

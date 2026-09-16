@@ -2,14 +2,18 @@ import { getIdeas, type Idea } from "@/lib/db/pipeline";
 import { unwrap, type Db } from "@/lib/db/query";
 import type { IdeaStage, NoteRow } from "@/lib/db/types";
 import type { ForecastLadderInput } from "@/lib/forecast-ladder";
+import { getCompanyModel, type CompanyFinancialModel } from "@/lib/company-models";
 import { bareSymbol } from "@/lib/utils";
 
 export const BEST_IDEAS_SNAPSHOT_TAG = "best-ideas-snapshot";
 export const HERMES_BEST_IDEAS_MANDATE =
   "Hermes-ranked Top 10 and Watchlist 10: the app exists to surface Dustin North Star Project Hermes's best current ideas to beat QQQ over 10 years.";
 export const QQQ_LINE_HURDLE_LABEL = "12% modeled 5y IRR hurdle";
+export const CAPITAL_LINE_HURDLE = 0.12;
+export const CAPITAL_LINE_MAX_AGE_DAYS = 45;
 
 export type QqqLinePosition = "above" | "below";
+export type QqqLineSource = "explicit" | "tag" | "inferred";
 
 export type BestIdeaInput = Pick<
   Idea,
@@ -40,6 +44,7 @@ export type RankedBestIdea = BestIdeaInput & {
   scoreLabel: string;
   qqqQuestion: string;
   qqqLine: QqqLinePosition;
+  qqqLineSource: QqqLineSource;
   qqqLineReason: string | null;
   modeledReturn: number | null;
   missing: string[];
@@ -55,12 +60,24 @@ export type QqqLineInSand = {
   firstBelow: RankedBestIdea | null;
 };
 
+export type CapitalLine = {
+  hurdleLabel: string;
+  lastPriceRefresh: string | null;
+  modelAsOf: string | null;
+  rankingPriceAsOf: string | null;
+  lineIndex: number;
+  capitalWorthy: RankedBestIdea[];
+  rankedOnly: RankedBestIdea[];
+  firstRankedOnly: RankedBestIdea | null;
+};
+
 export type BestIdeasDashboard = {
   mandate: string;
   generatedBy: "Hermes";
   benchmark: "QQQ";
   horizonYears: 10;
   lastUpdated: string | null;
+  rankingPriceAsOf: string | null;
   sourceMode: "hermes-snapshot" | "idea-table";
   snapshotThesis: string | null;
   snapshotId: string | null;
@@ -107,6 +124,7 @@ export type BestIdeasSnapshotInput = {
 
 export type NormalizedBestIdeasSnapshot = {
   asOf: string;
+  sourceAsOf: string | null;
   thesis: string | null;
   topTen: RankedBestIdea[];
   watchlistTen: RankedBestIdea[];
@@ -176,6 +194,7 @@ export function scoreBestIdea(idea: BestIdeaInput) {
 function rankIdeas(ideas: BestIdeaInput[], lane: RankedBestIdea["lane"]): RankedBestIdea[] {
   return ideas.map((idea, index) => {
     const score = scoreBestIdea(idea);
+    const taggedLine = qqqLineFromTags(idea.tags);
     return {
       ...idea,
       rank: index + 1,
@@ -183,7 +202,8 @@ function rankIdeas(ideas: BestIdeaInput[], lane: RankedBestIdea["lane"]): Ranked
       lane,
       scoreLabel: `${Math.round(score)}`,
       qqqQuestion: idea.whyBeatQqq?.trim() || "Needs a fresh Hermes QQQ-relative underwrite.",
-      qqqLine: inferredQqqLine(idea, score),
+      qqqLine: taggedLine ?? inferredQqqLine(idea, score),
+      qqqLineSource: taggedLine ? "tag" : "inferred",
       qqqLineReason: null,
       modeledReturn: null,
       missing: missingFields(idea),
@@ -196,6 +216,7 @@ function rankSnapshotIdeas(ideas: SnapshotIdeaInput[], lane: RankedBestIdea["lan
   return ideas.slice(0, 10).map((raw, index) => {
     const ticker = cleanTicker(raw.ticker);
     const score = raw.score ?? raw.conviction ?? 0;
+    const taggedLine = qqqLineFromTags(raw.tags);
     const idea: BestIdeaInput = {
       id: `${lane}-${index + 1}-${ticker}`,
       ticker,
@@ -223,7 +244,8 @@ function rankSnapshotIdeas(ideas: SnapshotIdeaInput[], lane: RankedBestIdea["lan
       lane,
       scoreLabel: `${Math.round(score)}`,
       qqqQuestion: idea.whyBeatQqq ?? "Needs a fresh Hermes QQQ-relative underwrite.",
-      qqqLine: raw.qqqLine ?? qqqLineFromTags(idea.tags) ?? inferredQqqLine(idea, score),
+      qqqLine: raw.qqqLine ?? taggedLine ?? inferredQqqLine(idea, score),
+      qqqLineSource: raw.qqqLine ? "explicit" : taggedLine ? "tag" : "inferred",
       qqqLineReason: cleanText(raw.qqqLineReason),
       modeledReturn: raw.modeledReturn ?? null,
       missing: missingFields(idea),
@@ -233,12 +255,109 @@ function rankSnapshotIdeas(ideas: SnapshotIdeaInput[], lane: RankedBestIdea["lan
 }
 
 export function normalizeBestIdeasSnapshot(input: BestIdeasSnapshotInput): NormalizedBestIdeasSnapshot {
-  const asOf = input.asOf && !Number.isNaN(Date.parse(input.asOf)) ? new Date(input.asOf).toISOString() : new Date().toISOString();
+  const sourceAsOf = input.asOf && Number.isFinite(Date.parse(input.asOf)) ? new Date(input.asOf).toISOString() : null;
+  const asOf = sourceAsOf ?? new Date().toISOString();
   return {
     asOf,
+    sourceAsOf,
     thesis: cleanText(input.thesis),
     topTen: rankSnapshotIdeas(input.topTen, "top-ten", asOf),
     watchlistTen: rankSnapshotIdeas(input.watchlistTen, "watchlist", asOf),
+  };
+}
+
+export type CapitalLineOptions = {
+  now?: string | number | Date;
+  getModel?: (ticker: string) => CompanyFinancialModel | null;
+};
+
+const CAPITAL_LINE_MAX_AGE_MS = CAPITAL_LINE_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
+
+function timestamp(value: string | number | Date | null | undefined) {
+  if (value instanceof Date) return value.getTime();
+  if (typeof value === "number") return value;
+  return value ? Date.parse(value) : Number.NaN;
+}
+
+function isFreshAsOf(value: string | null | undefined, now: string | number | Date) {
+  const valueMs = timestamp(value);
+  const nowMs = timestamp(now);
+  if (!Number.isFinite(valueMs) || !Number.isFinite(nowMs)) return false;
+  const age = nowMs - valueMs;
+  return age >= 0 && age <= CAPITAL_LINE_MAX_AGE_MS;
+}
+
+function hasText(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function isCompleteCompanyModel(model: CompanyFinancialModel | null, ticker: string, now: string | number | Date) {
+  if (!model || model.ticker !== bareSymbol(ticker).toUpperCase() || !isFreshAsOf(model.asOf, now)) return false;
+  if (![model.probabilityWeightedReturn, model.qqqHurdle].every(Number.isFinite) || model.qqqHurdle !== CAPITAL_LINE_HURDLE) return false;
+  if (![model.metric, model.methodology, model.sourceLabel, model.dataQuality].every(hasText)) return false;
+
+  const baselineNumbers = [
+    model.baseline.currentPrice,
+    model.baseline.revenueGrowth1y,
+    model.baseline.revenueCagr3y,
+    model.baseline.startingMargin,
+    model.baseline.valuationMultiple,
+  ];
+  if (!baselineNumbers.every(Number.isFinite) || model.baseline.currentPrice <= 0 || model.baseline.valuationMultiple <= 0) return false;
+  if (!hasText(model.baseline.currency) || !hasText(model.baseline.valuationLabel)) return false;
+
+  if (model.scenarios.length !== 3 || model.scenarios.map((scenario) => scenario.name).join(",") !== "Bear,Base,Bull") return false;
+  if (!model.scenarios.every((scenario) =>
+    [scenario.probability, scenario.revenueCagr, scenario.targetMargin, scenario.exitMultiple, scenario.annualizedReturn, scenario.targetPrice].every(Number.isFinite)
+    && scenario.probability > 0
+    && scenario.exitMultiple > 0
+    && scenario.targetPrice > 0
+    && hasText(scenario.exitMultipleLabel)
+    && hasText(scenario.narrative))) return false;
+
+  const probabilitySum = model.scenarios.reduce((sum, scenario) => sum + scenario.probability, 0);
+  const weightedReturn = model.scenarios.reduce((sum, scenario) => sum + scenario.probability * scenario.annualizedReturn, 0);
+  if (Math.abs(probabilitySum - 1) > 1e-6 || Math.abs(weightedReturn - model.probabilityWeightedReturn) > 1e-6) return false;
+  return [model.drivers, model.risks, model.monitoring].every((items) => items.length > 0 && items.every(hasText));
+}
+
+export function isCapitalWorthy(
+  idea: RankedBestIdea,
+  rankingPriceAsOf: string | null,
+  options: CapitalLineOptions = {},
+) {
+  const now = options.now ?? Date.now();
+  const model = (options.getModel ?? getCompanyModel)(idea.ticker);
+  return idea.source === "hermes-snapshot"
+    && idea.qqqLineSource === "explicit"
+    && idea.qqqLine === "above"
+    && idea.modeledReturn !== null
+    && Number.isFinite(idea.modeledReturn)
+    && idea.missing.length === 0
+    && Number.isFinite(idea.conviction)
+    && Number.isFinite(idea.risk)
+    && isFreshAsOf(rankingPriceAsOf, now)
+    && isCompleteCompanyModel(model, idea.ticker, now)
+    && idea.modeledReturn > CAPITAL_LINE_HURDLE;
+}
+
+export function getCapitalLine(dashboard: BestIdeasDashboard, options: CapitalLineOptions = {}): CapitalLine {
+  const ordered = [...dashboard.topTen, ...dashboard.watchlistTen];
+  const getModel = options.getModel ?? getCompanyModel;
+  const resolvedOptions = { ...options, getModel };
+  const capitalWorthy = ordered.filter((idea) => isCapitalWorthy(idea, dashboard.rankingPriceAsOf, resolvedOptions));
+  const rankedOnly = ordered.filter((idea) => !capitalWorthy.includes(idea));
+  const modelDates = new Set(ordered.map((idea) => getModel(idea.ticker)?.asOf).filter((asOf): asOf is string => Boolean(asOf)));
+  const modelAsOf = modelDates.size === 1 ? [...modelDates][0]! : null;
+  return {
+    hurdleLabel: QQQ_LINE_HURDLE_LABEL,
+    lastPriceRefresh: dashboard.rankingPriceAsOf,
+    modelAsOf,
+    rankingPriceAsOf: dashboard.rankingPriceAsOf,
+    lineIndex: capitalWorthy.length,
+    capitalWorthy,
+    rankedOnly,
+    firstRankedOnly: rankedOnly[0] ?? null,
   };
 }
 
@@ -263,6 +382,7 @@ export function snapshotToDashboard(snapshot: NormalizedBestIdeasSnapshot, snaps
     benchmark: "QQQ",
     horizonYears: 10,
     lastUpdated: snapshot.asOf,
+    rankingPriceAsOf: snapshot.sourceAsOf,
     sourceMode: "hermes-snapshot",
     snapshotThesis: snapshot.thesis,
     snapshotId,
@@ -309,6 +429,7 @@ export function buildBestIdeas(ideas: BestIdeaInput[]): BestIdeasDashboard {
     benchmark: "QQQ",
     horizonYears: 10,
     lastUpdated,
+    rankingPriceAsOf: null,
     sourceMode: "idea-table",
     snapshotThesis: null,
     snapshotId: null,
@@ -434,6 +555,6 @@ export function bestIdeasSnapshotNote(input: BestIdeasSnapshotInput, actor = "he
     source_system: "hermes_agent",
     is_pinned: true,
     occurred_at: snapshot.asOf,
-    metadata: { bestIdeas: { asOf: snapshot.asOf, thesis: snapshot.thesis, topTen: input.topTen.slice(0, 10), watchlistTen: input.watchlistTen.slice(0, 10) } },
+    metadata: { bestIdeas: { asOf: snapshot.sourceAsOf, thesis: snapshot.thesis, topTen: input.topTen.slice(0, 10), watchlistTen: input.watchlistTen.slice(0, 10) } },
   };
 }

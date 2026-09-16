@@ -235,7 +235,7 @@ Environment Variables. Never commit values.
 `vercel.json` pins the framework, `npm ci` and region `iad1`. Set the variables above, deploy
 the `main` branch (or this PR's preview). The build never contacts the database (every page is
 `force-dynamic`), so a preview builds without secrets; it renders "not connected" panels until
-the public keys are set. `.github/workflows/ci.yml` runs lint, typecheck, vitest and the build
+the public keys are set. `.github/workflows/ci.yml` runs lint, typecheck, vitest, the Python sync regression suite and the build
 on every push.
 
 ### Local
@@ -244,13 +244,17 @@ on every push.
 npm ci
 cp .env.example .env.local   # fill in keys
 npm run dev                  # http://localhost:3000
-npm run check                # lint + typecheck + vitest + build
+npm run check                # lint + typecheck + vitest + sync unittests + build
 BASE_URL=http://localhost:3000 npm run smoke   # Playwright screenshots of every route → scripts/smoke/output
 ```
 
 `npm run smoke` loads `.env.local`, accepts `CHROMIUM_PATH=/path/to/chrome` when Playwright's
-bundled browser is not installed, logs in through the password gate, and checks 24 live route
-states at desktop and 390px mobile widths (48 total checks). Keep the current
+bundled browser is not installed, logs in through the password gate, and checks 25 live route
+states at desktop and 390px mobile widths (50 total checks), including `/challengers`. When a
+latest reviewed tournament is present, the smoke run also requires every candidate row to expose
+visible, nonempty Frozen evidence, Model as of, Next-event freshness, and Accepted review fields.
+Set `EXPECT_CHALLENGER_TOURNAMENT=1` when running against the reviewed fixture or an expected
+publication so an absent/empty tournament also fails closed. Keep the current
 `HERMES_ACCESS_PASSWORD` in `.env.local`; never put it on the command line or send it through chat.
 
 ---
@@ -342,8 +346,8 @@ versioned on every edit.
 
 ## Verification performed for this PR
 
-- `npm run lint`, `npm run typecheck`, `npm test` (16 tests: stats, backtest engine) and
-  `npm run build` pass; the build also passes with no environment variables at all.
+- `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:sync` and `npm run build`
+  are the required code gates; the build also passes with no environment variables at all.
 - All three migrations applied to INVESTING-BRAIN-AG and recorded in
   `hermes_schema_migrations` with their file hashes; all views executed and row counts checked
   (research stream 1,838 rows / 1,064 latest; positions 376; universe 1,064; guru crossover 9,464;

@@ -4,7 +4,7 @@ import { loadEnvConfig } from "@next/env";
 import { chromium, type Page } from "playwright";
 
 /**
- * Authenticated production smoke test: renders 24 meaningful route states at
+ * Authenticated production smoke test: renders 25 meaningful route states at
  * desktop and 390px mobile widths, stores screenshots, and fails on HTTP/UI/
  * runtime errors or document-level horizontal overflow.
  *
@@ -22,6 +22,7 @@ const BASE_ROUTES = [
   "/research",
   "/research/new",
   "/pipeline",
+  "/challengers",
   "/north-star",
   "/companies",
   "/companies/MELI",
@@ -120,7 +121,7 @@ async function main() {
 
       await authenticate(page, base);
       routes ??= await discoverDataBackedRoutes(page, base);
-      if (routes.length !== 24) throw new Error(`Smoke route contract drifted: expected 24 routes, found ${routes.length}.`);
+      if (routes.length !== 25) throw new Error(`Smoke route contract drifted: expected 25 routes, found ${routes.length}.`);
 
       for (const route of routes) {
         const started = Date.now();
@@ -139,6 +140,31 @@ async function main() {
           document.documentElement.scrollWidth - document.documentElement.clientWidth,
           document.body.scrollWidth - document.body.clientWidth,
         ));
+        const auditIssues: string[] = [];
+        if (route === "/challengers") {
+          const latest = page.locator('section[aria-label="Latest reviewed tournament"]');
+          const latestCount = await latest.count();
+          if (!latestCount && process.env.EXPECT_CHALLENGER_TOURNAMENT === "1") {
+            auditIssues.push("expected a latest reviewed tournament fixture or publication");
+          }
+          if (latestCount) {
+            const candidateRows = latest.locator("ol > li");
+            const rows = await candidateRows.count();
+            if (!rows) auditIssues.push("latest reviewed tournament has zero candidate rows");
+            for (let index = 0; index < rows; index += 1) {
+              const row = candidateRows.nth(index);
+              for (const label of ["Frozen evidence", "Model as of", "Next-event freshness", "Accepted review"]) {
+                const field = row.getByText(label, { exact: true });
+                if (await field.count() !== 1 || !await field.isVisible()) {
+                  auditIssues.push(`candidate ${index + 1}: ${label} is missing or hidden`);
+                  continue;
+                }
+                const fieldText = (await field.locator("..").innerText()).replace(label, "").trim();
+                if (!fieldText) auditIssues.push(`candidate ${index + 1}: ${label} has no value`);
+              }
+            }
+          }
+        }
         await page.screenshot({ path: path.join(out, screenshotName(viewport.name, route)), fullPage: true });
 
         const issues = [
@@ -148,6 +174,7 @@ async function main() {
           errorPanel > 0 ? `ErrorPanel ${errorPanel}` : null,
           runtimeErrors.length > 0 ? `${runtimeErrors.length} runtime error(s)` : null,
           horizontalOverflow > 1 ? `${horizontalOverflow}px document overflow` : null,
+          ...auditIssues,
         ].filter((issue): issue is string => issue !== null);
         const ok = issues.length === 0;
         const ms = Date.now() - started;

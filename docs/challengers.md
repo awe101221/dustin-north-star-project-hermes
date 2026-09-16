@@ -5,6 +5,47 @@
 The home page and primary navigation link to it; the navigation shortcut is `g h`.
 Company models, pipeline cards, and Quant remain the research workflow.
 
+The page also surfaces the latest independently reviewed PM tournament ahead of the
+general candidate queue. Tournament rank is preserved separately from current portfolio
+posture: an owned security can remain the reviewed `first alternate` while its live idea
+card correctly stays in `owned-position review`. Neither label changes the 10 + 10.
+
+## Tournament synchronization
+
+`scripts/sync/challenger_board_sync.py` reconciles the latest completed North Star PM
+tournament from the active Hermes Kanban databases into the matching active
+`hermes_ideas.metadata.challenger` objects. It is fail-closed and will not publish when:
+
+- a candidate lacks an accepted independent-review audit entry;
+- an accepted Evidence & Risk run lacks an exact structured `metadata.verdict` of `PASS`
+  or `PASS WITH CAVEATS` (task results and summaries are never verdict fallbacks);
+- accepted-review, audit, and candidate identities are not exactly the same set;
+- the Evidence & Risk task title/body does not bind to that candidate ticker, or its completed
+  run is not joined to that exact task (an explicit run-metadata ticker is verified when present);
+- a required return, price, evidence, model-date, basis, or disposition field is missing;
+- a timestamp lacks an explicit timezone, a grade is outside A/B/C/D and the exact reviewed
+  legacy B- normalization allowlist, a supplied rank conflicts, or an integer identity is boolean;
+- a candidate maps to zero or multiple active idea records;
+- destination metadata, challenger, or tournament containers are malformed;
+- the packet attempts an automatic `admit`; or
+- the configured Supabase project is not `INVESTING-BRAIN-AG`.
+
+If separately installed and enabled, a production scheduler may run the deterministic script every
+15 minutes; this repository does not install or enable that scheduler. Writes use
+compare-and-set versions and a two-phase immutable manifest: every row is staged with
+`publicationComplete: false`, the complete candidate set is read back, then completion
+markers advance. The UI renders a tournament only when every expected row is complete and
+its ordered identities, candidate-set hash, `reviewedContentHash`, manifest hash, PM source run,
+count, every frozen reviewed field, and shared provenance all verify. A crash or retry therefore
+cannot expose a partial tournament. Hash inputs use a type-tagged canonical envelope, sort object
+keys by UTF-16 code units, preserve UTF-8 text, encode numbers as big-endian IEEE-754 binary64
+hex, and normalize signed zero. This keeps strings distinct from numbers and prevents Python,
+TypeScript, or JSONB numeric formatting from changing the reviewed publication identity.
+Writes are idempotent, preserve unrelated idea metadata, and end with exact readback.
+The local receipt is `~/.hermes/state/challenger-board-sync.json`. The script never changes
+membership, pipeline stage, position size, or trades. Its fixed process lock is
+`~/.hermes/state/challenger-board-sync.lock`, regardless of a custom receipt path.
+
 ## Metadata contract
 
 Record candidate underwriting in the existing `hermes_ideas.metadata.challenger`
@@ -24,6 +65,14 @@ Legacy ideas without this object remain visible with blocked evidence.
 | `nextEventAt` | ISO date or timestamp with explicit timezone, or explicit `null` for no scheduled event. Missing or invalid values block evidence. |
 | `reviewStatus` | `reviewed` or `pm-approved` clears independent review. Other nonempty statuses require refresh; missing status blocks evidence. |
 | `admissionDecision` | Optional exact disposition: `admit`, `first alternate`, `watch / price trigger`, `owned-position review`, or `reject`. Unknown nonempty decisions block evidence. |
+| `tournament` | Optional reviewed-PM provenance: tournament/task id, PM `sourceRunId`, comparison and completion timestamps, nonempty incumbent/terminal label/summary, source comment, accepted review task/run, rank, reviewed disposition, model basis, return-basis diagnostics, and portfolio-fit caveat. A published tournament also requires `expectedCandidateCount`, `orderedCandidateIdentities`, `candidateSetHash`, `reviewedContentHash`, `manifestHash`, and `publicationComplete`. `reviewedContentHash` seals every normalized shared-provenance and candidate-specific frozen field, not only candidate identities. |
+
+For an explicit one-time adoption of a same-id legacy tournament that has neither
+`sourceRunId` nor `manifestHash`, the synchronizer compares every already-present controlled
+field with the normalized reviewed source before adding the manifest. Equivalent timestamp
+offsets are accepted only when they represent the same instant; date-only values must be the
+same date. Any changed rank, disposition, return, price, date, basis, evidence grade, or review
+task/run/verdict blocks adoption. Unrelated custom metadata is preserved.
 
 For returns and fit, absolute numbers greater than 1 are percentage points; numbers
 from -1 through 1 are fractions. Thus `18`, `"18%"`, and `0.18` all mean 18%;

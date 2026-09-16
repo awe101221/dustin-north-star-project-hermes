@@ -2,14 +2,17 @@ import { describe, expect, it, vi } from "vitest";
 import {
   buildBestIdeas,
   buildRevisitIdeas,
+  bestIdeasSnapshotNote,
   getBestIdeasDashboard,
   snapshotToDashboard,
+  getCapitalLine,
   getQqqLineInSand,
   HERMES_BEST_IDEAS_MANDATE,
   normalizeBestIdeasSnapshot,
   snapshotMetadataToDashboard,
   type BestIdeaInput,
 } from "./best-ideas";
+import { getCompanyModel, type CompanyFinancialModel } from "./company-models";
 import type { Db } from "./db/query";
 
 function idea(overrides: Partial<BestIdeaInput> & { ticker: string }): BestIdeaInput {
@@ -33,6 +36,39 @@ function idea(overrides: Partial<BestIdeaInput> & { ticker: string }): BestIdeaI
     tags: overrides.tags ?? ["hermes-ranked"],
     updatedAt: overrides.updatedAt ?? "2026-09-07T12:00:00.000Z",
   };
+}
+
+const CAPITAL_LINE_NOW = "2026-09-16T12:00:00.000Z";
+
+function capitalSnapshot(
+  overrides: Record<string, unknown> = {},
+  asOf?: string | null,
+) {
+  const snapshotAsOf = arguments.length >= 2 ? asOf : "2026-09-15T12:00:00.000Z";
+  const ticker = typeof overrides.ticker === "string" ? overrides.ticker : "MELI";
+  const model = getCompanyModel(ticker);
+  return snapshotToDashboard(normalizeBestIdeasSnapshot({
+    asOf: snapshotAsOf,
+    topTen: [{
+      ticker,
+      thesis: "A complete company thesis.",
+      whyBeatQqq: "The modeled return clears the QQQ research hurdle.",
+      falsifier: "The thesis fails if durable growth does not materialize.",
+      conviction: 80,
+      risk: 40,
+      qqqLine: "above",
+      modeledReturn: (model?.qqqHurdle ?? 0.12) + 0.01,
+      ...overrides,
+    }],
+    watchlistTen: [],
+  }));
+}
+
+function capitalTickers(
+  dashboard: ReturnType<typeof capitalSnapshot>,
+  getModel: (ticker: string) => CompanyFinancialModel | null = getCompanyModel,
+) {
+  return getCapitalLine(dashboard, { now: CAPITAL_LINE_NOW, getModel }).capitalWorthy.map((item) => item.ticker);
 }
 
 describe("best ideas ranking", () => {
@@ -118,29 +154,127 @@ describe("best ideas ranking", () => {
     expect(snapshotMetadataToDashboard({})).toBeNull();
   });
 
-  it("draws a movable QQQ line in the sand from explicit snapshot fields", () => {
-    const dashboard = snapshotMetadataToDashboard({
-      bestIdeas: {
-        asOf: "2026-09-07T19:54:44.000Z",
-        thesis: "Modeled refresh with daily price updates.",
-        topTen: [
-          { ticker: "MELI", thesis: "Modeled upside", whyBeatQqq: "Probability-weighted return can beat QQQ.", falsifier: "QQQ wins if growth slows.", conviction: 91, risk: 48, qqqLine: "above", qqqLineReason: "PW 5y IRR clears the 12% QQQ hurdle." },
-          { ticker: "TSM", thesis: "Great company, expensive stock", whyBeatQqq: "Bull case can beat QQQ.", falsifier: "QQQ wins if valuation compresses.", conviction: 77, risk: 64, qqqLine: "below", qqqLineReason: "Base/PW model does not clear the QQQ hurdle today." },
-        ],
-        watchlistTen: [
-          { ticker: "VRT", thesis: "AI power beneficiary", whyBeatQqq: "Backlog could surprise.", falsifier: "QQQ wins if valuation already prices it.", conviction: 74, risk: 72, qqqLine: "below" },
-        ],
-      },
+  describe("fail-closed Capital Line", () => {
+    it.each([
+      ["below", 0.119999, []],
+      ["equal", 0.12, []],
+      ["above", 0.120001, ["MELI"]],
+    ])("uses a strict > hurdle at the %s boundary", (_label, modeledReturn, expected) => {
+      expect(capitalTickers(capitalSnapshot({ modeledReturn }))).toEqual(expected);
     });
 
-    expect(dashboard?.topTen[0]?.qqqLine).toBe("above");
-    expect(dashboard?.topTen[1]?.qqqLine).toBe("below");
-    const line = getQqqLineInSand(dashboard!);
-    expect(line.hurdleLabel).toBe("12% modeled 5y IRR hurdle");
-    expect(line.above.map((x) => x.ticker)).toEqual(["MELI"]);
-    expect(line.below.map((x) => x.ticker)).toEqual(["TSM", "VRT"]);
-    expect(line.firstBelow?.ticker).toBe("TSM");
-    expect(line.lastPriceRefresh).toBe("2026-09-07T19:54:44.000Z");
+    it("requires source-explicit qqqLine rather than tags or score inference", () => {
+      const explicit = capitalSnapshot().topTen[0]!;
+      const inferred = normalizeBestIdeasSnapshot({
+        asOf: "2026-09-15T12:00:00.000Z",
+        topTen: [{
+          ticker: "NU",
+          thesis: "A complete company thesis.",
+          whyBeatQqq: "The modeled return clears the QQQ research hurdle.",
+          falsifier: "The thesis fails if durable growth does not materialize.",
+          conviction: 80,
+          risk: 40,
+          tags: ["above-qqq-line"],
+          modeledReturn: 0.13,
+        }],
+        watchlistTen: [],
+      }).topTen[0]!;
+      const dashboard = { ...capitalSnapshot(), topTen: [explicit, inferred], totalActive: 2 };
+
+      expect(explicit.qqqLine).toBe("above");
+      expect(inferred.qqqLine).toBe("above");
+      expect(capitalTickers(dashboard)).toEqual(["MELI"]);
+    });
+
+    it("rejects an unknown or missing canonical registered model", () => {
+      expect(capitalTickers(capitalSnapshot({ ticker: "UNKNOWN", modeledReturn: 0.2 }))).toEqual([]);
+      expect(capitalTickers(capitalSnapshot(), () => null)).toEqual([]);
+    });
+
+    it.each([
+      ["missing Bear/Base/Bull", (model: CompanyFinancialModel) => ({ ...model, scenarios: model.scenarios.slice(0, 2) })],
+      ["probabilities do not sum to one", (model: CompanyFinancialModel) => ({ ...model, scenarios: model.scenarios.map((scenario) => ({ ...scenario, probability: 0.2 })) })],
+      ["non-finite scenario value", (model: CompanyFinancialModel) => ({ ...model, scenarios: model.scenarios.map((scenario, index) => index ? scenario : ({ ...scenario, annualizedReturn: Number.NaN })) })],
+      ["missing source", (model: CompanyFinancialModel) => ({ ...model, sourceLabel: "" })],
+      ["missing methodology", (model: CompanyFinancialModel) => ({ ...model, methodology: "" })],
+      ["missing data quality", (model: CompanyFinancialModel) => ({ ...model, dataQuality: "" })],
+      ["model identity mismatch", (model: CompanyFinancialModel) => ({ ...model, ticker: "NU" })],
+      ["invalid price baseline", (model: CompanyFinancialModel) => ({ ...model, baseline: { ...model.baseline, currentPrice: Number.NaN } })],
+    ])("rejects an incomplete registered model: %s", (_label, mutate) => {
+      const model = getCompanyModel("MELI")!;
+      expect(capitalTickers(capitalSnapshot(), () => mutate(model) as CompanyFinancialModel)).toEqual([]);
+    });
+
+    it("requires qqqLine and the price-rebased modeled return to agree", () => {
+      expect(capitalTickers(capitalSnapshot({ qqqLine: "above", modeledReturn: 0.12 }))).toEqual([]);
+      expect(capitalTickers(capitalSnapshot({ qqqLine: "below", modeledReturn: 0.13 }))).toEqual([]);
+    });
+
+    it("requires the canonical model hurdle to equal the fixed 12% Capital Line", () => {
+      const model = getCompanyModel("MELI")!;
+      expect(capitalTickers(
+        capitalSnapshot({ modeledReturn: 0.11 }),
+        () => ({ ...model, qqqHurdle: 0.10 }),
+      )).toEqual([]);
+    });
+
+    it.each(["thesis", "whyBeatQqq", "falsifier", "conviction", "risk"])("rejects missing %s underwriting", (field) => {
+      expect(capitalTickers(capitalSnapshot({ [field]: null }))).toEqual([]);
+    });
+
+    it.each([
+      ["stale", "2026-08-01T11:59:59.000Z"],
+      ["future", "2026-09-16T12:00:00.001Z"],
+      ["invalid", "not-a-date"],
+    ])("rejects a %s canonical model timestamp", (_label, asOf) => {
+      const model = getCompanyModel("MELI")!;
+      expect(capitalTickers(capitalSnapshot(), () => ({ ...model, asOf }))).toEqual([]);
+    });
+
+    it.each([
+      ["missing", undefined],
+      ["null", null],
+      ["invalid", "not-a-date"],
+      ["stale", "2026-08-01T11:59:59.000Z"],
+      ["future", "2026-09-16T12:00:00.001Z"],
+    ])("rejects a %s snapshot ranking/price-refresh asOf", (_label, asOf) => {
+      expect(capitalTickers(capitalSnapshot({}, asOf))).toEqual([]);
+    });
+
+    it("keeps a missing source asOf ineligible after note serialization and reload", () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-09-16T11:00:00.000Z"));
+      const input = {
+        topTen: [{
+          ticker: "MELI",
+          thesis: "A complete company thesis.",
+          whyBeatQqq: "The modeled return clears the QQQ research hurdle.",
+          falsifier: "The thesis fails if durable growth does not materialize.",
+          conviction: 80,
+          risk: 40,
+          qqqLine: "above" as const,
+          modeledReturn: 0.13,
+        }],
+        watchlistTen: [],
+      };
+      const reloaded = snapshotMetadataToDashboard(bestIdeasSnapshotNote(input).metadata)!;
+      const tickers = capitalTickers(reloaded);
+      vi.useRealTimers();
+      expect(tickers).toEqual([]);
+    });
+
+    it("reports model baseline time separately from ranking and price refresh time", () => {
+      const dashboard = capitalSnapshot();
+      const capital = getCapitalLine(dashboard, { now: CAPITAL_LINE_NOW });
+      expect(capital.modelAsOf).toBe("2026-09-07T20:55:00.000Z");
+      expect(capital.rankingPriceAsOf).toBe("2026-09-15T12:00:00.000Z");
+    });
+
+    it("keeps the legacy QQQ line behavior unchanged", () => {
+      const dashboard = capitalSnapshot({ modeledReturn: 0.12 });
+      expect(capitalTickers(dashboard)).toEqual([]);
+      expect(getQqqLineInSand(dashboard).above.map((item) => item.ticker)).toEqual(["MELI"]);
+    });
   });
 });
 

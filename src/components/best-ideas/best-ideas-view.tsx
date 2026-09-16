@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight, Calculator, Eye, ListChecks, Target, Trophy } from "lucide-react";
 import type { BestIdeasDashboard, RankedBestIdea } from "@/lib/best-ideas";
-import { getQqqLineInSand } from "@/lib/best-ideas";
+import { getCapitalLine, isCapitalWorthy } from "@/lib/best-ideas";
 import { fmtDateTime, fmtPct } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Badge, toneFor } from "@/components/ui/badge";
@@ -33,8 +33,9 @@ function UnderwritingPanels({ idea }: { idea: RankedBestIdea }) {
   );
 }
 
-function IdeaRow({ idea, dense = false }: { idea: RankedBestIdea; dense?: boolean }) {
+function IdeaRow({ idea, rankingPriceAsOf, dense = false }: { idea: RankedBestIdea; rankingPriceAsOf: string | null; dense?: boolean }) {
   const isTop = idea.lane === "top-ten";
+  const clearsCapitalLine = isCapitalWorthy(idea, rankingPriceAsOf);
   return (
     <div className={cn("rounded-lg border border-border bg-surface/70 p-3 sm:p-4", dense ? "space-y-2" : "space-y-3")}>
       <div className="flex items-start gap-3">
@@ -57,7 +58,8 @@ function IdeaRow({ idea, dense = false }: { idea: RankedBestIdea; dense?: boolea
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <Badge variant={toneFor(idea.stage)}>{idea.stage}</Badge>
             {idea.theme ? <Badge variant="outline">{idea.theme}</Badge> : null}
-            <Badge variant={idea.qqqLine === "above" ? "pos" : "warn"}>{idea.qqqLine === "above" ? "above QQQ line" : "below QQQ line"}</Badge>
+            <Badge variant={clearsCapitalLine ? "pos" : "warn"}>{clearsCapitalLine ? "clears Capital Line" : "ranked only"}</Badge>
+            <Badge variant="outline">Modeled return {fmtPct(idea.modeledReturn, 1)}</Badge>
             <PersonaChip slug={idea.persona} />
           </div>
           <p className="mt-1 text-[12.5px] leading-5 text-foreground-secondary">{idea.thesis || "Needs a fresh Hermes thesis."}</p>
@@ -93,7 +95,7 @@ function IdeaRow({ idea, dense = false }: { idea: RankedBestIdea; dense?: boolea
   );
 }
 
-function IdeaList({ title, description, icon, ideas, empty, dense = false }: { title: string; description: string; icon: React.ReactNode; ideas: RankedBestIdea[]; empty: string; dense?: boolean }) {
+function IdeaList({ title, description, icon, ideas, empty, rankingPriceAsOf, dense = false }: { title: string; description: string; icon: React.ReactNode; ideas: RankedBestIdea[]; empty: string; rankingPriceAsOf: string | null; dense?: boolean }) {
   return (
     <Card>
       <CardHeader>
@@ -103,48 +105,56 @@ function IdeaList({ title, description, icon, ideas, empty, dense = false }: { t
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        {ideas.length ? ideas.map((idea) => <IdeaRow key={`${idea.lane}-${idea.id}`} idea={idea} dense={dense} />) : <p className="py-8 text-center text-[12px] text-muted">{empty}</p>}
+        {ideas.length ? ideas.map((idea) => <IdeaRow key={`${idea.lane}-${idea.id}`} idea={idea} rankingPriceAsOf={rankingPriceAsOf} dense={dense} />) : <p className="py-8 text-center text-[12px] text-muted">{empty}</p>}
       </CardContent>
     </Card>
   );
 }
 
-function QqqLinePanel({ dashboard, compact = false }: { dashboard: BestIdeasDashboard; compact?: boolean }) {
-  const line = getQqqLineInSand(dashboard);
-  const aboveTickers = line.above.slice(0, compact ? 8 : 20);
-  const belowTickers = line.below.slice(0, compact ? 8 : 20);
+function CapitalLinePanel({ dashboard, compact = false }: { dashboard: BestIdeasDashboard; compact?: boolean }) {
+  const line = getCapitalLine(dashboard);
+  const worthyTickers = line.capitalWorthy.slice(0, compact ? 8 : 20);
+  const rankedTickers = line.rankedOnly.slice(0, compact ? 8 : 20);
   return (
-    <Card className="border-gold/30 bg-gold-soft/40">
+    <Card className="overflow-hidden border-gold/40 bg-gold-soft/30">
       <CardHeader>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <CardTitle className="inline-flex items-center gap-1.5"><Target className="size-3.5 text-gold" /> QQQ-beating line in the sand</CardTitle>
+            <CardTitle className="inline-flex items-center gap-1.5"><Target className="size-3.5 text-gold" /> Capital Line</CardTitle>
             <CardDescription>
-              Only names above this line currently clear the QQQ hurdle. Everything below defaults to QQQ until price, fundamentals, or evidence improve.
+              The 10 + 10 ranks the best current options; it is not automatically a buy list. Only companies with a complete, fresh model and a price-rebased return strictly above the QQQ hurdle clear the Capital Line.
             </CardDescription>
           </div>
           <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted">
             <Badge variant="gold">{line.hurdleLabel}</Badge>
-            <Badge variant="cyan">daily price refresh</Badge>
-            <span>last refresh {fmtDateTime(line.lastPriceRefresh)}</span>
+            <Badge variant="outline">research gate · not trade authorization</Badge>
+            <span>Model &amp; price baseline {fmtDateTime(line.modelAsOf)}</span>
+            <span>Ranking &amp; price refresh {fmtDateTime(line.rankingPriceAsOf)}</span>
           </div>
         </div>
       </CardHeader>
-      <CardContent className={cn("grid gap-3", compact ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-[1fr_auto_1fr]")}>
-        <div className="panel-2 p-3">
-          <p className="eyebrow mb-2">Above line · modeled QQQ beaters ({line.above.length})</p>
-          <div className="flex flex-wrap gap-2">
-            {aboveTickers.length ? aboveTickers.map((idea) => <Badge key={`above-${idea.ticker}`} variant="pos">{idea.ticker}</Badge>) : <span className="text-[12px] text-muted">No names clear the line today.</span>}
+      <CardContent className="space-y-3">
+        <div className={cn("grid gap-3", compact ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2")}>
+          <div className="panel-2 border-pos/30 p-3">
+            <p className="eyebrow mb-2 text-pos">Clears Capital Line · eligible for incremental research capital ({line.capitalWorthy.length})</p>
+            <div className="flex flex-wrap gap-2">
+              {worthyTickers.length ? worthyTickers.map((idea) => <Badge key={`worthy-${idea.ticker}`} variant="pos">{idea.ticker} · {fmtPct(idea.modeledReturn, 1)}</Badge>) : <span className="text-[12px] text-muted">No ranked company has a complete model above the line today. QQQ remains the default.</span>}
+            </div>
+          </div>
+          <div className="panel-2 border-warn/30 p-3">
+            <p className="eyebrow mb-2 text-warn">Ranked only · does not clear Capital Line ({line.rankedOnly.length})</p>
+            <div className="flex flex-wrap gap-2">
+              {rankedTickers.length ? rankedTickers.map((idea) => <Badge key={`ranked-${idea.ticker}`} variant="warn">{idea.ticker}{idea.modeledReturn !== null ? ` · ${fmtPct(idea.modeledReturn, 1)}` : " · model incomplete"}</Badge>) : <span className="text-[12px] text-muted">Every ranked company currently clears the Capital Line.</span>}
+            </div>
+            {line.firstRankedOnly ? <p className="mt-2 text-[11.5px] text-muted">First below: {line.firstRankedOnly.ticker} — {line.firstRankedOnly.qqqLineReason ?? "needs a complete model above the QQQ hurdle."}</p> : null}
           </div>
         </div>
-        {!compact ? <div className="flex items-center justify-center"><div className="h-full min-h-10 border-l border-dashed border-gold/60" /></div> : null}
-        <div className="panel-2 p-3">
-          <p className="eyebrow mb-2">Below line · QQQ better by default ({line.below.length})</p>
-          <div className="flex flex-wrap gap-2">
-            {belowTickers.length ? belowTickers.map((idea) => <Badge key={`below-${idea.ticker}`} variant="warn">{idea.ticker}</Badge>) : <span className="text-[12px] text-muted">Every ranked name clears the line today.</span>}
-          </div>
-          {line.firstBelow ? <p className="mt-2 text-[11.5px] text-muted">First below: {line.firstBelow.ticker} — {line.firstBelow.qqqLineReason ?? "needs a better price or stronger evidence."}</p> : null}
+        <div className="flex items-center gap-3" aria-label="Capital Line divider">
+          <div className="h-px flex-1 bg-gold/60" />
+          <span className="eyebrow text-gold">Capital Line</span>
+          <div className="h-px flex-1 bg-gold/60" />
         </div>
+        <p className="text-[11px] leading-5 text-muted">12% modeled 5-year return is the Capital Line research gate; 15% is the separate challenger admission hurdle, and neither is trade authorization or proof of the 10-year objective. A company below the line can remain in the ranked 10 + 10 while QQQ stays the better capital default.</p>
       </CardContent>
     </Card>
   );
@@ -184,7 +194,7 @@ export function BestIdeasView({ dashboard, compact = false, revisitResearch = {}
         <Link href="/learnings" className={compact ? "inline-flex items-center gap-1 text-cyan hover:underline" : "ml-auto inline-flex items-center gap-1 text-cyan hover:underline"}>View Learnings archive <ArrowUpRight className="size-3" /></Link>
       </div>
 
-      <QqqLinePanel dashboard={dashboard} compact={compact} />
+      <CapitalLinePanel dashboard={dashboard} compact={compact} />
 
       <Link href="/challengers" className="panel flex min-h-11 flex-wrap items-center justify-between gap-2 p-4 hover:border-cyan/40 focus-visible:outline-2 focus-visible:outline-cyan">
         <span><span className="block text-[14px] font-semibold text-cyan">10 + 10 Challenger Board</span><span className="mt-1 block text-[12px] text-muted">Review challengers against the incumbents, the 15% admission hurdle, and evidence gates.</span></span>
@@ -198,6 +208,7 @@ export function BestIdeasView({ dashboard, compact = false, revisitResearch = {}
           icon={<Trophy className="size-3.5 text-gold" />}
           ideas={visibleTop}
           empty="No Top 10 ideas yet. Add Hermes-ranked cards to the pipeline."
+          rankingPriceAsOf={dashboard.rankingPriceAsOf}
           dense={compact}
         />
         <IdeaList
@@ -206,6 +217,7 @@ export function BestIdeasView({ dashboard, compact = false, revisitResearch = {}
           icon={<Eye className="size-3.5 text-cyan" />}
           ideas={visibleWatch}
           empty="No Watchlist ideas yet. Hermes needs more active research cards."
+          rankingPriceAsOf={dashboard.rankingPriceAsOf}
           dense={compact}
         />
       </div>

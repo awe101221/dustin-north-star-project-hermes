@@ -60,6 +60,64 @@ function CandidateCard({ candidate }: { candidate: ChallengerCandidate }) {
   </article>;
 }
 
+function frozenEventFreshness(candidate: ChallengerCandidate, reviewedAsOf: string) {
+  if (!candidate.tournamentNextEventAt) return "None scheduled · Fresh at review";
+  const daysUntilEvent = (Date.parse(candidate.tournamentNextEventAt) - Date.parse(reviewedAsOf)) / 86_400_000;
+  const freshness = daysUntilEvent > 14 ? "Fresh at review" : "Refresh due at review";
+  const sourceStatus = candidate.tournamentNextEventStatus?.replaceAll("_", " ")
+    ?? (candidate.tournamentNextEventEstimated ? "estimated" : null);
+  return `${fmtDate(candidate.tournamentNextEventAt)} · ${freshness}${sourceStatus ? ` · ${sourceStatus}` : ""}`;
+}
+
+function LatestTournament({ board }: { board: ChallengerBoard }) {
+  const tournament = board.latestTournament;
+  if (!tournament) return null;
+  const matchup = tournament.incumbentTicker ? `${tournament.incumbentTicker} vs challengers` : "Reviewed challenger tournament";
+  return <section className="panel overflow-hidden" aria-label="Latest reviewed tournament">
+    <div className="border-b border-border p-4 sm:p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="eyebrow mb-1">Latest reviewed tournament</p>
+          <h2 className="text-[16px] font-semibold text-gold">{matchup}</h2>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {tournament.terminalLabel ? <Badge variant="cyan">{tournament.terminalLabel}</Badge> : null}
+          {tournament.reviewVerdict ? <Badge variant="outline">{tournament.reviewVerdict}</Badge> : null}
+        </div>
+      </div>
+      {tournament.summary ? <p className="mt-2 max-w-4xl text-[12px] leading-5 text-foreground-secondary">{tournament.summary}</p> : null}
+      <p className="mt-2 text-[11px] text-muted">Comparison as of {fmtDate(tournament.asOf)} · completed {fmtDate(tournament.completedAt)} · source {tournament.sourceTaskId ?? tournament.id} · PM run {tournament.sourceRunId}{tournament.sourceCommentId ? ` · comment ${tournament.sourceCommentId}` : ""} · verified {tournament.candidates.length}/{tournament.expectedCandidateCount} candidates</p>
+    </div>
+    <ol className="divide-y divide-border">
+      {tournament.candidates.map((candidate) => <li key={`${tournament.id}-${candidate.id}`} className="space-y-3 p-4 sm:p-5">
+        <div className="flex flex-wrap items-start gap-3">
+          <div className="flex min-w-20 items-center gap-2 sm:block">
+            <p className="eyebrow">Rank {candidate.tournamentRank}</p>
+            <Link className="num text-[18px] font-semibold text-gold hover:underline" href={`/companies/${encodeURIComponent(candidate.ticker)}`}>{candidate.symbol}</Link>
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant={candidate.tournamentDisposition === "reject" ? "neg" : "cyan"}>{candidate.tournamentDisposition}</Badge>
+              <span className="text-[11px] text-muted">{candidate.companyName}</span>
+            </div>
+            {candidate.tournamentBasis ? <p className="mt-2 text-[11px] leading-5 text-foreground-secondary">{candidate.tournamentBasis}</p> : null}
+            {candidate.tournamentPortfolioFit ? <p className="mt-1 text-[11px] leading-5 text-muted">{candidate.tournamentPortfolioFit}</p> : null}
+          </div>
+        </div>
+        <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          <Detail label="Reviewed IRR"><span className="num font-semibold">{fmtPct(candidate.tournamentExpectedIrr, 2)}</span>{candidate.priceOnlyExpectedIrr !== null ? <><br /><span className="text-muted">{fmtPct(candidate.priceOnlyExpectedIrr, 2)} price-only</span></> : null}</Detail>
+          <Detail label="Price / hurdle"><span className="num">{fmtNum(candidate.tournamentCurrentPrice, 2)} / {fmtNum(candidate.tournamentHurdlePrice, 2)}</span></Detail>
+          <Detail label="Frozen evidence">Grade {candidate.tournamentEvidenceGrade}</Detail>
+          <Detail label="Model as of">{fmtDate(candidate.tournamentModelAsOf)}</Detail>
+          <Detail label="Next-event freshness">{frozenEventFreshness(candidate, tournament.asOf)}</Detail>
+          <Detail label="Accepted review">{candidate.tournamentAcceptedReviewTaskId} · run {candidate.tournamentAcceptedReviewRunId}</Detail>
+        </dl>
+      </li>)}
+    </ol>
+    <p className="border-t border-border px-4 py-3 text-[11px] leading-5 text-muted sm:px-5">Tournament rank and disposition preserve the reviewed PM result. Live ownership, evidence freshness, and admission gates remain separate and cannot authorize membership, sizing, or trades.</p>
+  </section>;
+}
+
 export function ChallengerBoardView({ board }: { board: ChallengerBoard }) {
   const floors = board.incumbentFloors;
   const visibleCandidates = board.candidates.slice(0, VISIBLE_CANDIDATES);
@@ -75,12 +133,19 @@ export function ChallengerBoardView({ board }: { board: ChallengerBoard }) {
         <p className="mt-2 text-[12px] leading-5 text-foreground-secondary">The candidate-specific required IRR can raise this minimum. Models expire at 45 days; events within 14 days or already passed require a refresh. First alternate is a research disposition. Admit requires an explicit PM-approved decision and clear gates.</p>
         <p className="mt-2 text-[12px] leading-5 text-muted">This board does not add names to the 10 + 10, change positions, or authorize trades.</p>
       </section>
-      <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Detail label="Challengers"><span className="num text-[24px] font-semibold">{board.summary.total}</span></Detail>
-        <Detail label="Clears hurdle"><span className="num text-[24px] font-semibold text-gold">{board.summary.clearsHurdle}</span></Detail>
-        <Detail label="First alternates"><span className="num text-[24px] font-semibold text-cyan">{board.summary.firstAlternates}</span></Detail>
-        <Detail label="Blocked / refresh"><span className="num text-[24px] font-semibold text-warn">{board.summary.blocked}</span></Detail>
-      </dl>
+      <LatestTournament board={board} />
+      <section aria-label="Live candidate status" className="space-y-2">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-[14px] font-semibold">Live candidate status</h2>
+          <p className="text-[11px] leading-5 text-muted">Live counts below are separate from the frozen reviewed tournament ranks above.</p>
+        </div>
+        <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <Detail label="Live challengers"><span className="num text-[24px] font-semibold">{board.summary.total}</span></Detail>
+          <Detail label="Live clears hurdle"><span className="num text-[24px] font-semibold text-gold">{board.summary.clearsHurdle}</span></Detail>
+          <Detail label="Live first alternates"><span className="num text-[24px] font-semibold text-cyan">{board.summary.firstAlternates}</span></Detail>
+          <Detail label="Live blocked / refresh"><span className="num text-[24px] font-semibold text-warn">{board.summary.blocked}</span></Detail>
+        </dl>
+      </section>
       <section className="panel p-4" aria-label="Incumbent floors">
         <h2 className="mb-3 text-[14px] font-semibold">The incumbents to beat</h2>
         <dl className="grid gap-3 sm:grid-cols-2">

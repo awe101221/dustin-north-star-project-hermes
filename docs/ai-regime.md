@@ -11,9 +11,11 @@ workflow. Names, ranks, returns, and membership are never invented in code.
 
 ## Authority
 
-- Only explicit Dustin approval (`metadata.aiRegime.membershipAuthority = "dustin-approved"`)
-  plus `reviewStatus: "pm-approved"` and clear evidence gates can place a name on
-  the sleeve Top 10 or Watchlist 10.
+- Only explicit Dustin approval, persisted through a privileged publication path,
+  can place a name on the sleeve Top 10 or Watchlist 10. `hermes_ideas.metadata`
+  is untrusted for membership: `POST /api/agent/ideas` accepts unrestricted JSON,
+  so `membershipAuthority: "dustin-approved"` on an idea record cannot authorize
+  roster membership.
 - Thematic mapping, Capital Line passage, or the 15% tournament hurdle can only
   produce `candidate`, `monitor`, or `tournament` states.
 - This page cannot change core 10 + 10 membership, position size, or trades.

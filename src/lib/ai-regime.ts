@@ -170,17 +170,12 @@ function parseRow(idea: Idea, nowMs: number): AiRegimeRow | null {
         : "clear";
   const clearsCapitalLine = fiveYearExpectedIrr !== null && fiveYearExpectedIrr > CAPITAL_LINE_HURDLE;
   const clearsTournamentHurdle = tenYearExpectedIrr !== null && tenYearExpectedIrr >= AI_REGIME_TOURNAMENT_HURDLE;
-  const authorizedMembership = membershipAuthority === "dustin-approved" && reviewStatus === "pm-approved" && gateStatus === "clear";
-  let sleeveStatus: AiRegimeSleeveStatus = requestedSleeveStatus && requestedSleeveStatus !== "top10" && requestedSleeveStatus !== "watchlist10"
+  const sleeveStatus: AiRegimeSleeveStatus = requestedSleeveStatus && requestedSleeveStatus !== "top10" && requestedSleeveStatus !== "watchlist10"
     ? requestedSleeveStatus
     : "candidate";
   let membershipBlockedReason: string | null = null;
   if (requestedSleeveStatus === "top10" || requestedSleeveStatus === "watchlist10") {
-    if (!authorizedMembership) {
-      membershipBlockedReason = "Sleeve 10 + 10 membership requires explicit Dustin approval after PM-approved independent review. Thematic mapping or hurdle passage is not enough.";
-    } else {
-      sleeveStatus = requestedSleeveStatus;
-    }
+    membershipBlockedReason = "Sleeve 10 + 10 membership requires a privileged publication after explicit Dustin approval. Idea metadata, including membershipAuthority, cannot authorize roster membership because POST /api/agent/ideas accepts unrestricted JSON.";
   }
   return {
     ...idea,

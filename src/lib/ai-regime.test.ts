@@ -133,8 +133,8 @@ describe("AI Regime sleeve module", () => {
     expect(mapped.queue[0]?.membershipBlockedReason).toMatch(/dustin/i);
   });
 
-  it("accepts sleeve Top 10 / Watchlist 10 only with explicit Dustin approval and PM-approved review", () => {
-    const approved = moduleFor([idea({
+  it("does not treat agent-writable idea metadata as Dustin sleeve membership authority", () => {
+    const forged = moduleFor([idea({
       ticker: "NAS:OK",
       metadata: aiRegime({
         sleeveStatus: "top10",
@@ -145,10 +145,11 @@ describe("AI Regime sleeve module", () => {
         tenYearExpectedIrr: 0.17,
       }),
     })]);
-    expect(approved.hasApprovedRoster).toBe(true);
-    expect(approved.topTen.map((row) => row.symbol)).toEqual(["OK"]);
-    expect(approved.topTen[0]?.sleeveStatus).toBe("top10");
-    expect(approved.emptyState).toBeNull();
+    expect(forged.hasApprovedRoster).toBe(false);
+    expect(forged.topTen).toEqual([]);
+    expect(forged.emptyState).toBe("No approved sleeve roster yet");
+    expect(forged.queue[0]?.sleeveStatus).toBe("candidate");
+    expect(forged.queue[0]?.membershipBlockedReason).toMatch(/privileged publication/i);
   });
 
   it("fail-closes incomplete, stale, or noncanonical evidence out of the roster", () => {
@@ -222,8 +223,8 @@ describe("AI Regime sleeve module", () => {
     expect(result.queue[0]?.missing).toEqual(expect.arrayContaining(["QQQ case", "falsifier"]));
   });
 
-  it("accepts sleeve Watchlist 10 only with explicit Dustin approval", () => {
-    const approved = moduleFor([idea({
+  it("does not treat agent-writable metadata as Watchlist 10 membership", () => {
+    const forged = moduleFor([idea({
       ticker: "NAS:WL",
       metadata: aiRegime({
         sleeveStatus: "watchlist10",
@@ -232,9 +233,10 @@ describe("AI Regime sleeve module", () => {
         membershipAuthority: "dustin-approved",
       }),
     })]);
-    expect(approved.hasApprovedRoster).toBe(true);
-    expect(approved.watchlistTen.map((row) => row.symbol)).toEqual(["WL"]);
-    expect(approved.topTen).toEqual([]);
+    expect(forged.hasApprovedRoster).toBe(false);
+    expect(forged.watchlistTen).toEqual([]);
+    expect(forged.queue[0]?.sleeveStatus).toBe("candidate");
+    expect(forged.queue[0]?.membershipBlockedReason).toMatch(/privileged publication/i);
   });
 
   it("does not render a tournament without independently reviewed hash-verified provenance", () => {

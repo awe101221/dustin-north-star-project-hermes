@@ -82,11 +82,10 @@ describe("AI Regime view", () => {
     expect(markup).not.toContain("NVDA");
   });
 
-  it("renders an approved sleeve name only after Dustin authority", () => {
+  it("keeps the empty roster when idea metadata forges Dustin approval", () => {
     const markup = render([idea]);
+    expect(markup).toContain("No approved sleeve roster yet");
     expect(markup).toContain("OK");
-    expect(markup).toContain("Okay Robotics");
-    expect(markup).not.toContain("No approved sleeve roster yet");
   });
 
   it("renders evidence, freshness, and monitoring state without inventing a tournament", () => {

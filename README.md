@@ -68,6 +68,15 @@ model freshness, and event gates. Explicit PM decisions remain separate from gat
 status; the board never changes membership or authorizes trades. See the
 [metadata contract and scoring rules](docs/challengers.md). No migration is required.
 
+### AI Regime sleeve
+
+`/ai-regime` is a subordinate research sleeve for AI, Physical AI, Space
+AI/infrastructure, and hidden beneficiaries. The first production state is
+fail-closed: **No approved sleeve roster yet**. Methodology, taxonomy, and
+valuation playbooks still render. Sleeve Top 10 / Watchlist 10 requires explicit
+Dustin approval after independent review. The page never invents companies or
+changes the core 10 + 10. See [docs/ai-regime.md](docs/ai-regime.md).
+
 ### Revisit former 10 + 10 companies
 
 The home page's **Revisit · Former 10 + 10** section derives departures from saved

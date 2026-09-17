@@ -4,7 +4,7 @@ import { loadEnvConfig } from "@next/env";
 import { chromium, type Page } from "playwright";
 
 /**
- * Authenticated production smoke test: renders 25 meaningful route states at
+ * Authenticated production smoke test: renders 26 meaningful route states at
  * desktop and 390px mobile widths, stores screenshots, and fails on HTTP/UI/
  * runtime errors or document-level horizontal overflow.
  *
@@ -23,6 +23,7 @@ const BASE_ROUTES = [
   "/research/new",
   "/pipeline",
   "/challengers",
+  "/ai-regime",
   "/north-star",
   "/companies",
   "/companies/MELI",

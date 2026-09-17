@@ -9,14 +9,19 @@ describe("primary navigation", () => {
     expect(navFor("/best-ideas")?.href).toBe("/");
   });
 
-  it("links the challenger tournament, underwriting evaluation loop, and system reality map", () => {
+  it("links the challenger tournament, AI Regime sleeve, underwriting evaluation loop, and system reality map", () => {
     expect(NAV).toEqual(expect.arrayContaining([
       expect.objectContaining({ href: "/challengers", label: "Challengers" }),
+      expect.objectContaining({ href: "/ai-regime", label: "AI Regime" }),
       expect.objectContaining({ href: "/evaluation", label: "Evaluation" }),
       expect.objectContaining({ href: "/system", label: "System Map" }),
     ]));
     expect(navFor("/challengers")?.href).toBe("/challengers");
+    expect(navFor("/ai-regime")?.href).toBe("/ai-regime");
     expect(navFor("/evaluation")?.href).toBe("/evaluation");
     expect(navFor("/system")?.href).toBe("/system");
+    const hotkeys = NAV.map((item) => item.hotkey);
+    expect(new Set(hotkeys).size).toBe(hotkeys.length);
+    expect(NAV.find((item) => item.href === "/ai-regime")).toMatchObject({ label: "AI Regime", hotkey: "d" });
   });
 });

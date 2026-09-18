@@ -2,8 +2,8 @@ import Link from "next/link";
 import { ArrowUpRight, Cpu } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
-import type { AiRegimeModule, AiRegimeRow } from "@/lib/ai-regime";
-import { fmtDate, fmtPct } from "@/lib/format";
+import type { AiRegimeModule } from "@/lib/ai-regime";
+import { fmtDate, fmtPct, fmtPrice } from "@/lib/format";
 
 const workflowLink = "inline-flex min-h-10 items-center justify-center gap-1 rounded-md border border-border px-3 text-[12px] text-cyan hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-cyan";
 
@@ -25,28 +25,6 @@ function Detail({ label, children }: { label: string; children: React.ReactNode 
   return <div className="panel-2 min-w-0 p-3"><dt className="eyebrow mb-1">{label}</dt><dd className="break-words text-[12px] leading-5 text-foreground-secondary">{children}</dd></div>;
 }
 
-function RosterCard({ row }: { row: AiRegimeRow }) {
-  return <article className="panel space-y-3 p-3 sm:p-5" aria-label={`${row.symbol} AI Regime sleeve row`}>
-    <div className="flex items-start justify-between gap-3">
-      <div className="min-w-0">
-        <h3 className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-          <Link className="num text-[17px] font-semibold text-gold hover:underline" href={`/companies/${encodeURIComponent(row.ticker)}`}>{row.symbol}</Link>
-          <span className="text-[12px] text-muted">{row.companyName}</span>
-        </h3>
-        <p className="mt-1 break-words text-[11px] text-muted">{row.exposureType} · {row.domains.join(", ")}</p>
-      </div>
-      <Badge variant="cyan">{row.sleeveStatus}</Badge>
-    </div>
-    <p className="text-[13px] leading-5 text-foreground-secondary">{row.thesis || "Thesis missing."}</p>
-    <dl className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-      <Detail label="5y expected IRR"><span className="num font-semibold">{fmtPct(row.fiveYearExpectedIrr)}</span></Detail>
-      <Detail label="10y expected IRR"><span className="num font-semibold">{fmtPct(row.tenYearExpectedIrr)}</span></Detail>
-      <Detail label="Capital Line">{row.clearsCapitalLine ? "Clears >12%" : "Does not clear >12%"}</Detail>
-      <Detail label="Tournament hurdle">{row.clearsTournamentHurdle ? "Clears 15%" : "Does not clear 15%"}</Detail>
-    </dl>
-  </article>;
-}
-
 export function AiRegimeView({ module }: { module: AiRegimeModule }) {
   return <>
     <PageHeader
@@ -59,13 +37,13 @@ export function AiRegimeView({ module }: { module: AiRegimeModule }) {
     <div className="space-y-5">
       <section className="rounded-lg border border-gold/30 bg-gold-soft/30 p-4 sm:p-5" aria-label="Mandate and guardrails">
         <h2 className="flex items-center gap-2 text-[16px] font-semibold text-gold"><Cpu aria-hidden="true" className="size-5" />Mandate and guardrails</h2>
-        <p className="mt-2 text-[12px] leading-5 text-foreground-secondary">This module does not replace the canonical 10 + 10 or `/challengers`. Only explicit Dustin approval can assign sleeve Top 10 or Watchlist 10. Thematic mapping or hurdle passage can only create candidate, monitor, or tournament states. Strict five-year Capital Line is greater than 12%. Separate ten-year thematic tournament hurdle is 15%. QQQ remains the default when evidence is stale, incomplete, inconsistent, or noncanonical.</p>
+        <p className="mt-2 text-[12px] leading-5 text-foreground-secondary">This module does not replace the canonical 10 + 10 or `/challengers`. Only explicit Dustin approval through a privileged publication can assign sleeve Top 10 or Watchlist 10. Thematic mapping or metadata-only hurdle indications can only create candidate, monitor, or tournament candidate states. Strict five-year price-only Capital Line is greater than 12%. The separate five-year price-only tournament hurdle is at least 15% on the same as-of date and basis. 10-year outputs are historical context only and cannot drive admission, rerank, or displacement. QQQ remains the default for metadata-only rows and whenever evidence is stale, incomplete, inconsistent, or noncanonical.</p>
         <p className="mt-2 text-[12px] leading-5 text-muted">No names, ranks, returns, or membership are invented in code. This page never changes the portfolio, sizes a position, or authorizes a trade.</p>
       </section>
 
       <section className="panel p-4 sm:p-5" aria-label="Valuation playbooks">
         <h2 className="mb-2 text-[14px] font-semibold">Valuation playbooks</h2>
-        <p className="text-[12px] leading-5 text-foreground-secondary">Forward value is core/base business value + evidence-weighted transition economics + milestone/probability-discounted option value. Reverse expectations, capex, financing, dilution, and downside are required. History is a base-rate anchor, not the forecast. TAM-only value is forbidden. No automatic multiple premium for theme exposure.</p>
+        <p className="text-[12px] leading-5 text-foreground-secondary">Forward value is core/base business value + evidence-weighted transition economics + milestone/probability-discounted option value. Reverse expectations, capex, financing, dilution, and downside are required. A nonempty valuation label and asserted IRRs are metadata, not acceptance or an attestation that this contract was completed. History is a base-rate anchor, not the forecast. TAM-only value is forbidden. No automatic multiple premium for theme exposure.</p>
       </section>
 
       <section className="panel p-4 sm:p-5" aria-label="Hidden-beneficiary lens">
@@ -88,18 +66,17 @@ export function AiRegimeView({ module }: { module: AiRegimeModule }) {
       <section aria-label="Thematic sleeve 10 + 10" className="space-y-3">
         <h2 className="text-[15px] font-semibold">Thematic sleeve Top 10 + Watchlist 10</h2>
         {module.emptyState ? <div className="panel p-6 text-[13px] text-muted" data-testid="ai-regime-empty-roster">{module.emptyState}. Methodology and workflow stay visible while independently reviewed, PM-accepted, Dustin-approved membership is absent.</div> : null}
-        {module.topTen.map((row) => <RosterCard key={row.id} row={row} />)}
-        {module.watchlistTen.map((row) => <RosterCard key={row.id} row={row} />)}
+        <p className="text-[11px] leading-5 text-muted">V1 is empty-only: this route has no privileged approved-roster input. A later reviewed publication path must enforce at most 10 names per lane before approved rows can render.</p>
       </section>
 
       <section className="panel p-4 sm:p-5" aria-label="Thematic Challenger Tournament">
         <h2 className="mb-2 text-[14px] font-semibold">Thematic Challenger Tournament</h2>
-        <p className="text-[12px] leading-5 text-foreground-secondary">No sealed AI Regime tournament is published. A tournament renders only from independently reviewed, hash-verified provenance. Admission remains Dustin-gated and cannot mutate the core 10 + 10.</p>
+        <p className="text-[12px] leading-5 text-foreground-secondary">No sealed AI Regime tournament is published. Idea metadata can request tournament candidate consideration only. Tournament admission requires one-ticker Underwriter → independent Evidence &amp; Risk Reviewer → North Star PM review with Dustin retaining final authority, then an immutable hash-verified publication. Admission cannot mutate the core 10 + 10.</p>
       </section>
 
       <section className="panel p-4 sm:p-5" aria-label="Evidence / freshness / monitoring">
         <h2 className="mb-2 text-[14px] font-semibold">Evidence / freshness / monitoring</h2>
-        <p className="text-[12px] leading-5 text-foreground-secondary">45-day model freshness and 14-day event refresh apply before any sleeve row can clear. Missing QQQ case, falsifier, evidence grade, or independent review keeps QQQ as the default. Periodic review and event-driven triggers stay visible here; they cannot commit roster or trade state.</p>
+        <p className="text-[12px] leading-5 text-foreground-secondary">Every row sourced only from agent-writable `hermes_ideas.metadata.aiRegime` remains explicitly unreviewed and evidence blocked. Self-declared A/B evidence, `reviewed`, `pm-approved`, valuation labels, or IRRs cannot create a clear state. A privileged immutable review publication must bind provenance, reviewed content hash, and as-of date before any clear, hurdle, tournament, or roster-eligible state. The 45-day model freshness and 14-day event refresh windows still describe metadata quality; they cannot commit roster or trade state.</p>
         <p className="mt-2 text-[11px] leading-5 text-muted">{module.summary.blocked} blocked · {module.summary.candidates} candidates · {module.summary.monitors} monitors · approved sleeve {module.summary.approvedTopTen}/{module.summary.approvedWatchlist}.</p>
       </section>
 
@@ -111,10 +88,29 @@ export function AiRegimeView({ module }: { module: AiRegimeModule }) {
         {module.queue.map((row) => <article key={row.id} className="panel space-y-2 p-4" aria-label={`${row.symbol} AI Regime candidate`}>
           <div className="flex flex-wrap items-center gap-2">
             <Link className="num text-[15px] font-semibold text-gold hover:underline" href={`/companies/${encodeURIComponent(row.ticker)}`}>{row.symbol}</Link>
-            <Badge variant={row.gateStatus === "clear" ? "pos" : "warn"}>{row.gateStatus}</Badge>
-            <Badge variant="outline">{row.sleeveStatus}</Badge>
+            <Badge variant="warn">{row.gateStatus}</Badge>
+            <Badge variant="outline">metadata {row.metadataStatus} · unreviewed</Badge>
+            <Badge variant="outline">{row.sleeveStatus.replace("-", " ")}</Badge>
           </div>
           <p className="text-[12px] leading-5 text-foreground-secondary">{row.thesis || "Thesis missing."}</p>
+          <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            <Detail label="Metadata evidence">{row.evidenceGrade ?? "Missing"} · claimed review {row.reviewStatus ?? "missing"}</Detail>
+            <Detail label="Model as of">{fmtDate(row.modelAsOf, "iso")}</Detail>
+            <Detail label="Next event">{row.nextEventAt ? fmtDate(row.nextEventAt, "iso") : "No event supplied"}</Detail>
+            <Detail label="Metadata updated">{fmtDate(row.updatedAt, "iso")}</Detail>
+            <Detail label="Valuation archetype">{row.valuationArchetype ?? "Missing"}</Detail>
+            <Detail label="5y asserted price-only IRR">{fmtPct(row.fiveYearExpectedIrr)}</Detail>
+            <Detail label="10y historical context">{fmtPct(row.tenYearExpectedIrr)}</Detail>
+            <Detail label="Hurdle price">{fmtPrice(row.hurdlePrice)}</Detail>
+            <Detail label="Effective Capital Line">Strictly greater than {fmtPct(row.requiredFiveYearIrr)}</Detail>
+            <Detail label="Effective tournament hurdle">At least {fmtPct(row.requiredTournamentFiveYearIrr)} on the same 5y price-only basis</Detail>
+            <Detail label="Canonical basis">{row.returnBasis ?? "Missing"} · {row.probabilityWeighting ?? "missing weighting"} · {row.dividendsIncluded === false ? "dividends excluded" : "invalid dividend basis"}</Detail>
+            <Detail label="Valuation contract">{row.valuationContractComplete ? "Metadata complete; unreviewed" : "Incomplete"}</Detail>
+            <Detail label="Why own instead of QQQ?">{row.whyBeatQqq || "Missing"}</Detail>
+            <Detail label="Falsifier / downside">{row.falsifier || "Missing"}</Detail>
+            <Detail label="Next review trigger">{row.nextAction || row.catalyst || "Not supplied"}</Detail>
+          </dl>
+          {row.gateReasons.length ? <ul className="space-y-1 text-[11px] leading-5 text-warn">{row.gateReasons.map((reason) => <li key={reason}>{reason}</li>)}</ul> : null}
           {row.membershipBlockedReason ? <p className="text-[11px] leading-5 text-muted">{row.membershipBlockedReason}</p> : null}
         </article>)}
         {!module.queue.length ? <div className="panel p-6 text-[13px] text-muted">No AI Regime candidates in `metadata.aiRegime`. Publish reviewed research through the independent review lane before names appear here.</div> : null}

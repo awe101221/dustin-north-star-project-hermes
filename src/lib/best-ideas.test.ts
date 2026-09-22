@@ -6,6 +6,7 @@ import {
   getBestIdeasDashboard,
   snapshotToDashboard,
   getCapitalLine,
+  meetsTenPlusTenEntry,
   getQqqLineInSand,
   HERMES_BEST_IDEAS_MANDATE,
   normalizeBestIdeasSnapshot,
@@ -155,6 +156,13 @@ describe("best ideas ranking", () => {
   });
 
   describe("fail-closed Capital Line", () => {
+    it("lets a name above 12% enter the ranked 10+10 without populating the Capital Line", () => {
+      expect(meetsTenPlusTenEntry({ modeledReturn: 0.12 })).toBe(false);
+      expect(meetsTenPlusTenEntry({ modeledReturn: 0.120001 })).toBe(true);
+      expect(meetsTenPlusTenEntry({ modeledReturn: 0.14 })).toBe(true);
+      expect(capitalTickers(capitalSnapshot({ modeledReturn: 0.14 }))).toEqual([]);
+    });
+
     it.each([
       ["below", 0.149999, []],
       ["equal", 0.15, []],

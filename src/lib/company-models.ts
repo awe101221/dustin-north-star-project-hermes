@@ -1272,7 +1272,7 @@ const BASELINES: Record<string, CompanyFinancialModel["baseline"]> = {
 };
 
 const METHODOLOGY =
-  "Five-year, three-scenario operating model. Each case makes revenue growth, year-five margin, terminal valuation, and annualized shareholder return explicit. The probability-weighted return is compared with a 12% QQQ hurdle; scenario returns are top-down calibrations and must be refreshed when price, filings, or evidence change.";
+  "Five-year, three-scenario operating model. Each case makes revenue growth, year-five margin, terminal valuation, and annualized shareholder return explicit. The Capital Line is 15%. A name can enter the ranked 10 + 10 above 12% without clearing it. Scenario returns are top-down calibrations and must be refreshed when price, filings, or evidence change.";
 
 function hydrateModel(seed: CompanyModelSeed): CompanyFinancialModel {
   const baseline = BASELINES[seed.ticker];

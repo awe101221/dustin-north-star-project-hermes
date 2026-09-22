@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight, Calculator, Eye, ListChecks, Target, Trophy } from "lucide-react";
 import type { BestIdeasDashboard, RankedBestIdea } from "@/lib/best-ideas";
-import { getCapitalLine, isCapitalWorthy } from "@/lib/best-ideas";
+import { getCapitalLine, isCapitalWorthy, meetsTenPlusTenEntry } from "@/lib/best-ideas";
 import { fmtDateTime, fmtPct } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Badge, toneFor } from "@/components/ui/badge";
@@ -58,7 +58,7 @@ function IdeaRow({ idea, rankingPriceAsOf, dense = false }: { idea: RankedBestId
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <Badge variant={toneFor(idea.stage)}>{idea.stage}</Badge>
             {idea.theme ? <Badge variant="outline">{idea.theme}</Badge> : null}
-            <Badge variant={clearsCapitalLine ? "pos" : "warn"}>{clearsCapitalLine ? "clears Capital Line" : "ranked only"}</Badge>
+            <Badge variant={clearsCapitalLine ? "pos" : meetsTenPlusTenEntry(idea) ? "outline" : "warn"}>{clearsCapitalLine ? "on Capital Line" : meetsTenPlusTenEntry(idea) ? "ranked · below Capital Line" : "below 12% entry"}</Badge>
             <Badge variant="outline">Modeled return {fmtPct(idea.modeledReturn, 1)}</Badge>
             <PersonaChip slug={idea.persona} />
           </div>
@@ -114,7 +114,6 @@ function IdeaList({ title, description, icon, ideas, empty, rankingPriceAsOf, de
 function CapitalLinePanel({ dashboard, compact = false }: { dashboard: BestIdeasDashboard; compact?: boolean }) {
   const line = getCapitalLine(dashboard);
   const worthyTickers = line.capitalWorthy.slice(0, compact ? 8 : 20);
-  const rankedTickers = line.rankedOnly.slice(0, compact ? 8 : 20);
   return (
     <Card className="overflow-hidden border-gold/40 bg-gold-soft/30">
       <CardHeader>
@@ -122,7 +121,7 @@ function CapitalLinePanel({ dashboard, compact = false }: { dashboard: BestIdeas
           <div>
             <CardTitle className="inline-flex items-center gap-1.5"><Target className="size-3.5 text-gold" /> Capital Line</CardTitle>
             <CardDescription>
-              The 10 + 10 ranks the best current options; it is not automatically a buy list. Only companies with a complete, fresh model and a price-rebased return strictly above the QQQ hurdle clear the Capital Line.
+              A name enters the ranked 10 + 10 above 12%. From there the best names are ranked. This line is populated only when a name clears 15%.
             </CardDescription>
           </div>
           <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted">
@@ -134,27 +133,18 @@ function CapitalLinePanel({ dashboard, compact = false }: { dashboard: BestIdeas
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className={cn("grid gap-3", compact ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2")}>
-          <div className="panel-2 border-pos/30 p-3">
-            <p className="eyebrow mb-2 text-pos">Clears Capital Line · eligible for incremental research capital ({line.capitalWorthy.length})</p>
+        <div className="panel-2 border-pos/30 p-3">
+            <p className="eyebrow mb-2 text-pos">Clears 15% · on the Capital Line ({line.capitalWorthy.length})</p>
             <div className="flex flex-wrap gap-2">
-              {worthyTickers.length ? worthyTickers.map((idea) => <Badge key={`worthy-${idea.ticker}`} variant="pos">{idea.ticker} · {fmtPct(idea.modeledReturn, 1)}</Badge>) : <span className="text-[12px] text-muted">No ranked company has a complete model above the line today. QQQ remains the default.</span>}
+              {worthyTickers.length ? worthyTickers.map((idea) => <Badge key={`worthy-${idea.ticker}`} variant="pos">{idea.ticker} · {fmtPct(idea.modeledReturn, 1)}</Badge>) : <span className="text-[12px] text-muted">No ranked name clears 15%. The Capital Line stays empty.</span>}
             </div>
           </div>
-          <div className="panel-2 border-warn/30 p-3">
-            <p className="eyebrow mb-2 text-warn">Ranked only · does not clear Capital Line ({line.rankedOnly.length})</p>
-            <div className="flex flex-wrap gap-2">
-              {rankedTickers.length ? rankedTickers.map((idea) => <Badge key={`ranked-${idea.ticker}`} variant="warn">{idea.ticker}{idea.modeledReturn !== null ? ` · ${fmtPct(idea.modeledReturn, 1)}` : " · model incomplete"}</Badge>) : <span className="text-[12px] text-muted">Every ranked company currently clears the Capital Line.</span>}
-            </div>
-            {line.firstRankedOnly ? <p className="mt-2 text-[11.5px] text-muted">First below: {line.firstRankedOnly.ticker} — {line.firstRankedOnly.qqqLineReason ?? "needs a complete model above the QQQ hurdle."}</p> : null}
-          </div>
-        </div>
         <div className="flex items-center gap-3" aria-label="Capital Line divider">
           <div className="h-px flex-1 bg-gold/60" />
           <span className="eyebrow text-gold">Capital Line</span>
           <div className="h-px flex-1 bg-gold/60" />
         </div>
-        <p className="text-[11px] leading-5 text-muted">15% modeled 5-year return is the Capital Line, the alpha line versus QQQ, not membership. 12% is the hurdle to enter the ranked 10 + 10. The tournament watches names below that for price, earnings, or an announcement. Neither rank nor Capital Line is trade authorization.</p>
+        <p className="text-[11px] leading-5 text-muted">A name enters the ranked 10 + 10 above 12%. From there the best names are ranked. The Capital Line lists only names that clear 15%. It is the alpha line versus QQQ, not the door. Neither rank nor Capital Line is trade authorization.</p>
       </CardContent>
     </Card>
   );

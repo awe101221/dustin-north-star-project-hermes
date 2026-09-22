@@ -322,6 +322,12 @@ function isCompleteCompanyModel(model: CompanyFinancialModel | null, ticker: str
   return [model.drivers, model.risks, model.monitoring].every((items) => items.length > 0 && items.every(hasText));
 }
 
+export function meetsTenPlusTenEntry(idea: { modeledReturn: number | null }) {
+  return idea.modeledReturn !== null
+    && Number.isFinite(idea.modeledReturn)
+    && idea.modeledReturn > TEN_PLUS_TEN_ENTRY_HURDLE;
+}
+
 export function isCapitalWorthy(
   idea: RankedBestIdea,
   rankingPriceAsOf: string | null,

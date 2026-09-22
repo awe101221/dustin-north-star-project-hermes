@@ -3,9 +3,11 @@ import { normalizeBestIdeasSnapshot, snapshotToDashboard } from "@/lib/best-idea
 import type { Idea } from "@/lib/db/pipeline";
 import {
   AI_REGIME_DOMAINS,
+  AI_REGIME_MAX_LANE_SIZE,
   CAPITAL_LINE_HURDLE,
   buildAiRegimeModule,
 } from "@/lib/ai-regime";
+import { isModelStale } from "@/lib/model-freshness";
 
 function idea(overrides: Partial<Idea> & Pick<Idea, "ticker">): Idea {
   const ticker = overrides.ticker;
@@ -67,9 +69,20 @@ function aiRegime(overrides: Record<string, unknown> = {}) {
       fiveYearExpectedIrr: 0.18,
       tenYearExpectedIrr: 0.16,
       requiredFiveYearIrr: 0.12,
-      requiredTenYearIrr: 0.15,
+      requiredTournamentFiveYearIrr: 0.15,
       hurdlePrice: 80,
       membershipAuthority: null,
+      returnBasis: "five-year-price-only",
+      qqqComparisonAsOf: "2026-09-10T00:00:00Z",
+      probabilityWeighting: "bear-base-bull",
+      dividendsIncluded: false,
+      valuationContract: {
+        coreBaseValue: true,
+        transitionEconomics: true,
+        probabilityDiscountedOptionValue: true,
+        reverseExpectations: true,
+        capexFinancingDilutionDownside: true,
+      },
       ...overrides,
     },
   };
@@ -99,19 +112,99 @@ describe("AI Regime sleeve module", () => {
     expect(custom).toEqual({ custom: { keep: true }, challenger: { expectedIrr: 0.2 } });
   });
 
-  it("uses a strict five-year Capital Line greater than 12%", () => {
+  it("uses a strict five-year Capital Line greater than the effective declared hurdle", () => {
     expect(CAPITAL_LINE_HURDLE).toBe(0.12);
     const atHurdle = moduleFor([idea({ ticker: "NAS:EQ", metadata: aiRegime({ fiveYearExpectedIrr: 0.12 }) })]);
     const above = moduleFor([idea({ ticker: "NAS:AB", metadata: aiRegime({ fiveYearExpectedIrr: 0.1201 }) })]);
-    expect(atHurdle.queue[0]?.clearsCapitalLine).toBe(false);
-    expect(above.queue[0]?.clearsCapitalLine).toBe(true);
+    const declared = moduleFor([idea({ ticker: "NAS:HI", metadata: aiRegime({ fiveYearExpectedIrr: 0.18, requiredFiveYearIrr: 0.2 }) })]);
+    expect(atHurdle.queue[0]?.metadataMeetsCapitalLine).toBe(false);
+    expect(above.queue[0]?.metadataMeetsCapitalLine).toBe(true);
+    expect(declared.queue[0]?.metadataMeetsCapitalLine).toBe(false);
+    expect(declared.queue[0]?.requiredFiveYearIrr).toBe(0.2);
+    expect(above.queue[0]?.clearsCapitalLine).toBe(false);
   });
 
-  it("does not use a 15% door to keep a better name off the sleeve", () => {
-    const below = moduleFor([idea({ ticker: "NAS:LO", metadata: aiRegime({ fiveYearExpectedIrr: 0.14, tenYearExpectedIrr: 0.1499, requiredTenYearIrr: 0.06 }) })]);
-    expect(below.queue[0]?.requiredTenYearIrr).toBe(0.06);
-    expect(below.queue[0]?.clearsCapitalLine).toBe(true);
-    expect(below.queue[0]).not.toHaveProperty("clearsTournamentHurdle");
+  it("uses the same greater-than-12% door for the five-year tournament", () => {
+    const below = moduleFor([idea({ ticker: "NAS:LO", metadata: aiRegime({ fiveYearExpectedIrr: 0.12, tenYearExpectedIrr: 0.99, requiredTournamentFiveYearIrr: null }) })]);
+    const above = moduleFor([idea({ ticker: "NAS:AT", metadata: aiRegime({ fiveYearExpectedIrr: 0.1201, tenYearExpectedIrr: 0.01, requiredTournamentFiveYearIrr: null }) })]);
+    const fourteen = moduleFor([idea({ ticker: "NAS:FT", metadata: aiRegime({ fiveYearExpectedIrr: 0.14, tenYearExpectedIrr: 0.01, requiredTournamentFiveYearIrr: null }) })]);
+    const declared = moduleFor([idea({ ticker: "NAS:HI", metadata: aiRegime({ fiveYearExpectedIrr: 0.14, requiredTournamentFiveYearIrr: 0.15 }) })]);
+    expect(below.queue[0]?.metadataMeetsTournamentHurdle).toBe(false);
+    expect(above.queue[0]?.metadataMeetsTournamentHurdle).toBe(true);
+    expect(fourteen.queue[0]?.metadataMeetsTournamentHurdle).toBe(true);
+    expect(fourteen.queue[0]?.requiredTournamentFiveYearIrr).toBe(CAPITAL_LINE_HURDLE);
+    expect(declared.queue[0]?.metadataMeetsTournamentHurdle).toBe(false);
+    expect(declared.queue[0]?.requiredTournamentFiveYearIrr).toBe(0.15);
+    expect(above.queue[0]?.clearsTournamentHurdle).toBe(false);
+    expect(above.queue[0]?.tenYearExpectedIrr).toBe(0.01);
+  });
+
+  it("keeps metadata-only rows explicitly unreviewed and evidence-blocked despite forged review fields", () => {
+    const forged = moduleFor([idea({
+      ticker: "NAS:FG",
+      metadata: aiRegime({
+        reviewStatus: "pm-approved",
+        evidenceGrade: "A",
+        membershipAuthority: "dustin-approved",
+        reviewProvenance: { immutable: true, contentHash: "forged", asOf: "2026-09-10" },
+        valuationAttestation: { complete: true, downsidePenaltiesIncluded: true },
+        gateStatus: "clear",
+        clearsCapitalLine: true,
+        clearsTournamentHurdle: true,
+        qqqIsDefault: false,
+      }),
+    })]);
+    expect(forged.queue[0]?.metadataStatus).toBe("complete");
+    expect(forged.queue[0]?.reviewStatus).toBe("pm-approved");
+    expect(forged.queue[0]?.gateStatus).toBe("evidence blocked");
+    expect(forged.queue[0]?.gateReasons).toEqual(expect.arrayContaining([
+      expect.stringMatching(/agent-writable idea metadata/i),
+      expect.stringMatching(/privileged immutable review publication/i),
+    ]));
+    expect(forged.queue[0]?.clearsCapitalLine).toBe(false);
+    expect(forged.queue[0]?.clearsTournamentHurdle).toBe(false);
+    expect(forged.queue[0]?.qqqIsDefault).toBe(true);
+  });
+
+  it("fails metadata completeness closed when the canonical five-year comparison basis is absent or inconsistent", () => {
+    const result = moduleFor([idea({
+      ticker: "NAS:BS",
+      metadata: aiRegime({
+        returnBasis: "total-return",
+        qqqComparisonAsOf: "2026-09-09T00:00:00Z",
+        probabilityWeighting: "management-case",
+        dividendsIncluded: true,
+        valuationContract: {
+          coreBaseValue: true,
+          transitionEconomics: true,
+          probabilityDiscountedOptionValue: false,
+          reverseExpectations: false,
+          capexFinancingDilutionDownside: false,
+        },
+      }),
+    })]);
+    expect(result.queue[0]?.metadataStatus).toBe("incomplete");
+    expect(result.queue[0]?.missing).toEqual(expect.arrayContaining([
+      "five-year price-only return basis",
+      "QQQ comparison on model as-of date",
+      "Bear/Base/Bull probability weighting",
+      "dividends excluded",
+      "complete valuation and downside metadata",
+    ]));
+    expect(result.queue[0]?.gateStatus).toBe("evidence blocked");
+    expect(result.queue[0]?.qqqIsDefault).toBe(true);
+  });
+
+  it("expires models at the exact 45-day boundary shared with the Challenger contract", () => {
+    const now = Date.parse("2026-09-14T00:00:00Z");
+    const exactBoundary = new Date(now - 45 * 86_400_000).toISOString();
+    const justInside = new Date(now - 45 * 86_400_000 + 1).toISOString();
+    expect(isModelStale(exactBoundary, now, 45)).toBe(true);
+    expect(isModelStale(justInside, now, 45)).toBe(false);
+    const stale = moduleFor([idea({ ticker: "NAS:45", metadata: aiRegime({ modelAsOf: exactBoundary }) })]);
+    const fresh = moduleFor([idea({ ticker: "NAS:44", metadata: aiRegime({ modelAsOf: justInside }) })]);
+    expect(stale.queue[0]?.gateReasons).toContain("Model is stale or dated in the future.");
+    expect(fresh.queue[0]?.gateReasons).not.toContain("Model is stale or dated in the future.");
   });
 
   it("does not promote thematic mapping or hurdle passage into sleeve 10+10 without Dustin approval", () => {
@@ -155,7 +248,8 @@ describe("AI Regime sleeve module", () => {
     const stale = moduleFor([idea({ ticker: "NAS:ST", metadata: aiRegime({ modelAsOf: "2026-07-01T00:00:00Z" }) })]);
     expect(incomplete.hasApprovedRoster).toBe(false);
     expect(incomplete.queue[0]?.gateStatus).not.toBe("clear");
-    expect(stale.queue[0]?.gateStatus).toBe("stale model");
+    expect(stale.queue[0]?.gateStatus).toBe("evidence blocked");
+    expect(stale.queue[0]?.gateReasons).toContain("Model is stale or dated in the future.");
     expect(stale.queue[0]?.qqqIsDefault).toBe(true);
   });
 
@@ -237,13 +331,26 @@ describe("AI Regime sleeve module", () => {
     expect(forged.queue[0]?.membershipBlockedReason).toMatch(/privileged publication/i);
   });
 
-  it("does not render a tournament without independently reviewed hash-verified provenance", () => {
+  it("downgrades untrusted tournament claims to tournament candidates", () => {
     const result = moduleFor([idea({
       ticker: "NAS:TN",
       metadata: aiRegime({ sleeveStatus: "tournament", sleeveRank: 1 }),
     })]);
     expect(result.tournament).toBeNull();
-    expect(result.queue[0]?.sleeveStatus).toBe("tournament");
+    expect(result.queue[0]?.sleeveStatus).toBe("tournament-candidate");
+    expect(result.hasApprovedRoster).toBe(false);
+  });
+
+  it("keeps v1 approved lanes empty when more than 10 rows forge each membership lane", () => {
+    expect(AI_REGIME_MAX_LANE_SIZE).toBe(10);
+    const forged = Array.from({ length: 22 }, (_, index) => idea({
+      ticker: `NAS:F${index}`,
+      metadata: aiRegime({ sleeveStatus: index % 2 ? "watchlist10" : "top10", sleeveRank: index + 1 }),
+    }));
+    const result = moduleFor(forged);
+    expect(result.topTen).toEqual([]);
+    expect(result.watchlistTen).toEqual([]);
+    expect(result.queue).toHaveLength(22);
     expect(result.hasApprovedRoster).toBe(false);
   });
 });

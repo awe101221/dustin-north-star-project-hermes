@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { BestIdeasDashboard, RankedBestIdea } from "@/lib/best-ideas";
 import type { Idea } from "@/lib/db/pipeline";
+import { isModelStale } from "@/lib/model-freshness";
 import { bareSymbol, clamp, toRecord } from "@/lib/utils";
 
 const DAY = 86_400_000;
@@ -489,7 +490,7 @@ export function buildChallengerBoard({ dashboard, ideas, now = new Date().toISOS
     const gateReasons = missing.map((field) => `Missing or invalid ${field}`);
     if (meta.evidenceGrade === "C" || meta.evidenceGrade === "D") gateReasons.push("Evidence must reach grade A or B");
     const evidenceBlocked = gateReasons.length > 0;
-    const stale = meta.modelAsOf !== null && stamp - Date.parse(meta.modelAsOf) >= 45 * DAY;
+    const stale = meta.modelAsOf !== null && isModelStale(meta.modelAsOf, stamp, 45);
     const event = meta.nextEventAt !== null && Date.parse(meta.nextEventAt) - stamp <= 14 * DAY;
     const reviewed = meta.reviewStatus === "reviewed" || meta.reviewStatus === "pm-approved";
     if (stale) gateReasons.push("Model is at least 45 days old");

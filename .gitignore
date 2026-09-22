@@ -31,3 +31,5 @@ supabase/.temp/
 # Python caches
 __pycache__/
 *.py[cod]
+.vercel/
+.env*

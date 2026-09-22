@@ -8,6 +8,9 @@ requires no migration. The navigation shortcut is `g d`.
 The first production state may show **No approved sleeve roster yet**. That is
 intentional. The page still renders mandate, taxonomy, valuation playbooks, and
 workflow. Names, ranks, returns, and membership are never invented in code.
+V1 is explicitly empty-only: it has no privileged approved-roster input and does
+not claim to support approved-state rendering. A later reviewed publication path
+must enforce at most 10 entries per lane before approved rows can render.
 
 ## Authority
 
@@ -16,8 +19,11 @@ workflow. Names, ranks, returns, and membership are never invented in code.
   is untrusted for membership: `POST /api/agent/ideas` accepts unrestricted JSON,
   so `membershipAuthority: "dustin-approved"` on an idea record cannot authorize
   roster membership.
-- Thematic mapping or Capital Line passage can only produce `candidate` or
-  `monitor` states. A 15% miss is not a membership veto.
+- Thematic mapping or a metadata-only hurdle indication can only produce
+  `candidate`, `monitor`, or `tournament-candidate` consideration. Tournament
+  admission requires one-ticker Underwriter → independent Evidence & Risk
+  Reviewer → North Star PM review, with Dustin retaining final authority, and a
+  privileged immutable publication.
 - This page cannot change core 10 + 10 membership, position size, or trades.
 - Current core 10 + 10 members are excluded from the sleeve roster so the sleeve
   cannot silently mutate the canonical list.
@@ -25,10 +31,14 @@ workflow. Names, ranks, returns, and membership are never invented in code.
 ## Gates
 
 - Strict five-year Capital Line: modeled 5-year expected IRR **greater than** 12%.
-- 10+10 rank: best certified five-year price-only opportunities found so far.
-  A name is not kept off the list for missing 15% when it clears the greater-than-12% door and beats a weaker name already on it.
-  name already on it. Dustin still approves any roster write.
-- Evidence grades A/B can clear; C/D or missing grades block.
+- The five-year price-only tournament door is the same greater-than-12% Capital Line, not a separate 15% floor.
+  A 14% name clears that door. Rank by the best certified opportunities found so far.
+  A pass does not write the roster. Dustin still approves any roster write.
+- Ten-year outputs are historical context only. They cannot drive admission,
+  rerank, or displacement.
+- Every row sourced only from agent-writable `hermes_ideas.metadata.aiRegime`
+  remains unreviewed and evidence-blocked. Self-declared A/B grades or
+  `reviewed` / `pm-approved` labels cannot create a positive `clear` state.
 - Models expire at 45 days; events within 14 days or already passed require refresh.
 - QQQ remains the default when evidence is stale, incomplete, inconsistent, or
   noncanonical.
@@ -37,8 +47,10 @@ workflow. Names, ranks, returns, and membership are never invented in code.
 
 Forward value is core/base business value + evidence-weighted transition
 economics + milestone/probability-discounted option value, with reverse
-expectations and explicit capex, financing, dilution, and downside. History is a
-base-rate anchor, not the sole forecast. TAM-only value is forbidden.
+expectations and explicit capex, financing, dilution, and downside. A nonempty
+`valuationArchetype` and asserted IRRs are metadata completeness, not acceptance
+or evidence that this valuation contract was performed. History is a base-rate
+anchor, not the sole forecast. TAM-only value is forbidden.
 
 ## Metadata contract
 
@@ -55,22 +67,39 @@ company name, tags, or score.
 | `valuationArchetype` | Nonempty playbook label, typically `core-plus-transition-plus-option`. |
 | `themeFit` | Fraction or percentage from 0 through 100%. |
 | `monetizationStage` | Optional stage string. |
-| `evidenceGrade` | `A`, `B`, `C`, or `D`. Only A and B can clear. |
+| `evidenceGrade` | Informational self-declared `A`, `B`, `C`, or `D`; it cannot clear an idea-metadata row. |
 | `modelAsOf` | ISO date or timestamp with explicit timezone. |
 | `nextEventAt` | ISO date/timestamp with timezone, or explicit `null`. |
-| `reviewStatus` | `reviewed` or `pm-approved` can clear review. |
-| `sleeveStatus` | `candidate`, `monitor`, `tournament`, `top10`, or `watchlist10`. The last two are ignored without Dustin approval. |
+| `reviewStatus` | Informational claim only. `reviewed` or `pm-approved` in idea metadata cannot clear review. |
+| `sleeveStatus` | `candidate`, `monitor`, `tournament-candidate`, `top10`, or `watchlist10`. Legacy `tournament` is downgraded to `tournament-candidate`; the last two are ignored without privileged publication. |
 | `sleeveRank` | Optional positive integer. |
-| `fiveYearExpectedIrr` | Modeled annualized 5-year return. |
-| `tenYearExpectedIrr` | Modeled annualized 10-year return. |
+| `fiveYearExpectedIrr` | Asserted annualized five-year **price-only** return on `modelAsOf`; both metadata comparisons use this same value and date. It remains unreviewed until privileged publication. |
+| `tenYearExpectedIrr` | Optional historical-context output; never a gate. |
 | `requiredFiveYearIrr` | Optional; effective hurdle is at least the 12% Capital Line. |
-| `requiredTenYearIrr` | Optional context. Ten-year output cannot admit, rank, or displace. |
+| `requiredTournamentFiveYearIrr` | Optional; effective five-year tournament door is the greater-than-12% Capital Line. A stored 15% floor is not required. |
 | `hurdlePrice` | Optional positive price. |
-| `membershipAuthority` | Exact `dustin-approved` is required for sleeve 10 + 10. |
+| `membershipAuthority` | Informational and untrusted. Even `dustin-approved` cannot authorize membership from idea metadata. |
+| `returnBasis` | Exact `five-year-price-only`; any other value makes metadata incomplete. |
+| `qqqComparisonAsOf` | Must normalize to the same instant as `modelAsOf`. |
+| `probabilityWeighting` | Exact `bear-base-bull`. |
+| `dividendsIncluded` | Exact `false`; dividend-inclusive returns are noncanonical. |
+| `valuationContract` | All five booleans must be true: `coreBaseValue`, `transitionEconomics`, `probabilityDiscountedOptionValue`, `reverseExpectations`, and `capexFinancingDilutionDownside`. These remain self-declared metadata, not review authority. |
 
 Return units follow the Challenger board: absolute numbers greater than 1 are
 percentage points; `-1` through `1` are fractions.
 
-A sealed thematic tournament is not rendered until independently reviewed
-hash-verified provenance exists. Publication of candidate or roster data is a
-separate reviewed task.
+A positive `clear`, Capital Line, tournament, or roster-eligible state requires a
+privileged immutable publication that binds the reviewed content, provenance,
+content hash, and as-of date. The publication path must enforce a maximum of 10
+entries in each sleeve lane. A sealed thematic tournament is not rendered until
+that independently reviewed hash-verified provenance exists. Publication of
+candidate or roster data is a separate reviewed task.
+
+## Rollback
+
+This remediation changes read-only projection, copy, and tests only; it adds no
+migration or database write. To roll it back, revert the remediation commit,
+rerun `npm run check`, and verify `/ai-regime` plus the navigation entry on the
+Vercel preview. No database rollback is required. Reverting to the original
+implementation restores known fail-open policy defects, so production rollback
+should prefer disabling/removing the route until a corrected change is reviewed.

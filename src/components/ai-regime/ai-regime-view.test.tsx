@@ -47,9 +47,20 @@ const idea: Idea = {
       fiveYearExpectedIrr: 0.19,
       tenYearExpectedIrr: 0.17,
       requiredFiveYearIrr: 0.12,
-      requiredTenYearIrr: 0.15,
+      requiredTournamentFiveYearIrr: 0.15,
       hurdlePrice: 40,
       membershipAuthority: "dustin-approved",
+      returnBasis: "five-year-price-only",
+      qqqComparisonAsOf: "2026-09-10T00:00:00Z",
+      probabilityWeighting: "bear-base-bull",
+      dividendsIncluded: false,
+      valuationContract: {
+        coreBaseValue: true,
+        transitionEconomics: true,
+        probabilityDiscountedOptionValue: true,
+        reverseExpectations: true,
+        capexFinancingDilutionDownside: true,
+      },
     },
   },
   stageChangedAt: "2026-09-01T00:00:00Z",
@@ -79,6 +90,8 @@ describe("AI Regime view", () => {
     expect(markup).toContain("hidden beneficiaries");
     expect(markup).toContain("fallen names");
     expect(markup).toContain("12%");
+    expect(markup).toContain("five-year price-only tournament hurdle");
+    expect(markup).toContain("10-year outputs are historical context only");
     expect(markup).not.toContain("NVDA");
   });
 
@@ -86,6 +99,34 @@ describe("AI Regime view", () => {
     const markup = render([idea]);
     expect(markup).toContain("No approved sleeve roster yet");
     expect(markup).toContain("OK");
+    expect(markup).toContain("metadata complete · unreviewed");
+    expect(markup).toContain("evidence blocked");
+    expect(markup).not.toContain(">clear<");
+    expect(markup).toContain("Metadata evidence");
+    expect(markup).toContain("Model as of");
+    expect(markup).toContain("Next event");
+    expect(markup).toContain("Valuation archetype");
+    expect(markup).toContain("5y asserted price-only IRR");
+    expect(markup).toContain("Effective Capital Line");
+    expect(markup).toContain("Effective tournament hurdle");
+    expect(markup).toContain("Why own instead of QQQ?");
+    expect(markup).toContain("Falsifier / downside");
+    expect(markup).toContain("Next review trigger");
+  });
+
+  it("labels untrusted tournament claims as tournament candidates", () => {
+    const tournamentCandidate = {
+      ...idea,
+      metadata: {
+        aiRegime: {
+          ...(idea.metadata.aiRegime as Record<string, unknown>),
+          sleeveStatus: "tournament",
+        },
+      },
+    };
+    const markup = render([tournamentCandidate]);
+    expect(markup).toContain("tournament candidate");
+    expect(markup).not.toContain(">tournament<");
   });
 
   it("renders evidence, freshness, and monitoring state without inventing a tournament", () => {

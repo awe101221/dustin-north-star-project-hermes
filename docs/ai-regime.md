@@ -30,9 +30,9 @@ must enforce at most 10 entries per lane before approved rows can render.
 
 ## Gates
 
-- Strict five-year Capital Line: modeled 5-year expected IRR **greater than** 12%.
-- Separate five-year price-only thematic tournament hurdle: modeled 5-year
-  expected IRR **at least** 15%, on the same as-of date and basis as Capital Line.
+- Strict five-year Capital Line: modeled 5-year expected IRR **greater than** 15%. This is the alpha line versus QQQ, not membership.
+- 10+10 entry hurdle: modeled 5-year expected IRR **greater than** 12%.
+- The tournament has no IRR admission floor. It is where names are considered for the 10+10 and watched for price, earnings, or an announcement, for both Core and the AI sleeve.
 - Ten-year outputs are historical context only. They cannot drive admission,
   rerank, or displacement.
 - Every row sourced only from agent-writable `hermes_ideas.metadata.aiRegime`
@@ -75,7 +75,7 @@ company name, tags, or score.
 | `fiveYearExpectedIrr` | Asserted annualized five-year **price-only** return on `modelAsOf`; both metadata comparisons use this same value and date. It remains unreviewed until privileged publication. |
 | `tenYearExpectedIrr` | Optional historical-context output; never a gate. |
 | `requiredFiveYearIrr` | Optional; effective hurdle is at least the 12% Capital Line. |
-| `requiredTournamentFiveYearIrr` | Optional; effective five-year tournament hurdle is at least 15%. |
+| `requiredTournamentFiveYearIrr` | Optional; effective five-year tournament door is the greater-than-12% Capital Line. A stored 15% floor is not required. |
 | `hurdlePrice` | Optional positive price. |
 | `membershipAuthority` | Informational and untrusted. Even `dustin-approved` cannot authorize membership from idea metadata. |
 | `returnBasis` | Exact `five-year-price-only`; any other value makes metadata incomplete. |

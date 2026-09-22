@@ -197,6 +197,21 @@ describe("10 + 10 challenger board", () => {
     expect(board.candidates.find((x) => x.ticker === "PASSED")?.gateStatus).toBe("pending refresh");
   });
 
+  it("lets a 14% name enter when it beats a weaker incumbent", () => {
+    const weakBoard = snapshotToDashboard(normalizeBestIdeasSnapshot({
+      asOf: "2026-09-10T00:00:00Z",
+      topTen: [{ ticker: "NAS:WEAK", modeledReturn: 0.06, score: 40 }],
+      watchlistTen: [{ ticker: "WEAKER", modeledReturn: 0.05, score: 30 }],
+    }));
+    const board = buildChallengerBoard({
+      dashboard: weakBoard,
+      now: "2026-09-14T12:00:00Z",
+      ideas: [idea({ ticker: "FOURTEEN", metadata: challengerMetadata({ expectedIrr: 0.14, requiredIrr: 0.15 }) })],
+    });
+    expect(board.candidates[0]?.disposition).toBe("first alternate");
+    expect(board.candidates[0]?.requiredIrr).toBe(0.15);
+  });
+
   it("uses the admission taxonomy without silently admitting a candidate", () => {
     const board = buildChallengerBoard({
       dashboard: dashboard(),

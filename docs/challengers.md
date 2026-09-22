@@ -9,6 +9,7 @@ The page also surfaces the latest independently reviewed PM tournament ahead of 
 general candidate queue. Tournament rank is preserved separately from current portfolio
 posture: an owned security can remain the reviewed `first alternate` while its live idea
 card correctly stays in `owned-position review`. Neither label changes the 10 + 10.
+The tournament is where names are considered for the 10 + 10, for both Core and the AI sleeve. It also watches contenders and names that have fallen out, for a price move, earnings, or an announcement that could put them in. There is no IRR floor to be watched. Entry into the 10 + 10 is greater than 12%. Capital Line is greater than 15% and is the alpha line versus QQQ, not membership. A pass does not displace anyone. Dustin approves every roster write.
 
 ## Tournament synchronization
 
@@ -56,7 +57,7 @@ Legacy ideas without this object remain visible with blocked evidence.
 | --- | --- |
 | `discoveryLane` | Nonempty source-lane string, trimmed and lowercased, e.g. `quality-drawdown` or `estimate-inflection`. Missing values display as `unclassified` and block review. |
 | `expectedIrr` | Modeled annualized return. Fraction, percentage number, numeric string, or percent string. |
-| `requiredIrr` | Positive annualized return hurdle, in the same units. Effective hurdle is at least 15%; missing/invalid values block review. |
+| `requiredIrr` | Positive annualized return stored with the packet. The tournament has no 12% or 15% admission floor. 10+10 entry is greater than 12%. Capital Line is greater than 15%. |
 | `hurdlePrice` | Positive price at the required return, in the same quote currency as `currentPrice`. |
 | `currentPrice` | Positive recorded model price. This is not a live quote. |
 | `evidenceGrade` | `A`, `B`, `C`, or `D` (case insensitive). Only A and B clear evidence. Unknown grades are missing evidence. |

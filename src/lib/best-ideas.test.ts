@@ -156,9 +156,9 @@ describe("best ideas ranking", () => {
 
   describe("fail-closed Capital Line", () => {
     it.each([
-      ["below", 0.119999, []],
-      ["equal", 0.12, []],
-      ["above", 0.120001, ["MELI"]],
+      ["below", 0.149999, []],
+      ["equal", 0.15, []],
+      ["above", 0.150001, ["MELI"]],
     ])("uses a strict > hurdle at the %s boundary", (_label, modeledReturn, expected) => {
       expect(capitalTickers(capitalSnapshot({ modeledReturn }))).toEqual(expected);
     });
@@ -210,7 +210,7 @@ describe("best ideas ranking", () => {
       expect(capitalTickers(capitalSnapshot({ qqqLine: "below", modeledReturn: 0.13 }))).toEqual([]);
     });
 
-    it("requires the canonical model hurdle to equal the fixed 12% Capital Line", () => {
+    it("requires the canonical model hurdle to equal the 15% Capital Line", () => {
       const model = getCompanyModel("MELI")!;
       expect(capitalTickers(
         capitalSnapshot({ modeledReturn: 0.11 }),

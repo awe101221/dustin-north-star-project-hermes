@@ -51,9 +51,10 @@ describe("Best Ideas Capital Line", () => {
     expect(markup).toContain("Clears Capital Line · eligible for incremental research capital (1)");
     expect(markup).toContain("Ranked only · does not clear Capital Line (2)");
     expect(markup).toContain("The 10 + 10 ranks the best current options; it is not automatically a buy list.");
-    expect(markup).toContain("12% modeled 5-year return is the Capital Line research gate");
-    expect(markup).toContain("15% is the separate challenger admission hurdle");
-    expect(markup).toContain("neither is trade authorization or proof of the 10-year objective");
+    expect(markup).toContain("15% modeled 5-year return is the Capital Line");
+    expect(markup).toContain("not membership");
+    expect(markup).toContain("12% is the hurdle to enter");
+    expect(markup).toContain("Neither rank nor Capital Line is trade authorization");
     expect(markup).toContain("Model &amp; price baseline");
     expect(markup).toContain("Ranking &amp; price refresh");
     expect(markup).not.toContain("capital worthy");

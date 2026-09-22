@@ -154,7 +154,7 @@ function CapitalLinePanel({ dashboard, compact = false }: { dashboard: BestIdeas
           <span className="eyebrow text-gold">Capital Line</span>
           <div className="h-px flex-1 bg-gold/60" />
         </div>
-        <p className="text-[11px] leading-5 text-muted">12% modeled 5-year return is the Capital Line research gate; 15% is the separate challenger admission hurdle, and neither is trade authorization or proof of the 10-year objective. A company below the line can remain in the ranked 10 + 10 while QQQ stays the better capital default.</p>
+        <p className="text-[11px] leading-5 text-muted">15% modeled 5-year return is the Capital Line, the alpha line versus QQQ, not membership. 12% is the hurdle to enter the ranked 10 + 10. The tournament watches names below that for price, earnings, or an announcement. Neither rank nor Capital Line is trade authorization.</p>
       </CardContent>
     </Card>
   );
@@ -197,7 +197,7 @@ export function BestIdeasView({ dashboard, compact = false, revisitResearch = {}
       <CapitalLinePanel dashboard={dashboard} compact={compact} />
 
       <Link href="/challengers" className="panel flex min-h-11 flex-wrap items-center justify-between gap-2 p-4 hover:border-cyan/40 focus-visible:outline-2 focus-visible:outline-cyan">
-        <span><span className="block text-[14px] font-semibold text-cyan">10 + 10 Challenger Board</span><span className="mt-1 block text-[12px] text-muted">Review challengers against the incumbents, the 15% admission hurdle, and evidence gates.</span></span>
+        <span><span className="block text-[14px] font-semibold text-cyan">10 + 10 Challenger Board</span><span className="mt-1 block text-[12px] text-muted">Find names that can replace a weaker current name, and watch fallen names for a return on price, earnings, or a material announcement.</span></span>
         <ArrowUpRight aria-hidden="true" className="size-4 text-cyan" />
       </Link>
       <Link href="/ai-regime" className="panel flex min-h-11 flex-wrap items-center justify-between gap-2 p-4 hover:border-cyan/40 focus-visible:outline-2 focus-visible:outline-cyan">

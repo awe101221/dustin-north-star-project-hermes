@@ -88,9 +88,9 @@ describe("AI Regime view", () => {
     expect(markup).toContain("not a trade recommendation");
     expect(markup).toContain("core/base business value");
     expect(markup).toContain("hidden beneficiaries");
-    expect(markup).toContain("15%");
     expect(markup).toContain("12%");
-    expect(markup).toContain("five-year price-only tournament hurdle");
+    expect(markup).toContain("15%");
+    expect(markup).toContain("no IRR floor");
     expect(markup).toContain("10-year outputs are historical context only");
     expect(markup).not.toContain("NVDA");
   });

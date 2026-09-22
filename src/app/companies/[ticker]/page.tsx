@@ -140,7 +140,7 @@ export default async function CompanyPage({ params }: { params: Promise<{ ticker
                     {u.triggerPierced ? <Badge variant="neg">trigger pierced</Badge> : null}
                     {u.respawn ? <Badge variant="warn">re-underwrite</Badge> : null}
                     <span className="num flex w-full flex-wrap gap-x-3 gap-y-1 sm:ml-auto sm:w-auto">
-                      <span>IRR <b className={(u.expectedIrr ?? 0) >= 0.15 ? "text-pos" : ""}>{fmtPct(u.expectedIrr)}</b></span>
+                      <span>IRR <b className={(u.expectedIrr ?? 0) > 0.15 ? "text-pos" : ""}>{fmtPct(u.expectedIrr)}</b></span>
                       <span>@quote <b>{fmtPct(u.irrAtQuote)}</b></span>
                       <span>MoS <b>{u.mos !== null ? `${u.mos.toFixed(2)}x` : "—"}</b></span>
                       <span>down <b className="text-neg">{fmtPct(u.downside, 0)}</b></span>

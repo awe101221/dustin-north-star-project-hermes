@@ -42,7 +42,7 @@ export const SCREEN_PRESETS: Array<{ id: string; name: string; description: stri
   {
     id: "hurdle-buys",
     name: "Hurdle-clearing BUYs",
-    description: "Latest memos with BUY/BUY-MORE and ≥15% expected IRR, ranked by IRR.",
+    description: "Latest memos with BUY/BUY-MORE and greater than 15% expected IRR, ranked by IRR.",
     spec: { ...DEFAULT_SCREEN },
   },
   {

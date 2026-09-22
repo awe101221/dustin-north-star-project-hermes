@@ -37,7 +37,7 @@ export function AiRegimeView({ module }: { module: AiRegimeModule }) {
     <div className="space-y-5">
       <section className="rounded-lg border border-gold/30 bg-gold-soft/30 p-4 sm:p-5" aria-label="Mandate and guardrails">
         <h2 className="flex items-center gap-2 text-[16px] font-semibold text-gold"><Cpu aria-hidden="true" className="size-5" />Mandate and guardrails</h2>
-        <p className="mt-2 text-[12px] leading-5 text-foreground-secondary">This module does not replace the canonical 10 + 10 or `/challengers`. Only explicit Dustin approval through a privileged publication can assign sleeve Top 10 or Watchlist 10. Thematic mapping or metadata-only hurdle indications can only create candidate, monitor, or tournament candidate states. Strict five-year price-only Capital Line is greater than 12%. The separate five-year price-only tournament hurdle is at least 15% on the same as-of date and basis. 10-year outputs are historical context only and cannot drive admission, rerank, or displacement. QQQ remains the default for metadata-only rows and whenever evidence is stale, incomplete, inconsistent, or noncanonical.</p>
+        <p className="mt-2 text-[12px] leading-5 text-foreground-secondary">This module does not replace the canonical 10 + 10 or `/challengers`. Only explicit Dustin approval through a privileged publication can assign sleeve Top 10 or Watchlist 10. The sleeve tournament is where names are considered for the sleeve 10 + 10 and watched for price, earnings, or an announcement that could put them in. There is no IRR floor to be watched. Entry is greater than 12%. Capital Line is greater than 15% and is not membership. 10-year outputs are historical context only and cannot drive admission, rerank, or displacement. QQQ remains the default for metadata-only rows.</p>
         <p className="mt-2 text-[12px] leading-5 text-muted">No names, ranks, returns, or membership are invented in code. This page never changes the portfolio, sizes a position, or authorizes a trade.</p>
       </section>
 
@@ -103,7 +103,7 @@ export function AiRegimeView({ module }: { module: AiRegimeModule }) {
             <Detail label="10y historical context">{fmtPct(row.tenYearExpectedIrr)}</Detail>
             <Detail label="Hurdle price">{fmtPrice(row.hurdlePrice)}</Detail>
             <Detail label="Effective Capital Line">Strictly greater than {fmtPct(row.requiredFiveYearIrr)}</Detail>
-            <Detail label="Effective tournament hurdle">At least {fmtPct(row.requiredTournamentFiveYearIrr)} on the same 5y price-only basis</Detail>
+            <Detail label="Effective tournament hurdle">Greater than {fmtPct(row.requiredTournamentFiveYearIrr)} on the same 5y price-only basis</Detail>
             <Detail label="Canonical basis">{row.returnBasis ?? "Missing"} · {row.probabilityWeighting ?? "missing weighting"} · {row.dividendsIncluded === false ? "dividends excluded" : "invalid dividend basis"}</Detail>
             <Detail label="Valuation contract">{row.valuationContractComplete ? "Metadata complete; unreviewed" : "Incomplete"}</Detail>
             <Detail label="Why own instead of QQQ?">{row.whyBeatQqq || "Missing"}</Detail>

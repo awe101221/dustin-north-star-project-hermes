@@ -4,7 +4,6 @@ import { isModelStale } from "@/lib/model-freshness";
 import { bareSymbol, toRecord } from "@/lib/utils";
 
 export { CAPITAL_LINE_HURDLE };
-export const AI_REGIME_TOURNAMENT_HURDLE = 0.15;
 export const AI_REGIME_MAX_LANE_SIZE = 10;
 const DAY = 86_400_000;
 
@@ -189,13 +188,12 @@ function parseRow(idea: Idea, nowMs: number): AiRegimeRow | null {
   const requiredFiveYearIrr = requiredFiveYear !== null && requiredFiveYear > CAPITAL_LINE_HURDLE
     ? requiredFiveYear
     : CAPITAL_LINE_HURDLE;
-  const requiredTournamentFiveYearIrr = requiredTournamentFiveYear !== null
-    && requiredTournamentFiveYear > AI_REGIME_TOURNAMENT_HURDLE
+  const requiredTournamentFiveYearIrr = requiredTournamentFiveYear !== null && requiredTournamentFiveYear > 0
     ? requiredTournamentFiveYear
-    : AI_REGIME_TOURNAMENT_HURDLE;
+    : 0;
   const metadataMeetsCapitalLine = fiveYearExpectedIrr !== null && fiveYearExpectedIrr > requiredFiveYearIrr;
   const metadataMeetsTournamentHurdle = fiveYearExpectedIrr !== null
-    && fiveYearExpectedIrr >= requiredTournamentFiveYearIrr;
+    && fiveYearExpectedIrr > requiredTournamentFiveYearIrr;
   const clearsCapitalLine = false;
   const clearsTournamentHurdle = false;
   const sleeveStatus: AiRegimeSleeveStatus = requestedSleeveStatus && requestedSleeveStatus !== "top10" && requestedSleeveStatus !== "watchlist10"

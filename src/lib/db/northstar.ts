@@ -31,7 +31,7 @@ export const DEFAULT_MANDATE: Mandate = {
   horizonYears: 10,
   hurdleIrr: 0.15,
   rules: [
-    { id: "hurdle", title: "15% expected IRR hurdle on every new underwrite", kind: "gate" },
+    { id: "hurdle", title: "15% Capital Line on every new underwrite", kind: "gate" },
     { id: "qqq-alt", title: "Every position must state why it beats QQQ and what makes QQQ the better hold", kind: "gate" },
     { id: "falsifier", title: "No thesis without a falsifier and a re-underwrite trigger", kind: "gate" },
     { id: "human", title: "Dustin has final authority on sizing, trades and broker actions", kind: "process" },

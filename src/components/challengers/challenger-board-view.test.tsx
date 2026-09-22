@@ -116,7 +116,8 @@ describe("Challenger Board view", () => {
   it("shows the hurdle, incumbent comparisons, evidence gate, and workflow links", () => {
     const markup = renderToStaticMarkup(<ChallengerBoardView board={board()} />);
     expect(markup).toContain("10 + 10 Challenger Board");
-    expect(markup).toContain("15% admission hurdle");
+    expect(markup).toContain("Replacement watch");
+    expect(markup).toContain("fallen out");
     expect(markup).toContain("QQQ remains the default");
     expect(markup).toContain("Weakest Top 10");
     expect(markup).toContain("Weakest Watchlist 10");

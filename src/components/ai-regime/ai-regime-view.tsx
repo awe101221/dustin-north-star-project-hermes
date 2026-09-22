@@ -42,7 +42,7 @@ function RosterCard({ row }: { row: AiRegimeRow }) {
       <Detail label="5y expected IRR"><span className="num font-semibold">{fmtPct(row.fiveYearExpectedIrr)}</span></Detail>
       <Detail label="10y expected IRR"><span className="num font-semibold">{fmtPct(row.tenYearExpectedIrr)}</span></Detail>
       <Detail label="Capital Line">{row.clearsCapitalLine ? "Clears >12%" : "Does not clear >12%"}</Detail>
-      <Detail label="Tournament hurdle">{row.clearsTournamentHurdle ? "Clears 15%" : "Does not clear 15%"}</Detail>
+      <Detail label="Rank basis">Vs weakest current name</Detail>
     </dl>
   </article>;
 }
@@ -59,7 +59,7 @@ export function AiRegimeView({ module }: { module: AiRegimeModule }) {
     <div className="space-y-5">
       <section className="rounded-lg border border-gold/30 bg-gold-soft/30 p-4 sm:p-5" aria-label="Mandate and guardrails">
         <h2 className="flex items-center gap-2 text-[16px] font-semibold text-gold"><Cpu aria-hidden="true" className="size-5" />Mandate and guardrails</h2>
-        <p className="mt-2 text-[12px] leading-5 text-foreground-secondary">This module does not replace the canonical 10 + 10 or `/challengers`. Only explicit Dustin approval can assign sleeve Top 10 or Watchlist 10. Thematic mapping or hurdle passage can only create candidate, monitor, or tournament states. Strict five-year Capital Line is greater than 12%. Separate ten-year thematic tournament hurdle is 15%. QQQ remains the default when evidence is stale, incomplete, inconsistent, or noncanonical.</p>
+        <p className="mt-2 text-[12px] leading-5 text-foreground-secondary">This module does not replace the canonical 10 + 10 or `/challengers`. Only explicit Dustin approval can assign sleeve Top 10 or Watchlist 10. Thematic mapping or Capital Line passage can only create candidate or monitor states. The sleeve tournament finds names that can replace a weaker sleeve name, and watches fallen names for a return on price, earnings, or a material announcement. Strict five-year Capital Line is greater than 12% and is not membership. A name is not kept off it for missing 15% when it clears the greater-than-12% door and beats a weaker name already on it. QQQ remains the default when evidence is stale, incomplete, inconsistent, or noncanonical.</p>
         <p className="mt-2 text-[12px] leading-5 text-muted">No names, ranks, returns, or membership are invented in code. This page never changes the portfolio, sizes a position, or authorizes a trade.</p>
       </section>
 

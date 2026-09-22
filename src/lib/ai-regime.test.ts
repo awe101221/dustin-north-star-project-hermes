@@ -3,7 +3,6 @@ import { normalizeBestIdeasSnapshot, snapshotToDashboard } from "@/lib/best-idea
 import type { Idea } from "@/lib/db/pipeline";
 import {
   AI_REGIME_DOMAINS,
-  AI_REGIME_TOURNAMENT_HURDLE,
   CAPITAL_LINE_HURDLE,
   buildAiRegimeModule,
 } from "@/lib/ai-regime";
@@ -108,12 +107,11 @@ describe("AI Regime sleeve module", () => {
     expect(above.queue[0]?.clearsCapitalLine).toBe(true);
   });
 
-  it("uses a separate ten-year thematic tournament hurdle of 15%", () => {
-    expect(AI_REGIME_TOURNAMENT_HURDLE).toBe(0.15);
-    const below = moduleFor([idea({ ticker: "NAS:LO", metadata: aiRegime({ tenYearExpectedIrr: 0.1499 }) })]);
-    const atHurdle = moduleFor([idea({ ticker: "NAS:AT", metadata: aiRegime({ tenYearExpectedIrr: 0.15 }) })]);
-    expect(below.queue[0]?.clearsTournamentHurdle).toBe(false);
-    expect(atHurdle.queue[0]?.clearsTournamentHurdle).toBe(true);
+  it("does not use a 15% door to keep a better name off the sleeve", () => {
+    const below = moduleFor([idea({ ticker: "NAS:LO", metadata: aiRegime({ fiveYearExpectedIrr: 0.14, tenYearExpectedIrr: 0.1499, requiredTenYearIrr: 0.06 }) })]);
+    expect(below.queue[0]?.requiredTenYearIrr).toBe(0.06);
+    expect(below.queue[0]?.clearsCapitalLine).toBe(true);
+    expect(below.queue[0]).not.toHaveProperty("clearsTournamentHurdle");
   });
 
   it("does not promote thematic mapping or hurdle passage into sleeve 10+10 without Dustin approval", () => {

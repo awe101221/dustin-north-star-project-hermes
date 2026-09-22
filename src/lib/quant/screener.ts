@@ -31,7 +31,7 @@ export type ScreenSpec = {
 export const DEFAULT_SCREEN: ScreenSpec = {
   personas: [],
   verdicts: ["BUY", "BUY-MORE", "MAINTAIN"],
-  minExpectedIrr: 0.15,
+  minExpectedIrr: 0.12,
   held: "any",
   rankableOnly: false,
   sort: { key: "expectedIrr", dir: "desc" },
@@ -42,7 +42,7 @@ export const SCREEN_PRESETS: Array<{ id: string; name: string; description: stri
   {
     id: "hurdle-buys",
     name: "Hurdle-clearing BUYs",
-    description: "Latest memos with BUY/BUY-MORE and ≥15% expected IRR, ranked by IRR.",
+    description: "Latest memos with BUY/BUY-MORE and greater than 12% expected IRR, ranked by IRR.",
     spec: { ...DEFAULT_SCREEN },
   },
   {
@@ -60,7 +60,7 @@ export const SCREEN_PRESETS: Array<{ id: string; name: string; description: stri
   {
     id: "held-below-hurdle",
     name: "Held but below hurdle",
-    description: "Positions whose latest memo IRR no longer clears 15% — trim candidates.",
+    description: "Positions whose latest memo IRR no longer clears 12% — trim candidates.",
     spec: { held: "held", minExpectedIrr: null, sort: { key: "expectedIrr", dir: "asc" }, limit: 100, text: null },
   },
   {

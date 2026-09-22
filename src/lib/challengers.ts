@@ -3,7 +3,6 @@ import type { BestIdeasDashboard, RankedBestIdea } from "@/lib/best-ideas";
 import type { Idea } from "@/lib/db/pipeline";
 import { bareSymbol, clamp, toRecord } from "@/lib/utils";
 
-export const CHALLENGER_HURDLE = 0.15;
 const DAY = 86_400_000;
 export const CHALLENGER_DISPOSITIONS = ["admit", "first alternate", "owned-position review", "watch / price trigger", "reject"] as const;
 export type ChallengerDisposition = typeof CHALLENGER_DISPOSITIONS[number];
@@ -189,7 +188,7 @@ function parseMetadata(metadata: Record<string, unknown>): ChallengerMetadata {
   return {
     discoveryLane: text(raw.discoveryLane)?.toLowerCase() ?? "unclassified",
     expectedIrr: ratio(raw.expectedIrr),
-    requiredIrr: required !== null && required > 0 ? Math.max(CHALLENGER_HURDLE, required) : null,
+    requiredIrr: required !== null && required > 0 ? required : null,
     hurdlePrice: positive(raw.hurdlePrice),
     currentPrice: positive(raw.currentPrice),
     evidenceGrade: grade === "A" || grade === "B" || grade === "C" || grade === "D" ? grade : null,
@@ -254,8 +253,7 @@ function disposition(candidate: ChallengerMetadata, gate: ChallengerGate, owned:
   if (explicit === "reject") return explicit;
   if (owned || explicit === "owned-position review") return "owned-position review";
   if (explicit === "watch / price trigger") return explicit;
-  const qualifies = gate === "clear" && candidate.expectedIrr !== null && candidate.requiredIrr !== null
-    && candidate.expectedIrr >= candidate.requiredIrr && top === "above" && watch === "above";
+  const qualifies = gate === "clear" && candidate.expectedIrr !== null && top === "above" && watch === "above";
   if (qualifies) return explicit === "admit" && candidate.reviewStatus === "pm-approved" ? "admit" : "first alternate";
   if (gate === "clear" && watch === "below" && explicit !== "first alternate") return "reject";
   return "watch / price trigger";
@@ -341,7 +339,7 @@ function hasCompleteFrozenCandidate(candidate: ChallengerCandidate): boolean {
     || !exactHash(tournament.manifestHash) || tournament.publicationComplete !== true
     || !safePositive(tournament.acceptedReviewRunId)
     || !nonempty(tournament.acceptedReviewTaskId) || !nonempty(tournament.basis)
-    || !finite(tournament.expectedIrr) || !finite(tournament.requiredIrr) || (tournament.requiredIrr as number) < CHALLENGER_HURDLE
+    || !finite(tournament.expectedIrr) || !finite(tournament.requiredIrr) || (tournament.requiredIrr as number) <= 0
     || !finite(tournament.currentPrice) || (tournament.currentPrice as number) <= 0
     || !finite(tournament.hurdlePrice) || (tournament.hurdlePrice as number) <= 0
     || !Number.isSafeInteger(tournament.rank) || (tournament.rank as number) <= 0

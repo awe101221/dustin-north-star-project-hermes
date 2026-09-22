@@ -77,7 +77,7 @@ describe("AI Regime view", () => {
     expect(markup).toContain("not a trade recommendation");
     expect(markup).toContain("core/base business value");
     expect(markup).toContain("hidden beneficiaries");
-    expect(markup).toContain("15%");
+    expect(markup).toContain("fallen names");
     expect(markup).toContain("12%");
     expect(markup).not.toContain("NVDA");
   });

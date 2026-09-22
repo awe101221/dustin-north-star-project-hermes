@@ -16,8 +16,8 @@ workflow. Names, ranks, returns, and membership are never invented in code.
   is untrusted for membership: `POST /api/agent/ideas` accepts unrestricted JSON,
   so `membershipAuthority: "dustin-approved"` on an idea record cannot authorize
   roster membership.
-- Thematic mapping, Capital Line passage, or the 15% tournament hurdle can only
-  produce `candidate`, `monitor`, or `tournament` states.
+- Thematic mapping or Capital Line passage can only produce `candidate` or
+  `monitor` states. A 15% miss is not a membership veto.
 - This page cannot change core 10 + 10 membership, position size, or trades.
 - Current core 10 + 10 members are excluded from the sleeve roster so the sleeve
   cannot silently mutate the canonical list.
@@ -25,7 +25,9 @@ workflow. Names, ranks, returns, and membership are never invented in code.
 ## Gates
 
 - Strict five-year Capital Line: modeled 5-year expected IRR **greater than** 12%.
-- Separate ten-year thematic tournament hurdle: 15%.
+- 10+10 rank: best certified five-year price-only opportunities found so far.
+  A name is not kept off the list for missing 15% when it clears the greater-than-12% door and beats a weaker name already on it.
+  name already on it. Dustin still approves any roster write.
 - Evidence grades A/B can clear; C/D or missing grades block.
 - Models expire at 45 days; events within 14 days or already passed require refresh.
 - QQQ remains the default when evidence is stale, incomplete, inconsistent, or
@@ -62,7 +64,7 @@ company name, tags, or score.
 | `fiveYearExpectedIrr` | Modeled annualized 5-year return. |
 | `tenYearExpectedIrr` | Modeled annualized 10-year return. |
 | `requiredFiveYearIrr` | Optional; effective hurdle is at least the 12% Capital Line. |
-| `requiredTenYearIrr` | Optional; effective hurdle is at least 15%. |
+| `requiredTenYearIrr` | Optional context. Ten-year output cannot admit, rank, or displace. |
 | `hurdlePrice` | Optional positive price. |
 | `membershipAuthority` | Exact `dustin-approved` is required for sleeve 10 + 10. |
 

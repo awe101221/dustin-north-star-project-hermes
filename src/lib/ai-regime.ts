@@ -3,7 +3,6 @@ import type { Idea } from "@/lib/db/pipeline";
 import { bareSymbol, toRecord } from "@/lib/utils";
 
 export { CAPITAL_LINE_HURDLE };
-export const AI_REGIME_TOURNAMENT_HURDLE = 0.15;
 const DAY = 86_400_000;
 
 export const AI_REGIME_DOMAINS = [
@@ -46,7 +45,7 @@ export type AiRegimeRow = Idea & {
   fiveYearExpectedIrr: number | null;
   tenYearExpectedIrr: number | null;
   requiredFiveYearIrr: number;
-  requiredTenYearIrr: number;
+  requiredTenYearIrr: number | null;
   hurdlePrice: number | null;
   membershipAuthority: string | null;
   membershipBlockedReason: string | null;
@@ -54,7 +53,6 @@ export type AiRegimeRow = Idea & {
   missing: string[];
   gateReasons: string[];
   clearsCapitalLine: boolean;
-  clearsTournamentHurdle: boolean;
   qqqIsDefault: boolean;
 };
 
@@ -169,7 +167,6 @@ function parseRow(idea: Idea, nowMs: number): AiRegimeRow | null {
         ? "pending refresh"
         : "clear";
   const clearsCapitalLine = fiveYearExpectedIrr !== null && fiveYearExpectedIrr > CAPITAL_LINE_HURDLE;
-  const clearsTournamentHurdle = tenYearExpectedIrr !== null && tenYearExpectedIrr >= AI_REGIME_TOURNAMENT_HURDLE;
   const sleeveStatus: AiRegimeSleeveStatus = requestedSleeveStatus && requestedSleeveStatus !== "top10" && requestedSleeveStatus !== "watchlist10"
     ? requestedSleeveStatus
     : "candidate";
@@ -195,7 +192,7 @@ function parseRow(idea: Idea, nowMs: number): AiRegimeRow | null {
     fiveYearExpectedIrr,
     tenYearExpectedIrr,
     requiredFiveYearIrr: requiredFiveYear !== null && requiredFiveYear > CAPITAL_LINE_HURDLE ? requiredFiveYear : CAPITAL_LINE_HURDLE,
-    requiredTenYearIrr: requiredTenYear !== null && requiredTenYear > AI_REGIME_TOURNAMENT_HURDLE ? requiredTenYear : AI_REGIME_TOURNAMENT_HURDLE,
+    requiredTenYearIrr: requiredTenYear !== null && requiredTenYear > 0 ? requiredTenYear : null,
     hurdlePrice: positive(record.hurdlePrice),
     membershipAuthority,
     membershipBlockedReason,
@@ -203,7 +200,6 @@ function parseRow(idea: Idea, nowMs: number): AiRegimeRow | null {
     missing,
     gateReasons,
     clearsCapitalLine,
-    clearsTournamentHurdle,
     qqqIsDefault: gateStatus !== "clear" || !clearsCapitalLine,
   };
 }

@@ -124,14 +124,14 @@ export function ChallengerBoardView({ board }: { board: ChallengerBoard }) {
   const backlog = board.candidates.slice(VISIBLE_CANDIDATES);
   return <>
     <PageHeader eyebrow="Hermes · comparative underwriting" title="10 + 10 Challenger Board"
-      description="Challengers must earn a place against the current selections. QQQ remains the default until evidence, price and comparative review support a change."
+      description="Challengers earn a place by beating a weaker current name. The tournament also watches fallen names for a return on price, earnings, or a material announcement. QQQ remains the default."
       actions={<><Link href="/" className={workflowLink}>Current 10 + 10</Link><Link href="/quant" className={workflowLink}>Source with Quant <ArrowUpRight aria-hidden="true" className="size-3.5" /></Link></>}
       meta={<><span>As of {fmtDate(board.asOf)}</span><span>Research triage · not a trade recommendation</span></>} />
     <div className="space-y-5">
       <section className="rounded-lg border border-gold/30 bg-gold-soft/30 p-4 sm:p-5" aria-label="Admission standard">
-        <h2 className="flex items-center gap-2 text-[16px] font-semibold text-gold"><Scale aria-hidden="true" className="size-5" />15% admission hurdle</h2>
-        <p className="mt-2 text-[12px] leading-5 text-foreground-secondary">The candidate-specific required IRR can raise this minimum. Models expire at 45 days; events within 14 days or already passed require a refresh. First alternate is a research disposition. Admit requires an explicit PM-approved decision and clear gates.</p>
-        <p className="mt-2 text-[12px] leading-5 text-muted">This board does not add names to the 10 + 10, change positions, or authorize trades.</p>
+        <h2 className="flex items-center gap-2 text-[16px] font-semibold text-gold"><Scale aria-hidden="true" className="size-5" />Replacement watch</h2>
+        <p className="mt-2 text-[12px] leading-5 text-foreground-secondary">The tournament finds names that deserve a place in the 10 + 10 and can replace a weaker current name. It also watches possible contenders, and names that have fallen out, for a return on price, earnings, or a material announcement. A certified name enters that comparison when it beats the weakest current name on the same date and basis. Capital Line stays greater than 12% and is not membership. The admission door is greater than 12%, the same Capital Line. A 14% name is not rejected for missing 15%. A pass does not displace anyone. Dustin approves every roster write.</p>
+        <p className="mt-2 text-[12px] leading-5 text-muted">This board does not add names to the 10 + 10, change positions, or authorize trades. Models expire at 45 days; events within 14 days or already passed require a refresh.</p>
       </section>
       <LatestTournament board={board} />
       <section aria-label="Live candidate status" className="space-y-2">

@@ -8,8 +8,9 @@ import { bareSymbol } from "@/lib/utils";
 export const BEST_IDEAS_SNAPSHOT_TAG = "best-ideas-snapshot";
 export const HERMES_BEST_IDEAS_MANDATE =
   "Hermes-ranked Top 10 and Watchlist 10: the app exists to surface Dustin North Star Project Hermes's best current ideas to beat QQQ over 10 years.";
-export const QQQ_LINE_HURDLE_LABEL = "12% modeled 5y IRR hurdle";
-export const CAPITAL_LINE_HURDLE = 0.12;
+export const QQQ_LINE_HURDLE_LABEL = "15% modeled 5y IRR hurdle";
+export const CAPITAL_LINE_HURDLE = 0.15;
+export const TEN_PLUS_TEN_ENTRY_HURDLE = 0.12;
 export const CAPITAL_LINE_MAX_AGE_DAYS = 45;
 
 export type QqqLinePosition = "above" | "below";

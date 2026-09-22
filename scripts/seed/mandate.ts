@@ -10,9 +10,9 @@ export const MANDATE_SEED = {
   mission: "Beat QQQ over 10 years — compound capital above the Nasdaq-100 total return, after fees and taxes, without taking risks that can permanently impair the mission.",
   benchmark_symbol: "QQQ",
   horizon_years: 10,
-  hurdle_irr: 0.12,
+  hurdle_irr: 0.15,
   rules: [
-    { id: "hurdle-12", kind: "gate", title: "Greater than 12% expected 5-year IRR door on every new underwrite", detail: "Probability-weighted across bear/base/bull scenarios with explicit probabilities; canonical decimal ratios; math_must_work=true. This is the Capital Line, not a separate 15% door." },
+    { id: "hurdle-15", kind: "gate", title: "Greater than 15% expected 5-year IRR Capital Line on every new underwrite", detail: "This is the alpha line versus QQQ. The 10+10 entry hurdle is greater than 12%. The tournament has no IRR admission floor; it is where names are considered for 10+10 and watched for price, earnings, and announcements. Probability-weighted across bear/base/bull; math_must_work=true." },
     { id: "qqq-alternative", kind: "gate", title: "Every position states why it beats QQQ and what would make QQQ the better hold", detail: "The passive alternative is the null hypothesis. If the answer is 'it tracks the index', it does not earn an active slot." },
     { id: "falsifier", kind: "gate", title: "No thesis without a falsifier, a buy-consideration price and a re-underwrite trigger", detail: "Triggers are watched daily (trigger_watch_events); a pierced trigger opens a re-underwrite, never a silent hold." },
     { id: "downside-first", kind: "gate", title: "Underwrite the bear case first; downside is a scenario, not an adjective", detail: "downside_drawdown_pct is computed from the bear scenario, not asserted." },

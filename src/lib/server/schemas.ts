@@ -103,7 +103,7 @@ export const mandatePut = z.object({
   mission: z.string().min(1).max(2000),
   benchmark_symbol: z.string().min(1).max(12).default("QQQ"),
   horizon_years: z.number().int().min(1).max(50).default(10),
-  hurdle_irr: z.number().min(0).max(1).default(0.12),
+  hurdle_irr: z.number().min(0).max(1).default(0.15),
   rules: z.array(rule).default([]),
   kpis: z.array(kpi).default([]),
   sleeves: z.array(sleeve).default([]),

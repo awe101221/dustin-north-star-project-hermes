@@ -2,7 +2,7 @@ import { bareSymbol } from "@/lib/utils";
 
 export const CURRENT_10_PLUS_10_TICKERS = ["MELI", "NU", "META", "GOOGL", "APPF", "ACN", "CRDO", "TCEHY", "ANET", "TSM", "VRT", "AMKR", "MU", "CAMT", "MRVL", "ASML", "ONTO", "FORM", "GEV", "RXRX"] as const;
 export const COMPANY_MODEL_AS_OF = "2026-09-07T20:55:00.000Z";
-export const QQQ_MODEL_HURDLE = 0.12;
+export const QQQ_MODEL_HURDLE = 0.15;
 
 export type ScenarioName = "Bear" | "Base" | "Bull";
 

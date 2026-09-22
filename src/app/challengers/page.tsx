@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ChallengersPage() {
   const db = serverReadClient();
-  const header = <PageHeader eyebrow="Hermes · comparative underwriting" title="10 + 10 Challenger Board" description="Find replacements for weaker 10 + 10 names, and watch fallen names for a return on price, earnings, or a material announcement. Capital Line stays above 12%. QQQ remains the default." />;
+  const header = <PageHeader eyebrow="Hermes · comparative underwriting" title="10 + 10 Challenger Board" description="Find names to consider for the 10 + 10, and watch contenders and fallen names for price, earnings, or an announcement that could put them in. Entry hurdle is above 12%. Capital Line is above 15%. QQQ remains the default." />;
   if (!db) return <>{header}<NotConfigured what="the Dustin North Star Hermes brain" /></>;
   const result = await safeLoad(async () => {
     const [dashboard, ideas] = await Promise.all([getBestIdeasDashboard(db), getIdeas(db)]);

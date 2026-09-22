@@ -280,8 +280,8 @@ def _validate_packet(row: Dict[str, Any]) -> Dict[str, Any]:
         next_event_estimated = raw.get("nextEventEstimated")
         if next_event_estimated is not None and not isinstance(next_event_estimated, bool):
             raise ValueError("Tournament candidate next-event estimate flag is invalid")
-        if raw["requiredIrr"] < 0.12:
-            raise ValueError("Tournament candidate required IRR is below the 12% admission door")
+        if raw["requiredIrr"] <= 0:
+            raise ValueError("Tournament candidate required IRR must be positive")
         if not _text(raw.get("basis")):
             raise ValueError("Tournament candidate basis is unavailable")
         model_as_of = _candidate_date(raw.get("modelAsOf"), "Tournament candidate model date")

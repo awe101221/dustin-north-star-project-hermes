@@ -188,10 +188,9 @@ function parseRow(idea: Idea, nowMs: number): AiRegimeRow | null {
   const requiredFiveYearIrr = requiredFiveYear !== null && requiredFiveYear > CAPITAL_LINE_HURDLE
     ? requiredFiveYear
     : CAPITAL_LINE_HURDLE;
-  const requiredTournamentFiveYearIrr = requiredTournamentFiveYear !== null
-    && requiredTournamentFiveYear > CAPITAL_LINE_HURDLE
+  const requiredTournamentFiveYearIrr = requiredTournamentFiveYear !== null && requiredTournamentFiveYear > 0
     ? requiredTournamentFiveYear
-    : CAPITAL_LINE_HURDLE;
+    : 0;
   const metadataMeetsCapitalLine = fiveYearExpectedIrr !== null && fiveYearExpectedIrr > requiredFiveYearIrr;
   const metadataMeetsTournamentHurdle = fiveYearExpectedIrr !== null
     && fiveYearExpectedIrr > requiredTournamentFiveYearIrr;

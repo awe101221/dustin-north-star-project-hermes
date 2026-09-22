@@ -113,9 +113,9 @@ describe("AI Regime sleeve module", () => {
   });
 
   it("uses a strict five-year Capital Line greater than the effective declared hurdle", () => {
-    expect(CAPITAL_LINE_HURDLE).toBe(0.12);
-    const atHurdle = moduleFor([idea({ ticker: "NAS:EQ", metadata: aiRegime({ fiveYearExpectedIrr: 0.12 }) })]);
-    const above = moduleFor([idea({ ticker: "NAS:AB", metadata: aiRegime({ fiveYearExpectedIrr: 0.1201 }) })]);
+    expect(CAPITAL_LINE_HURDLE).toBe(0.15);
+    const atHurdle = moduleFor([idea({ ticker: "NAS:EQ", metadata: aiRegime({ fiveYearExpectedIrr: 0.15 }) })]);
+    const above = moduleFor([idea({ ticker: "NAS:AB", metadata: aiRegime({ fiveYearExpectedIrr: 0.1501 }) })]);
     const declared = moduleFor([idea({ ticker: "NAS:HI", metadata: aiRegime({ fiveYearExpectedIrr: 0.18, requiredFiveYearIrr: 0.2 }) })]);
     expect(atHurdle.queue[0]?.metadataMeetsCapitalLine).toBe(false);
     expect(above.queue[0]?.metadataMeetsCapitalLine).toBe(true);
@@ -124,19 +124,15 @@ describe("AI Regime sleeve module", () => {
     expect(above.queue[0]?.clearsCapitalLine).toBe(false);
   });
 
-  it("uses the same greater-than-12% door for the five-year tournament", () => {
-    const below = moduleFor([idea({ ticker: "NAS:LO", metadata: aiRegime({ fiveYearExpectedIrr: 0.12, tenYearExpectedIrr: 0.99, requiredTournamentFiveYearIrr: null }) })]);
-    const above = moduleFor([idea({ ticker: "NAS:AT", metadata: aiRegime({ fiveYearExpectedIrr: 0.1201, tenYearExpectedIrr: 0.01, requiredTournamentFiveYearIrr: null }) })]);
+  it("watches a name below 12% and does not use 15% as the tournament floor", () => {
+    const watched = moduleFor([idea({ ticker: "NAS:LO", metadata: aiRegime({ fiveYearExpectedIrr: 0.08, tenYearExpectedIrr: 0.99, requiredTournamentFiveYearIrr: null }) })]);
     const fourteen = moduleFor([idea({ ticker: "NAS:FT", metadata: aiRegime({ fiveYearExpectedIrr: 0.14, tenYearExpectedIrr: 0.01, requiredTournamentFiveYearIrr: null }) })]);
-    const declared = moduleFor([idea({ ticker: "NAS:HI", metadata: aiRegime({ fiveYearExpectedIrr: 0.14, requiredTournamentFiveYearIrr: 0.15 }) })]);
-    expect(below.queue[0]?.metadataMeetsTournamentHurdle).toBe(false);
-    expect(above.queue[0]?.metadataMeetsTournamentHurdle).toBe(true);
+    expect(watched.queue[0]?.metadataMeetsTournamentHurdle).toBe(true);
+    expect(watched.queue[0]?.requiredTournamentFiveYearIrr).toBe(0);
+    expect(watched.queue[0]?.metadataMeetsCapitalLine).toBe(false);
     expect(fourteen.queue[0]?.metadataMeetsTournamentHurdle).toBe(true);
-    expect(fourteen.queue[0]?.requiredTournamentFiveYearIrr).toBe(CAPITAL_LINE_HURDLE);
-    expect(declared.queue[0]?.metadataMeetsTournamentHurdle).toBe(false);
-    expect(declared.queue[0]?.requiredTournamentFiveYearIrr).toBe(0.15);
-    expect(above.queue[0]?.clearsTournamentHurdle).toBe(false);
-    expect(above.queue[0]?.tenYearExpectedIrr).toBe(0.01);
+    expect(fourteen.queue[0]?.metadataMeetsCapitalLine).toBe(false);
+    expect(fourteen.queue[0]?.clearsTournamentHurdle).toBe(false);
   });
 
   it("keeps metadata-only rows explicitly unreviewed and evidence-blocked despite forged review fields", () => {

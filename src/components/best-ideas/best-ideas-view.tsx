@@ -154,7 +154,7 @@ function CapitalLinePanel({ dashboard, compact = false }: { dashboard: BestIdeas
           <span className="eyebrow text-gold">Capital Line</span>
           <div className="h-px flex-1 bg-gold/60" />
         </div>
-        <p className="text-[11px] leading-5 text-muted">12% modeled 5-year return is the Capital Line research gate, not membership. Rank Core and the AI sleeve by the best opportunities found so far. A name is not kept off that list for missing 15% when it clears the greater-than-12% door and beats a weaker name already on it. Neither rank nor Capital Line is trade authorization or proof of the 10-year objective. A company below the line can remain in the ranked 10 + 10 while QQQ stays the better capital default.</p>
+        <p className="text-[11px] leading-5 text-muted">15% modeled 5-year return is the Capital Line, the alpha line versus QQQ, not membership. 12% is the hurdle to enter the ranked 10 + 10. The tournament watches names below that for price, earnings, or an announcement. Neither rank nor Capital Line is trade authorization.</p>
       </CardContent>
     </Card>
   );

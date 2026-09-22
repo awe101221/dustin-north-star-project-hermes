@@ -38,7 +38,7 @@ export function CompanyFinancialModelView({ model, rankedIdea, formerSelection =
             <Badge variant="outline">5-year model</Badge>
           </div>
           <CardTitle className="text-[15px]">Forward financial model</CardTitle>
-          <CardDescription className="mt-1 max-w-3xl">Bear, base, and bull assumptions tied to an explicit 12% QQQ hurdle. Scenario returns are research estimates, not targets or trade instructions.</CardDescription>
+          <CardDescription className="mt-1 max-w-3xl">Bear, base, and bull assumptions. The Capital Line is 15%. A name can enter the ranked 10 + 10 above 12% without clearing it. Scenario returns are research estimates, not targets or trade instructions.</CardDescription>
         </div>
         <div className="sm:ml-auto sm:text-right">
           <p className="eyebrow">Model refreshed</p>

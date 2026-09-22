@@ -30,8 +30,8 @@ must enforce at most 10 entries per lane before approved rows can render.
 
 ## Gates
 
-- Strict five-year Capital Line: modeled 5-year expected IRR **greater than** 15%. This is the alpha line versus QQQ, not membership.
-- 10+10 entry hurdle: modeled 5-year expected IRR **greater than** 12%.
+- Strict five-year Capital Line: modeled 5-year expected IRR **greater than** 15%. The Capital Line is populated only when that hurdle clears. It is the alpha line versus QQQ, not the door into the 10+10.
+- 10+10 entry: modeled 5-year expected IRR **greater than** 12%. A name does not have to clear the Capital Line to enter. From there the best names are ranked.
 - The tournament has no IRR admission floor. It is where names are considered for the 10+10 and watched for price, earnings, or an announcement, for both Core and the AI sleeve.
 - Ten-year outputs are historical context only. They cannot drive admission,
   rerank, or displacement.

@@ -71,7 +71,20 @@ export function AiRegimeView({ module }: { module: AiRegimeModule }) {
 
       <section className="panel p-4 sm:p-5" aria-label="Thematic Challenger Tournament">
         <h2 className="mb-2 text-[14px] font-semibold">Thematic Challenger Tournament</h2>
-        <p className="text-[12px] leading-5 text-foreground-secondary">No sealed AI Regime tournament is published. Idea metadata can request tournament candidate consideration only. Tournament admission requires one-ticker Underwriter → independent Evidence &amp; Risk Reviewer → North Star PM review with Dustin retaining final authority, then an immutable hash-verified publication. Admission cannot mutate the core 10 + 10.</p>
+        {module.tournament ? <>
+          <p className="text-[12px] leading-5 text-foreground-secondary">Reviewed watch only. A name here has a separate privileged publication after independent review and North Star PM acceptance. It is not sleeve Top 10 or Watchlist 10, and Dustin has not approved a roster write. Idea metadata cannot create this row. QQQ remains the default. This is not a trade.</p>
+          <ul className="mt-3 space-y-2">
+            {module.tournament.rows.map((row) => <li key={row.symbol} className="rounded-md border border-border p-3" aria-label={`${row.symbol} sleeve watch`}>
+              <div className="flex flex-wrap items-center gap-2">
+                <Link className="num text-[15px] font-semibold text-gold hover:underline" href={`/companies/${encodeURIComponent(row.ticker)}`}>{row.symbol}</Link>
+                <Badge variant="outline">{row.reviewVerdict}</Badge>
+                <Badge variant="warn">not a roster write</Badge>
+              </div>
+              <p className="mt-2 text-[12px] leading-5 text-foreground-secondary">{row.thesis}</p>
+              {row.parkedReason ? <p className="mt-1 text-[11px] leading-5 text-muted">{row.parkedReason}</p> : null}
+            </li>)}
+          </ul>
+        </> : <p className="text-[12px] leading-5 text-foreground-secondary">No sealed AI Regime tournament is published. Idea metadata can request tournament candidate consideration only. Tournament admission requires one-ticker Underwriter → independent Evidence &amp; Risk Reviewer → North Star PM review with Dustin retaining final authority, then an immutable hash-verified publication. Admission cannot mutate the core 10 + 10.</p>}
       </section>
 
       <section className="panel p-4 sm:p-5" aria-label="Evidence / freshness / monitoring">

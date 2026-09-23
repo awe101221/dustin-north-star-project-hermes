@@ -6,6 +6,7 @@ import {
   AI_REGIME_MAX_LANE_SIZE,
   CAPITAL_LINE_HURDLE,
   buildAiRegimeModule,
+  sleeveWatchInputFromRow,
 } from "@/lib/ai-regime";
 import { isModelStale } from "@/lib/model-freshness";
 
@@ -334,6 +335,64 @@ describe("AI Regime sleeve module", () => {
     })]);
     expect(result.tournament).toBeNull();
     expect(result.queue[0]?.sleeveStatus).toBe("tournament-candidate");
+    expect(result.hasApprovedRoster).toBe(false);
+  });
+
+  it("shows a reviewed watch publication without writing the sleeve 10 + 10", () => {
+    const reviewed = {
+      ticker: "NYS:MOD",
+      symbol: "MOD",
+      companyName: "Modine Manufacturing",
+      asOf: "2026-09-23T16:00:00Z",
+      reviewTaskId: "t_321efb88",
+      pmTaskId: "t_e926006f",
+      contentHash: "716hash716hash716",
+      reviewVerdict: "PASS WITH CAVEATS",
+      rosterWriteApproved: false,
+      thesis: "RemainCo is parked until separation financials exist.",
+      parkedReason: "No separation financials. Do not model the consolidated stub.",
+    };
+    const result = buildAiRegimeModule({
+      dashboard: dashboard(),
+      ideas: [idea({
+        ticker: "NAS:FORGED",
+        metadata: aiRegime({
+          sleeveStatus: "top10",
+          membershipAuthority: "dustin-approved",
+          watchPublication: reviewed,
+        }),
+      })],
+      watchPublications: [reviewed, { ...reviewed, ticker: "NYS:CLAIM", rosterWriteApproved: true }],
+      now: "2026-09-23T17:00:00Z",
+    });
+    expect(result.tournament?.rows.map((row) => row.symbol)).toEqual(["MOD"]);
+    expect(result.tournament?.rows[0]?.rosterWriteApproved).toBe(false);
+    expect(result.topTen).toEqual([]);
+    expect(result.watchlistTen).toEqual([]);
+    expect(result.hasApprovedRoster).toBe(false);
+    expect(result.emptyState).toBe("No approved sleeve roster yet");
+  });
+
+  it("rejects a database row that claims a roster write", () => {
+    const result = buildAiRegimeModule({
+      dashboard: dashboard(),
+      ideas: [],
+      watchPublications: [sleeveWatchInputFromRow({
+        ticker: "NYS:MOD",
+        symbol: "MOD",
+        company_name: "Modine Manufacturing",
+        as_of: "2026-09-23T16:00:00Z",
+        review_task_id: "t_321efb88",
+        pm_task_id: "t_e926006f",
+        content_hash: "716hash716hash716",
+        review_verdict: "PASS WITH CAVEATS",
+        roster_write_approved: true,
+        thesis: "RemainCo is parked.",
+        parked_reason: null,
+      })],
+    });
+    expect(result.tournament).toBeNull();
+    expect(result.topTen).toEqual([]);
     expect(result.hasApprovedRoster).toBe(false);
   });
 

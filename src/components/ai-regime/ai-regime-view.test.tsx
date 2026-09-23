@@ -161,6 +161,37 @@ describe("AI Regime view", () => {
     expect(markup).not.toContain("NVDA");
   });
 
+  it("renders a reviewed 12% name on the ranked sleeve list", () => {
+    const dashboard = snapshotToDashboard(normalizeBestIdeasSnapshot({
+      asOf: "2026-09-10T00:00:00Z",
+      topTen: [{ ticker: "NAS:NVDA", modeledReturn: 0.16, score: 90 }],
+      watchlistTen: [{ ticker: "CRM", modeledReturn: 0.12, score: 71 }],
+    }));
+    const markup = renderToStaticMarkup(
+      <AiRegimeView module={buildAiRegimeModule({
+        dashboard,
+        ideas: [],
+        now: "2026-09-23T17:00:00Z",
+        rosterPublications: [{
+          ticker: "NAS:SPSC",
+          symbol: "SPSC",
+          companyName: "SPS Commerce",
+          asOf: "2026-09-18",
+          reviewTaskId: "t_50482783",
+          pmTaskId: "t_f62c640d",
+          contentHash: "be874f671974c5e49fe6f7a05d1b797fc7cd6862d4d1e7daf161e850b7a37446",
+          reviewVerdict: "PASS WITH CAVEATS",
+          fiveYearExpectedIrr: 0.143657935359372,
+          thesis: "Certified five-year price-only expected IRR is 14.366%.",
+        }],
+      })} />,
+    );
+    expect(markup).toContain("SPSC");
+    expect(markup).toContain("14.366%");
+    expect(markup).toContain("not Capital Line");
+    expect(markup).not.toContain("No approved sleeve roster yet");
+  });
+
   it("renders evidence, freshness, and monitoring state without inventing a tournament", () => {
     const markup = render([]);
     expect(markup).toContain("Evidence / freshness / monitoring");

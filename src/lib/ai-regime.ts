@@ -74,8 +74,8 @@ export type AiRegimeModule = {
   hasApprovedRoster: boolean;
   emptyState: "No approved sleeve roster yet" | null;
   qqqIsDefault: boolean;
-  topTen: AiRegimeRow[];
-  watchlistTen: AiRegimeRow[];
+  topTen: SleeveRosterRow[];
+  watchlistTen: SleeveRosterRow[];
   tournament: { rows: SleeveWatchRow[] } | null;
   queue: AiRegimeRow[];
   taxonomy: { domain: AiRegimeDomain; count: number }[];
@@ -310,6 +310,73 @@ function watchRows(publications: unknown[]): SleeveWatchRow[] {
   return rows;
 }
 
+const TEN_PLUS_TEN_ENTRY = 0.12;
+
+export type SleeveRosterRow = {
+  ticker: string;
+  symbol: string;
+  companyName: string;
+  asOf: string;
+  reviewTaskId: string;
+  pmTaskId: string;
+  contentHash: string;
+  reviewVerdict: "PASS" | "PASS WITH CAVEATS";
+  fiveYearExpectedIrr: number;
+  thesis: string;
+  clearsCapitalLine: boolean;
+  rank: number;
+};
+
+export function acceptSleeveRosterPublication(input: unknown): Omit<SleeveRosterRow, "rank"> | null {
+  if (!input || typeof input !== "object") return null;
+  const row = input as Record<string, unknown>;
+  if (row.reviewVerdict !== "PASS" && row.reviewVerdict !== "PASS WITH CAVEATS") return null;
+  const contentHash = typeof row.contentHash === "string" ? row.contentHash.trim() : "";
+  if (contentHash.length < 16 || /\s/.test(contentHash)) return null;
+  const reviewTaskId = typeof row.reviewTaskId === "string" ? row.reviewTaskId : "";
+  const pmTaskId = typeof row.pmTaskId === "string" ? row.pmTaskId : "";
+  if (!TASK_ID.test(reviewTaskId) || !TASK_ID.test(pmTaskId) || reviewTaskId === pmTaskId) return null;
+  const ticker = text(row.ticker);
+  const symbol = text(row.symbol);
+  const companyName = text(row.companyName);
+  const thesis = text(row.thesis);
+  const asOf = date(row.asOf);
+  const fiveYearExpectedIrr = numeric(row.fiveYearExpectedIrr);
+  if (!ticker || !symbol || !companyName || !thesis || !asOf || fiveYearExpectedIrr === null) return null;
+  if (fiveYearExpectedIrr <= TEN_PLUS_TEN_ENTRY) return null;
+  if (bareSymbol(ticker) !== bareSymbol(symbol)) return null;
+  return {
+    ticker,
+    symbol: bareSymbol(symbol),
+    companyName,
+    asOf,
+    reviewTaskId,
+    pmTaskId,
+    contentHash,
+    reviewVerdict: row.reviewVerdict,
+    fiveYearExpectedIrr,
+    thesis,
+    clearsCapitalLine: fiveYearExpectedIrr > CAPITAL_LINE_HURDLE,
+  };
+}
+
+function rankRoster(publications: unknown[], core: Set<string>): { topTen: SleeveRosterRow[]; watchlistTen: SleeveRosterRow[] } {
+  const rows: Omit<SleeveRosterRow, "rank">[] = [];
+  const seen = new Set<string>();
+  for (const publication of publications) {
+    const row = acceptSleeveRosterPublication(publication);
+    if (!row || seen.has(row.symbol) || core.has(row.symbol)) continue;
+    seen.add(row.symbol);
+    rows.push(row);
+  }
+  rows.sort((a, b) => b.fiveYearExpectedIrr - a.fiveYearExpectedIrr || a.symbol.localeCompare(b.symbol));
+  const ranked = rows.slice(0, AI_REGIME_MAX_LANE_SIZE * 2).map((row, index) => ({ ...row, rank: index + 1 }));
+  return {
+    topTen: ranked.slice(0, AI_REGIME_MAX_LANE_SIZE),
+    watchlistTen: ranked.slice(AI_REGIME_MAX_LANE_SIZE),
+  };
+}
+
 export function sleeveWatchInputFromRow(row: Record<string, unknown>) {
   return {
     ticker: row.ticker,
@@ -330,11 +397,13 @@ export function buildAiRegimeModule({
   dashboard,
   ideas,
   watchPublications = [],
+  rosterPublications = [],
   now = new Date().toISOString(),
 }: {
   dashboard: BestIdeasDashboard;
   ideas: Idea[];
   watchPublications?: unknown[];
+  rosterPublications?: unknown[];
   now?: string;
 }): AiRegimeModule {
   const nowMs = Date.parse(now);
@@ -356,12 +425,11 @@ export function buildAiRegimeModule({
     }
     unique.push(row);
   }
-  // V1 has no privileged publication input. Agent-writable membership claims are
-  // downgraded in parseRow, so approved lanes remain intentionally empty.
-  const topTen: AiRegimeRow[] = [];
-  const watchlistTen: AiRegimeRow[] = [];
+  const ranked = rankRoster(rosterPublications, core);
+  const topTen = ranked.topTen;
+  const watchlistTen = ranked.watchlistTen;
   const queue = unique;
-  const hasApprovedRoster = false;
+  const hasApprovedRoster = topTen.length + watchlistTen.length > 0;
   const tournamentRows = watchRows(watchPublications);
   const taxonomy = AI_REGIME_DOMAINS.map((domain) => ({
     domain,
@@ -372,7 +440,7 @@ export function buildAiRegimeModule({
     rankingAsOf: dashboard.lastUpdated,
     sourceMode: dashboard.sourceMode,
     hasApprovedRoster,
-    emptyState: "No approved sleeve roster yet",
+    emptyState: hasApprovedRoster ? null : "No approved sleeve roster yet",
     qqqIsDefault: true,
     topTen,
     watchlistTen,

@@ -41,7 +41,7 @@ export default async function CompanyPage({ params }: { params: Promise<{ ticker
   const [loaded, underwritingLoaded] = await Promise.all([
     safeLoad(() => Promise.all([
       getCompany(db, raw),
-      getUniverseForTicker(db, raw).catch(() => []),
+      underwritingDb ? getUniverseForTicker(underwritingDb, raw).catch(() => []) : Promise.resolve([]),
       getMemoSummariesForTicker(db, raw).catch(() => []),
       getNotes(db, { ticker: raw, limit: 20 }).catch(() => []),
       getLatestPositions(db),

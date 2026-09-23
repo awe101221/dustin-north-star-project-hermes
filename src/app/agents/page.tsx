@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PageHeader, NotConfigured, ErrorPanel } from "@/components/page-header";
-import { serverReadClient } from "@/lib/supabase/server";
+import { underwritingReadClient } from "@/lib/supabase/server";
 import { getAgentTasks, getQuantJobs } from "@/lib/db/quant";
 import { unwrap } from "@/lib/db/query";
 import { agentToken, isWriteConfigured } from "@/lib/env";
@@ -17,7 +17,7 @@ function hoursSince(iso: string | null | undefined) {
 }
 
 export default async function AgentsPage() {
-  const db = serverReadClient();
+  const db = await underwritingReadClient();
   const header = (
     <PageHeader
       eyebrow="Agent control hooks"

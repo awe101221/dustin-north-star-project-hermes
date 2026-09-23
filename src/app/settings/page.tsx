@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/page-header";
-import { serverReadClient } from "@/lib/supabase/server";
+import { underwritingReadClient } from "@/lib/supabase/server";
 import { unwrap } from "@/lib/db/query";
 import { HERMES_PROJECT_REF, accessPassword, agentToken, guruFocusApiKey, isReadConfigured, isWriteConfigured, priceProvider, publicSupabaseUrl } from "@/lib/env";
 import { fmtDateTime, fmtNum } from "@/lib/format";
@@ -30,7 +30,7 @@ const FRESHNESS: Array<{ label: string; table: string; column: string; count?: b
 ];
 
 export default async function SettingsPage() {
-  const db = serverReadClient();
+  const db = await underwritingReadClient();
   const freshness = db
     ? await Promise.all(
         FRESHNESS.map(async (f) => {

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeader, NotConfigured, ErrorPanel } from "@/components/page-header";
-import { serverReadClient } from "@/lib/supabase/server";
+import { underwritingReadClient } from "@/lib/supabase/server";
 import { safeLoad } from "@/lib/server/safe";
 import { getArtifacts, getLatestRankings, getPersona } from "@/lib/db/personas";
 import { getResearchStream } from "@/lib/db/research";
@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function PersonaPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const db = serverReadClient();
+  const db = await underwritingReadClient();
   if (!db) return <NotConfigured />;
   const personaLoad = await safeLoad(() => getPersona(db, slug));
   if (!personaLoad.ok) {

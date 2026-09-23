@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PageHeader, NotConfigured, ErrorPanel } from "@/components/page-header";
-import { serverReadClient } from "@/lib/supabase/server";
+import { underwritingReadClient } from "@/lib/supabase/server";
 import { getGuruCrossover, getMasterScores, getQuantJobs, getUniverse } from "@/lib/db/quant";
 import { getPerformancePoints } from "@/lib/db/portfolio";
 import { guruFocusApiKey, isWriteConfigured, priceProvider } from "@/lib/env";
@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 export default async function QuantPage({ searchParams }: { searchParams: Promise<{ tab?: string; preset?: string }> }) {
   const sp = await searchParams;
-  const db = serverReadClient();
+  const db = await underwritingReadClient();
   const header = (
     <PageHeader
       eyebrow="Quant Tools / Alpha Module"

@@ -129,6 +129,38 @@ describe("AI Regime view", () => {
     expect(markup).not.toContain(">tournament<");
   });
 
+  it("renders a reviewed watch name without a sleeve roster write", () => {
+    const dashboard = snapshotToDashboard(normalizeBestIdeasSnapshot({
+      asOf: "2026-09-10T00:00:00Z",
+      topTen: [{ ticker: "NAS:NVDA", modeledReturn: 0.16, score: 90 }],
+      watchlistTen: [{ ticker: "CRM", modeledReturn: 0.12, score: 71 }],
+    }));
+    const markup = renderToStaticMarkup(
+      <AiRegimeView module={buildAiRegimeModule({
+        dashboard,
+        ideas: [],
+        now: "2026-09-23T17:00:00Z",
+        watchPublications: [{
+          ticker: "NYS:MOD",
+          symbol: "MOD",
+          companyName: "Modine Manufacturing",
+          asOf: "2026-09-23T16:00:00Z",
+          reviewTaskId: "t_321efb88",
+          pmTaskId: "t_e926006f",
+          contentHash: "716hash716hash716",
+          reviewVerdict: "PASS WITH CAVEATS",
+          rosterWriteApproved: false,
+          thesis: "RemainCo is parked until separation financials exist.",
+          parkedReason: "No separation financials.",
+        }],
+      })} />,
+    );
+    expect(markup).toContain("MOD");
+    expect(markup).toContain("Reviewed watch only");
+    expect(markup).toContain("No approved sleeve roster yet");
+    expect(markup).not.toContain("NVDA");
+  });
+
   it("renders evidence, freshness, and monitoring state without inventing a tournament", () => {
     const markup = render([]);
     expect(markup).toContain("Evidence / freshness / monitoring");

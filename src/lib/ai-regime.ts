@@ -76,7 +76,7 @@ export type AiRegimeModule = {
   qqqIsDefault: boolean;
   topTen: AiRegimeRow[];
   watchlistTen: AiRegimeRow[];
-  tournament: null;
+  tournament: { rows: SleeveWatchRow[] } | null;
   queue: AiRegimeRow[];
   taxonomy: { domain: AiRegimeDomain; count: number }[];
   coreOverlap: string[];
@@ -248,13 +248,93 @@ function compareRows(a: AiRegimeRow, b: AiRegimeRow) {
   return a.id.localeCompare(b.id) || a.symbol.localeCompare(b.symbol);
 }
 
+export type SleeveWatchRow = {
+  ticker: string;
+  symbol: string;
+  companyName: string;
+  asOf: string;
+  reviewTaskId: string;
+  pmTaskId: string;
+  contentHash: string;
+  reviewVerdict: "PASS" | "PASS WITH CAVEATS";
+  rosterWriteApproved: false;
+  thesis: string;
+  parkedReason: string | null;
+};
+
+const TASK_ID = /^t_[0-9a-f]{8}$/;
+
+export function acceptSleeveWatchPublication(input: unknown): SleeveWatchRow | null {
+  if (!input || typeof input !== "object") return null;
+  const row = input as Record<string, unknown>;
+  if (row.rosterWriteApproved !== false) return null;
+  if (row.reviewVerdict !== "PASS" && row.reviewVerdict !== "PASS WITH CAVEATS") return null;
+  const contentHash = typeof row.contentHash === "string" ? row.contentHash.trim() : "";
+  if (contentHash.length < 16 || /\s/.test(contentHash)) return null;
+  const reviewTaskId = typeof row.reviewTaskId === "string" ? row.reviewTaskId : "";
+  const pmTaskId = typeof row.pmTaskId === "string" ? row.pmTaskId : "";
+  if (!TASK_ID.test(reviewTaskId) || !TASK_ID.test(pmTaskId) || reviewTaskId === pmTaskId) return null;
+  const ticker = text(row.ticker);
+  const symbol = text(row.symbol);
+  const companyName = text(row.companyName);
+  const thesis = text(row.thesis);
+  const asOf = date(row.asOf);
+  if (!ticker || !symbol || !companyName || !thesis || !asOf) return null;
+  if (bareSymbol(ticker) !== bareSymbol(symbol)) return null;
+  const parkedReason = row.parkedReason === null ? null : text(row.parkedReason);
+  if (row.parkedReason !== null && parkedReason === null) return null;
+  return {
+    ticker,
+    symbol: bareSymbol(symbol),
+    companyName,
+    asOf,
+    reviewTaskId,
+    pmTaskId,
+    contentHash,
+    reviewVerdict: row.reviewVerdict,
+    rosterWriteApproved: false,
+    thesis,
+    parkedReason,
+  };
+}
+
+function watchRows(publications: unknown[]): SleeveWatchRow[] {
+  const rows: SleeveWatchRow[] = [];
+  const seen = new Set<string>();
+  for (const publication of publications) {
+    const row = acceptSleeveWatchPublication(publication);
+    if (!row || seen.has(row.symbol)) continue;
+    seen.add(row.symbol);
+    rows.push(row);
+  }
+  return rows;
+}
+
+export function sleeveWatchInputFromRow(row: Record<string, unknown>) {
+  return {
+    ticker: row.ticker,
+    symbol: row.symbol,
+    companyName: row.company_name,
+    asOf: row.as_of,
+    reviewTaskId: row.review_task_id,
+    pmTaskId: row.pm_task_id,
+    contentHash: row.content_hash,
+    reviewVerdict: row.review_verdict,
+    rosterWriteApproved: row.roster_write_approved,
+    thesis: row.thesis,
+    parkedReason: row.parked_reason,
+  };
+}
+
 export function buildAiRegimeModule({
   dashboard,
   ideas,
+  watchPublications = [],
   now = new Date().toISOString(),
 }: {
   dashboard: BestIdeasDashboard;
   ideas: Idea[];
+  watchPublications?: unknown[];
   now?: string;
 }): AiRegimeModule {
   const nowMs = Date.parse(now);
@@ -282,6 +362,7 @@ export function buildAiRegimeModule({
   const watchlistTen: AiRegimeRow[] = [];
   const queue = unique;
   const hasApprovedRoster = false;
+  const tournamentRows = watchRows(watchPublications);
   const taxonomy = AI_REGIME_DOMAINS.map((domain) => ({
     domain,
     count: unique.filter((row) => row.domains.includes(domain)).length,
@@ -295,7 +376,7 @@ export function buildAiRegimeModule({
     qqqIsDefault: true,
     topTen,
     watchlistTen,
-    tournament: null,
+    tournament: tournamentRows.length ? { rows: tournamentRows } : null,
     queue,
     taxonomy,
     coreOverlap,

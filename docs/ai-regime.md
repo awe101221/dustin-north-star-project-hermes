@@ -90,15 +90,11 @@ percentage points; `-1` through `1` are fractions.
 A positive `clear`, Capital Line, tournament, or roster-eligible state requires a
 privileged immutable publication that binds the reviewed content, provenance,
 content hash, and as-of date. The publication path must enforce a maximum of 10
-entries in each sleeve lane. A sealed thematic tournament is not rendered until
-that independently reviewed hash-verified provenance exists. Publication of
-candidate or roster data is a separate reviewed task.
+entries in each sleeve lane. A sealed thematic tournament watch row is rendered only from
+`hermes_sleeve_watch_publications`, not from idea metadata. That row is not
+sleeve Top 10 or Watchlist 10. The table rejects a roster write. Dustin still
+approves every 10+10 write.
 
 ## Rollback
 
-This remediation changes read-only projection, copy, and tests only; it adds no
-migration or database write. To roll it back, revert the remediation commit,
-rerun `npm run check`, and verify `/ai-regime` plus the navigation entry on the
-Vercel preview. No database rollback is required. Reverting to the original
-implementation restores known fail-open policy defects, so production rollback
-should prefer disabling/removing the route until a corrected change is reviewed.
+The watch-publication table is additive and empty until a privileged writer inserts a reviewed row. It cannot store a roster write. To roll this change back, revert the commit and leave or drop `hermes_sleeve_watch_publications`. Do not use that table as a 10+10 roster.

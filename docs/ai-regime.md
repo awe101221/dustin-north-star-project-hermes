@@ -95,6 +95,11 @@ entries in each sleeve lane. A sealed thematic tournament watch row is rendered 
 sleeve Top 10 or Watchlist 10. The table rejects a roster write. Dustin still
 approves every 10+10 write.
 
+Reviewed roster packets live in `src/lib/reviewed-sleeve-roster.json`, loaded by
+`src/lib/reviewed-sleeve-roster.ts`. Keeping them in a reviewed file, not a table,
+means only a merged commit can add a row. Dustin Awe Capital V2 reads the file from
+GitHub (read-only) to analyze sleeve names; renaming or moving it breaks that reader.
+
 ## Rollback
 
 The watch-publication table is additive and empty until a privileged writer inserts a reviewed row. It cannot store a roster write. To roll this change back, revert the commit and leave or drop `hermes_sleeve_watch_publications`. Do not use that table as a 10+10 roster.

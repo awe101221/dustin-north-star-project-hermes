@@ -4,6 +4,7 @@ import { ErrorPanel, NotConfigured, PageHeader } from "@/components/page-header"
 import { buildAiRegimeModule } from "@/lib/ai-regime";
 import { getBestIdeasDashboard } from "@/lib/best-ideas";
 import { getIdeas } from "@/lib/db/pipeline";
+import { REVIEWED_SLEEVE_ROSTER } from "@/lib/reviewed-sleeve-roster";
 import { safeLoad } from "@/lib/server/safe";
 import { loadSleeveWatchPublications } from "@/lib/server/sleeve-watch";
 import { serverReadClient } from "@/lib/supabase/server";
@@ -21,7 +22,7 @@ export default async function AiRegimePage() {
       getIdeas(db),
       loadSleeveWatchPublications(db),
     ]);
-    return buildAiRegimeModule({ dashboard, ideas, watchPublications });
+    return buildAiRegimeModule({ dashboard, ideas, watchPublications, rosterPublications: REVIEWED_SLEEVE_ROSTER });
   });
   if (!result.ok) return <>{header}<ErrorPanel title="AI Regime failed to load" detail={result.error} /></>;
   return <AiRegimeView module={result.data} />;

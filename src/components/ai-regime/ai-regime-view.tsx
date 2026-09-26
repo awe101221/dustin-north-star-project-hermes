@@ -37,7 +37,7 @@ export function AiRegimeView({ module }: { module: AiRegimeModule }) {
     <div className="space-y-5">
       <section className="rounded-lg border border-gold/30 bg-gold-soft/30 p-4 sm:p-5" aria-label="Mandate and guardrails">
         <h2 className="flex items-center gap-2 text-[16px] font-semibold text-gold"><Cpu aria-hidden="true" className="size-5" />Mandate and guardrails</h2>
-        <p className="mt-2 text-[12px] leading-5 text-foreground-secondary">This module does not replace the canonical 10 + 10 or `/challengers`. Only explicit Dustin approval through a privileged publication can assign sleeve Top 10 or Watchlist 10. The sleeve tournament is where names are considered for the sleeve 10 + 10 and watched for price, earnings, or an announcement that could put them in. There is no IRR floor to be watched. A name enters the ranked sleeve 10 + 10 above 12% and does not have to clear the Capital Line. From there the best names are ranked. The Capital Line is populated only when a name clears 15%. 10-year outputs are historical context only and cannot drive admission, rerank, or displacement. QQQ remains the default for metadata-only rows.</p>
+        <p className="mt-2 text-[12px] leading-5 text-foreground-secondary">This module does not replace the canonical 10 + 10 or `/challengers`. The ranked sleeve 10 + 10 updates from reviewed five-year price-only results that clear 12%. No separate roster approval is required. The Capital Line is populated only when a name clears 15%. The sleeve tournament has no IRR floor. 10-year outputs are historical context only and cannot drive admission, rerank, or displacement. QQQ remains the default for metadata-only rows.</p>
         <p className="mt-2 text-[12px] leading-5 text-muted">No names, ranks, returns, or membership are invented in code. This page never changes the portfolio, sizes a position, or authorizes a trade.</p>
       </section>
 
@@ -65,14 +65,24 @@ export function AiRegimeView({ module }: { module: AiRegimeModule }) {
 
       <section aria-label="Thematic sleeve 10 + 10" className="space-y-3">
         <h2 className="text-[15px] font-semibold">Thematic sleeve Top 10 + Watchlist 10</h2>
-        {module.emptyState ? <div className="panel p-6 text-[13px] text-muted" data-testid="ai-regime-empty-roster">{module.emptyState}. Methodology and workflow stay visible while independently reviewed, PM-accepted, Dustin-approved membership is absent.</div> : null}
-        <p className="text-[11px] leading-5 text-muted">V1 is empty-only: this route has no privileged approved-roster input. A later reviewed publication path must enforce at most 10 names per lane before approved rows can render.</p>
+        {module.emptyState ? <div className="panel p-6 text-[13px] text-muted" data-testid="ai-regime-empty-roster">{module.emptyState}. The ranked list updates from reviewed five-year price-only results that clear 12%. No separate approval is required. A name at or below 12% stays off.</div> : <ol className="space-y-2">
+          {module.topTen.map((row) => <li key={row.symbol} className="panel p-4" aria-label={`${row.symbol} sleeve top 10`}>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="num text-[12px] text-muted">{row.rank}</span>
+              <Link className="num text-[15px] font-semibold text-gold hover:underline" href={`/companies/${encodeURIComponent(row.ticker)}`}>{row.symbol}</Link>
+              <Badge variant="outline">{fmtPct(row.fiveYearExpectedIrr, 3)}</Badge>
+              <Badge variant={row.clearsCapitalLine ? "default" : "warn"}>{row.clearsCapitalLine ? "Capital Line" : "not Capital Line"}</Badge>
+            </div>
+            <p className="mt-2 text-[12px] leading-5 text-foreground-secondary">{row.thesis}</p>
+          </li>)}
+        </ol>}
+        <p className="text-[11px] leading-5 text-muted">Ranked 10+10 membership follows the reviewed hurdle. Strictly above 12% enters and is ranked. The Capital Line is populated only above 15%. Idea metadata cannot create a row. This is not a trade.</p>
       </section>
 
       <section className="panel p-4 sm:p-5" aria-label="Thematic Challenger Tournament">
         <h2 className="mb-2 text-[14px] font-semibold">Thematic Challenger Tournament</h2>
         {module.tournament ? <>
-          <p className="text-[12px] leading-5 text-foreground-secondary">Reviewed watch only. A name here has a separate privileged publication after independent review and North Star PM acceptance. It is not sleeve Top 10 or Watchlist 10, and Dustin has not approved a roster write. Idea metadata cannot create this row. QQQ remains the default. This is not a trade.</p>
+          <p className="mt-2 text-[12px] leading-5 text-foreground-secondary">Reviewed watch only. A name here is not on the ranked 10 + 10 unless its reviewed five-year price-only IRR clears 12%. Idea metadata cannot create this row. QQQ remains the default. This is not a trade.</p>
           <ul className="mt-3 space-y-2">
             {module.tournament.rows.map((row) => <li key={row.symbol} className="rounded-md border border-border p-3" aria-label={`${row.symbol} sleeve watch`}>
               <div className="flex flex-wrap items-center gap-2">

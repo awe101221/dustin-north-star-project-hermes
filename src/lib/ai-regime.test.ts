@@ -373,6 +373,40 @@ describe("AI Regime sleeve module", () => {
     expect(result.emptyState).toBe("No approved sleeve roster yet");
   });
 
+  it("ranks a reviewed name that clears 12% without a separate approval", () => {
+    const spsc = {
+      ticker: "NAS:SPSC",
+      symbol: "SPSC",
+      companyName: "SPS Commerce",
+      asOf: "2026-09-18T00:00:00Z",
+      reviewTaskId: "t_50482783",
+      pmTaskId: "t_f62c640d",
+      contentHash: "spsc14366certified",
+      reviewVerdict: "PASS WITH CAVEATS",
+      fiveYearExpectedIrr: 0.143657935359372,
+      thesis: "Certified five-year price-only expected IRR clears 12% and misses 15%.",
+    };
+    const result = buildAiRegimeModule({
+      dashboard: dashboard(),
+      ideas: [idea({
+        ticker: "NAS:FORGED",
+        metadata: aiRegime({ sleeveStatus: "top10", fiveYearExpectedIrr: 0.3, membershipAuthority: "dustin-approved" }),
+      })],
+      rosterPublications: [
+        spsc,
+        { ...spsc, ticker: "NAS:EQ", symbol: "EQ", fiveYearExpectedIrr: 0.12 },
+        { ...spsc, ticker: "NAS:HI", symbol: "HI", fiveYearExpectedIrr: 0.16 },
+      ],
+      now: "2026-09-23T17:00:00Z",
+    });
+    expect(result.topTen.map((row) => row.symbol)).toEqual(["HI", "SPSC"]);
+    expect(result.topTen[1]?.clearsCapitalLine).toBe(false);
+    expect(result.topTen[0]?.clearsCapitalLine).toBe(true);
+    expect(result.hasApprovedRoster).toBe(true);
+    expect(result.emptyState).toBeNull();
+    expect(result.queue.map((row) => row.symbol)).toEqual(["FORGED"]);
+  });
+
   it("rejects a database row that claims a roster write", () => {
     const result = buildAiRegimeModule({
       dashboard: dashboard(),

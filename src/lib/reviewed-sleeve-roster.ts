@@ -1,0 +1,15 @@
+/** Reviewed sleeve packets that may rank. Idea metadata cannot add a row. */
+export const REVIEWED_SLEEVE_ROSTER = [
+  {
+    ticker: "NAS:SPSC",
+    symbol: "SPSC",
+    companyName: "SPS Commerce",
+    asOf: "2026-09-18",
+    reviewTaskId: "t_50482783",
+    pmTaskId: "t_f62c640d",
+    contentHash: "be874f671974c5e49fe6f7a05d1b797fc7cd6862d4d1e7daf161e850b7a37446",
+    reviewVerdict: "PASS WITH CAVEATS" as const,
+    fiveYearExpectedIrr: 0.143657935359372,
+    thesis: "Certified five-year price-only expected IRR is 14.366%. It clears 12% entry and misses the 15% Capital Line.",
+  },
+];

@@ -34,7 +34,10 @@ Bear/Base/Bull forecasts. Never infer a quarterly return by dividing a five-year
      concept, CIK, unit, future quarter start/end, deadline after reporting), OR a
      precisely resolvable `milestone` with explicit resolution_rule and deadline.
      The next quarter must START after registration; deadlines must be within
-     210 days. Use a milestone for issuer-defined/non-GAAP metrics or non-SEC issuers
+     210 days. An identical already-registered open `sec_kpi` may be checked
+     again after its period starts. That reuse does not create a ladder. A
+     shifted quarter, a new target, or any other material change still has to
+     start after registration. Use a milestone for issuer-defined/non-GAAP metrics or non-SEC issuers
      when exact SEC facts are unavailable. Do not mislabel those as machine-gradeable.
    - Every forecast must contain at least one public HTTPS source URL, probability,
      confidence, falsifier, and IDs referring to the immutable assumption list.

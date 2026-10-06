@@ -17,6 +17,10 @@ async function input(model = "model-v1") {
 async function register(f: ReturnType<typeof ladderFixture>) {
   return (await db.query<{ result: { ladder_id: string; created: boolean; replay: boolean } }>("select hermes_register_forecast_ladder($1) result", [f])).rows[0]!.result;
 }
+function startedKpi(operating: ReturnType<typeof ladderFixture>["operating"], start: string, end: string, due: string) {
+  if (operating.kind !== "sec_kpi") throw new Error("fixture must be an SEC KPI");
+  return { ...operating, period_start: start, period_end: end, due_date: due };
+}
 beforeAll(async () => {
   db = new PGlite({ extensions: { pgcrypto } });
   await db.exec(`create schema extensions; create extension pgcrypto with schema extensions;
@@ -28,6 +32,7 @@ beforeAll(async () => {
   await db.exec(fs.readFileSync("supabase/migrations/20260907000400_underwriting_graph_evaluation.sql", "utf8"));
   await db.exec(migration);
   await db.exec(migration);
+  await db.exec(fs.readFileSync("supabase/migrations/20261006164300_reuse_open_sec_kpi.sql", "utf8"));
   await db.exec(`insert into hermes_prompt_versions(prompt_id,version,role,schema_version,prompt_body) values('ladder-test','1','analyst','1','immutable test contract')`);
 }, 30000);
 afterAll(async () => { await db?.close(); });
@@ -122,6 +127,66 @@ describe("short-horizon atomic ledger", () => {
     await db.query("select hermes_publish_learning_snapshot($1,$2)", [base.run_id, note]);
     expect((await db.query("select * from hermes_notes")).rows).toHaveLength(1);
     await expect(db.query("select hermes_publish_learning_snapshot($1,$2)", [base.run_id, { ...note, title: "rewritten" }])).rejects.toThrow(/Conflicting/);
+  });
+  it("reuses an identical open SEC KPI after its quarter has started", async () => {
+    const day = (n: number) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
+    const firstInput = await input();
+    firstInput.ticker = "REUSE";
+    const first = await register(firstInput);
+    const operating = startedKpi(firstInput.operating, day(-10), day(80), day(120));
+    await db.exec("alter table hermes_forecast_ladders disable trigger hermes_ladder_append_only");
+    await db.query("update hermes_forecast_ladders set payload=jsonb_set(payload,'{operating}',$2::jsonb) where id=$1", [first.ladder_id, JSON.stringify(operating)]);
+    await db.exec("alter table hermes_forecast_ladders enable trigger hermes_ladder_append_only");
+    const again = await input();
+    again.ticker = "REUSE";
+    again.operating = startedKpi(again.operating, day(-10), day(80), day(120));
+    const second = await register(again);
+    expect(second).toMatchObject({ ladder_id: first.ladder_id, created: false, replay: false });
+    expect((await db.query("select * from hermes_forecast_ladders where ticker='REUSE'")).rows).toHaveLength(1);
+    expect((await db.query("select * from hermes_ladder_checks where run_id=$1", [again.run_id])).rows).toHaveLength(1);
+  });
+  it("still rejects a started quarter when the KPI identity changes", async () => {
+    const day = (n: number) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
+    const firstInput = await input();
+    firstInput.ticker = "SHIFT";
+    const first = await register(firstInput);
+    const operating = startedKpi(firstInput.operating, day(-10), day(80), day(120));
+    await db.exec("alter table hermes_forecast_ladders disable trigger hermes_ladder_append_only");
+    await db.query("update hermes_forecast_ladders set payload=jsonb_set(payload,'{operating}',$2::jsonb) where id=$1", [first.ladder_id, JSON.stringify(operating)]);
+    await db.exec("alter table hermes_forecast_ladders enable trigger hermes_ladder_append_only");
+    const shifted = await input();
+    shifted.ticker = "SHIFT";
+    shifted.operating = startedKpi(shifted.operating, day(-9), day(80), day(120));
+    const changed = await input();
+    changed.ticker = "CHNG";
+    const created = await register(changed);
+    const started = startedKpi(changed.operating, day(-10), day(80), day(120));
+    await db.exec("alter table hermes_forecast_ladders disable trigger hermes_ladder_append_only");
+    await db.query("update hermes_forecast_ladders set payload=jsonb_set(payload,'{operating}',$2::jsonb) where id=$1", [created.ladder_id, JSON.stringify(started)]);
+    await db.exec("alter table hermes_forecast_ladders enable trigger hermes_ladder_append_only");
+    const material = await input();
+    material.ticker = "CHNG";
+    material.operating = startedKpi(material.operating, day(-10), day(80), day(120));
+    material.market_90d = { ...material.market_90d, expected_alpha: 0.06 };
+    await expect(register(shifted)).rejects.toThrow(/future fiscal quarter/);
+    await expect(register(material)).rejects.toThrow(/future fiscal quarter/);
+    expect((await db.query("select * from hermes_forecast_ladders where ticker in ('SHIFT','CHNG')")).rows).toHaveLength(2);
+  });
+  it("still rejects a missing period when an open KPI exists", async () => {
+    const day = (n: number) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
+    const firstInput = await input();
+    firstInput.ticker = "NULLD";
+    const first = await register(firstInput);
+    const operating = startedKpi(firstInput.operating, day(-10), day(80), day(120));
+    await db.exec("alter table hermes_forecast_ladders disable trigger hermes_ladder_append_only");
+    await db.query("update hermes_forecast_ladders set payload=jsonb_set(payload,'{operating}',$2::jsonb) where id=$1", [first.ladder_id, JSON.stringify(operating)]);
+    await db.exec("alter table hermes_forecast_ladders enable trigger hermes_ladder_append_only");
+    const missing = await input();
+    missing.ticker = "NULLD";
+    missing.operating = startedKpi(missing.operating, day(-10), day(80), day(120));
+    delete (missing.operating as { period_start?: string }).period_start;
+    await expect(register(missing)).rejects.toThrow(/future fiscal quarter/);
+    expect((await db.query("select * from hermes_ladder_checks where ticker='NULLD'")).rows).toHaveLength(1);
   });
   it("grades exact KPI evidence and rejects period/unit mismatch", async () => {
     const base = await input(); base.ticker = "KPI";

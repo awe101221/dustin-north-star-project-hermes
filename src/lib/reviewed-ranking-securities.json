@@ -1,1 +1,1080 @@
-[]
+[
+  {
+    "canonicalId": "ISIN:JP3159930001",
+    "ticker": "TSE:4440",
+    "identifiers": [
+      "ISIN:JP3159930001"
+    ],
+    "tickerAliases": [
+      "4440",
+      "TSE:4440"
+    ],
+    "evidenceUrls": [
+      "https://www.witz-inc.co.jp/ir/stock/",
+      "https://www2.jpx.co.jp/disc/44400/140120260407599443.pdf"
+    ]
+  },
+  {
+    "canonicalId": "ISIN:JP3799690007",
+    "ticker": "TSE:4270",
+    "identifiers": [
+      "ISIN:JP3799690007"
+    ],
+    "tickerAliases": [
+      "4270",
+      "TSE:4270"
+    ],
+    "evidenceUrls": [
+      "https://www.jpx.co.jp/english/listing/stocks/new/b5b4pj000004o2cc-att/02BeeX-OutlineEN.pdf",
+      "https://www.beex-inc.com/ir/stock"
+    ]
+  },
+  {
+    "canonicalId": "ISIN:KYG3066L1014",
+    "ticker": "HKSE:02688",
+    "identifiers": [
+      "ISIN:KYG3066L1014"
+    ],
+    "tickerAliases": [
+      "HKSE:02688"
+    ],
+    "evidenceUrls": [
+      "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0428/2026042802499.pdf",
+      "https://www.hkexnews.hk/listedco/listconews/sehk/2026/0917/2026091700629.pdf"
+    ]
+  },
+  {
+    "canonicalId": "ISIN:US05590Y1001",
+    "evidenceUrls": [
+      "https://depositaryreceipts.citi.com/adr/notices/previewPdf.aspx?caId=2787",
+      "https://depositaryreceipts.citi.com/adr/guides/pgm_dispaDivd.aspx?Type=D&cusip=05590Y100&pageId=15&subpageID=113"
+    ],
+    "identifiers": [
+      "ISIN:US05590Y1001"
+    ],
+    "ticker": "OTCPK:BMRRY",
+    "tickerAliases": [
+      "BMRRY",
+      "OTCPK:BMRRY"
+    ]
+  },
+  {
+    "canonicalId": "ISIN:US30051E1047",
+    "ticker": "OTCPK:EVVTY",
+    "identifiers": [
+      "ISIN:US30051E1047"
+    ],
+    "tickerAliases": [
+      "EVVTY",
+      "OTCPK:EVVTY"
+    ],
+    "evidenceUrls": [
+      "https://depositaryreceipts.citi.com/adr/notices/previewPdf.aspx?caId=2115"
+    ]
+  },
+  {
+    "canonicalId": "ISIN:US88032Q1094",
+    "ticker": "TCEHY",
+    "identifiers": [
+      "ISIN:US88032Q1094"
+    ],
+    "tickerAliases": [
+      "OTCPK:TCEHY",
+      "TCEHY"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1471515/000110465926104999/tm2624682d1_f6ef.htm",
+      "https://www.adr.com/drprofile/88032Q109",
+      "https://www.tencent.com/wp-content/uploads/2026/08/E700_IR.pdf"
+    ]
+  },
+  {
+    "canonicalId": "ISIN:USN070592100",
+    "ticker": "NAS:ASML",
+    "identifiers": [
+      "ISIN:USN070592100"
+    ],
+    "tickerAliases": [
+      "ASML",
+      "NAS:ASML"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/937966/000162828026011378/asml-20251231.htm",
+      "https://www.asml.com/en/investors/shares"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0000087347:COMMON-STOCK",
+    "ticker": "NYSE:SLB",
+    "identifiers": [
+      "SEC:0000087347:COMMON-STOCK"
+    ],
+    "tickerAliases": [
+      "NYSE:SLB",
+      "SLB"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/87347/000119312526415617/d184262d8k.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0000100591:COMMON-STOCK",
+    "ticker": "NYSE:AGX",
+    "identifiers": [
+      "SEC:0000100591:COMMON-STOCK"
+    ],
+    "tickerAliases": [
+      "AGX",
+      "NYSE:AGX"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/100591/000110465926104745/agx-20260731x10q.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0000319201:COMMON-STOCK",
+    "ticker": "KLAC",
+    "identifiers": [
+      "SEC:0000319201:COMMON-STOCK"
+    ],
+    "tickerAliases": [
+      "KLAC"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/319201/000031920126000027/klac-20260630.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0000704532:COMMON-STOCK",
+    "ticker": "NYSE:ONTO",
+    "identifiers": [
+      "SEC:0000704532:COMMON-STOCK"
+    ],
+    "tickerAliases": [
+      "NYSE:ONTO",
+      "ONTO"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/704532/000119312526337990/onto-20260806.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0000707549:COMMON-STOCK",
+    "ticker": "LRCX",
+    "identifiers": [
+      "SEC:0000707549:COMMON-STOCK"
+    ],
+    "tickerAliases": [
+      "LRCX"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/707549/000070754926000037/lrcx-20260628.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0000715153:ADS-COMMON",
+    "ticker": "NYSE:HMC",
+    "identifiers": [
+      "SEC:0000715153:ADS-COMMON"
+    ],
+    "tickerAliases": [
+      "HMC",
+      "NYSE:HMC"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/715153/000119312526274991/d116494d20f.htm",
+      "https://www.sec.gov/Archives/edgar/data/715153/000119312526333722/d371554d6k.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0000723125:COMMON-STOCK",
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/723125/000072312526000018/mu-20260930.htm"
+    ],
+    "identifiers": [
+      "SEC:0000723125:COMMON-STOCK"
+    ],
+    "ticker": "NAS:MU",
+    "tickerAliases": [
+      "MU",
+      "NAS:MU"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0000749251:COMMON-STOCK",
+    "ticker": "NYSE:IT",
+    "identifiers": [
+      "SEC:0000749251:COMMON-STOCK"
+    ],
+    "tickerAliases": [
+      "IT",
+      "NYSE:IT"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/749251/000074925126000112/it-20251231.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0000789019:COMMON-STOCK",
+    "ticker": "NAS:MSFT",
+    "identifiers": [
+      "SEC:0000789019:COMMON-STOCK"
+    ],
+    "tickerAliases": [
+      "MSFT",
+      "NAS:MSFT"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0000798354:COMMON-STOCK",
+    "ticker": "NAS:FISV",
+    "identifiers": [
+      "SEC:0000798354:COMMON-STOCK"
+    ],
+    "tickerAliases": [
+      "FISV",
+      "NAS:FISV"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/798354/000079835426000028/fi-20260806.htm",
+      "https://www.sec.gov/Archives/edgar/data/798354/000079835426000031/fisv-20260630.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0000813672:COMMON-STOCK",
+    "ticker": "CDNS",
+    "identifiers": [
+      "SEC:0000813672:COMMON-STOCK"
+    ],
+    "tickerAliases": [
+      "CDNS"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/813672/000081367226000092/cdns-20260630.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0000833640:COMMON-STOCK",
+    "ticker": "NAS:POWI",
+    "identifiers": [
+      "SEC:0000833640:COMMON-STOCK"
+    ],
+    "tickerAliases": [
+      "NAS:POWI",
+      "POWI"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/833640/000083364026000141/powi-20260805.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0000851205:COMMON-STOCK",
+    "ticker": "NAS:CGNX",
+    "identifiers": [
+      "SEC:0000851205:COMMON-STOCK"
+    ],
+    "tickerAliases": [
+      "CGNX",
+      "NAS:CGNX"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/851205/000085120526000012/cgnx-20251231.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0000877212:COMMON-A",
+    "ticker": "NAS:ZBRA",
+    "identifiers": [
+      "SEC:0000877212:COMMON-A"
+    ],
+    "tickerAliases": [
+      "NAS:ZBRA",
+      "ZBRA"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/877212/000162828026052550/0001628280-26-052550-index.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0000883241:COMMON-STOCK",
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/883241/000119312526413359/d830308d8k.htm"
+    ],
+    "identifiers": [
+      "SEC:0000883241:COMMON-STOCK"
+    ],
+    "ticker": "SNPS",
+    "tickerAliases": [
+      "SNPS"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001018724:COMMON-STOCK",
+    "ticker": "NAS:AMZN",
+    "identifiers": [
+      "SEC:0001018724:COMMON-STOCK"
+    ],
+    "tickerAliases": [
+      "AMZN",
+      "NAS:AMZN"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1018724/000101872426000026/amzn-20260630.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001039399:COMMON-STOCK",
+    "ticker": "NAS:FORM",
+    "identifiers": [
+      "SEC:0001039399:COMMON-STOCK"
+    ],
+    "tickerAliases": [
+      "FORM",
+      "NAS:FORM"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1039399/000103939926000033/form-20260627.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001045810:COMMON-STOCK",
+    "ticker": "NVDA",
+    "identifiers": [
+      "SEC:0001045810:COMMON-STOCK"
+    ],
+    "tickerAliases": [
+      "NVDA"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm",
+      "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000078/nvda-20260902.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001046179:ADS-COMMON",
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1046179/000162828026025362/tsm-20251231.htm",
+      "https://www.sec.gov/Archives/edgar/data/1046179/000104617926000545/tsm-monthend6kx20260825.htm"
+    ],
+    "identifiers": [
+      "SEC:0001046179:ADS-COMMON"
+    ],
+    "ticker": "TSM",
+    "tickerAliases": [
+      "NYSE:TSM",
+      "TSM"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001075531:COMMON-STOCK",
+    "ticker": "NAS:BKNG",
+    "identifiers": [
+      "SEC:0001075531:COMMON-STOCK"
+    ],
+    "tickerAliases": [
+      "BKNG",
+      "NAS:BKNG"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1075531/000107553126000037/bkng-20260630.htm",
+      "https://www.sec.gov/Archives/edgar/data/1075531/000107553126000036/bkng-20260804.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001092699:COMMON-STOCK",
+    "ticker": "NAS:SPSC",
+    "identifiers": [
+      "SEC:0001092699:COMMON-STOCK"
+    ],
+    "tickerAliases": [
+      "NAS:SPSC",
+      "SPSC"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1092699/000109269926000066/spsc-20260630.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001099590:COMMON-STOCK",
+    "ticker": "MELI",
+    "identifiers": [
+      "SEC:0001099590:COMMON-STOCK"
+    ],
+    "tickerAliases": [
+      "MELI",
+      "NAS:MELI"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1099590/000109959026000023/R1.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001109138:ORDINARY-SHARES",
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1109138/000117891326001561/zk2634678.htm"
+    ],
+    "identifiers": [
+      "SEC:0001109138:ORDINARY-SHARES"
+    ],
+    "ticker": "NAS:CAMT",
+    "tickerAliases": [
+      "CAMT",
+      "NAS:CAMT"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001280452:COMMON-STOCK",
+    "ticker": "MPWR",
+    "identifiers": [
+      "SEC:0001280452:COMMON-STOCK"
+    ],
+    "tickerAliases": [
+      "MPWR"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1280452/000162828026051029/mpwr-20260730.htm",
+      "https://www.sec.gov/Archives/edgar/data/1280452/000162828026053275/mpwr-20260630.htm",
+      "https://www.sec.gov/Archives/edgar/data/1280452/000143774926014647/mpwr20260331_10q.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001286681:COMMON-STOCK",
+    "ticker": "NAS:DPZ",
+    "identifiers": [
+      "SEC:0001286681:COMMON-STOCK"
+    ],
+    "tickerAliases": [
+      "DPZ",
+      "NAS:DPZ"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1286681/000128668126000035/dpz-20260614.htm",
+      "https://www.sec.gov/Archives/edgar/data/1286681/000119312526062321/dpz-20251228.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001326801:COMMON-A",
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1326801/000162828026050705/meta-20260630.htm"
+    ],
+    "identifiers": [
+      "SEC:0001326801:COMMON-A"
+    ],
+    "ticker": "NAS:META",
+    "tickerAliases": [
+      "META",
+      "NAS:META"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001327567:COMMON-STOCK",
+    "ticker": "NAS:PANW",
+    "identifiers": [
+      "SEC:0001327567:COMMON-STOCK"
+    ],
+    "tickerAliases": [
+      "NAS:PANW",
+      "PANW"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1327567/000132756726000023/panw-20260731.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001331520:COMMON-STOCK",
+    "ticker": "NYSE:HOMB",
+    "identifiers": [
+      "SEC:0001331520:COMMON-STOCK"
+    ],
+    "tickerAliases": [
+      "HOMB",
+      "NYSE:HOMB"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1331520/000133152026000112/homb-20260630.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001373715:COMMON-STOCK",
+    "ticker": "NOW",
+    "identifiers": [
+      "SEC:0001373715:COMMON-STOCK"
+    ],
+    "tickerAliases": [
+      "NOW"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1373715/000137371526000076/now-20260630.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001393052:COMMON-A",
+    "ticker": "NYSE:VEEV",
+    "identifiers": [
+      "SEC:0001393052:COMMON-A"
+    ],
+    "tickerAliases": [
+      "NYSE:VEEV",
+      "VEEV"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1393052/000139305226000014/veev-20260131.htm",
+      "https://www.sec.gov/Archives/edgar/data/1393052/000139305226000036/veev-20260731.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001397187:COMMON-STOCK",
+    "ticker": "NAS:LULU",
+    "identifiers": [
+      "SEC:0001397187:COMMON-STOCK"
+    ],
+    "tickerAliases": [
+      "LULU",
+      "NAS:LULU"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1397187/000139718726000127/lulu-20260802.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001404655:COMMON-STOCK",
+    "ticker": "NYSE:HUBS",
+    "identifiers": [
+      "SEC:0001404655:COMMON-STOCK"
+    ],
+    "tickerAliases": [
+      "HUBS",
+      "NYSE:HUBS"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1404655/000119312526335232/hubs-20260630.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001433195:COMMON-A",
+    "ticker": "APPF",
+    "identifiers": [
+      "SEC:0001433195:COMMON-A"
+    ],
+    "tickerAliases": [
+      "APPF",
+      "NAS:APPF"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1433195/000143319526000058/appf-20260630.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001443646:COMMON-A",
+    "ticker": "NYSE:BAH",
+    "identifiers": [
+      "SEC:0001443646:COMMON-A"
+    ],
+    "tickerAliases": [
+      "BAH",
+      "NYSE:BAH"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1443646/000162828026049495/bah-20260630.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001467373:CLASS-A-ORDINARY",
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1467373/000146737326000037/acn-20261001.htm",
+      "https://www.sec.gov/Archives/edgar/data/1467373/000146737326000032/acn-20260531.htm"
+    ],
+    "identifiers": [
+      "SEC:0001467373:CLASS-A-ORDINARY"
+    ],
+    "ticker": "ACN",
+    "tickerAliases": [
+      "ACN"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001477333:COMMON-A",
+    "ticker": "NET",
+    "identifiers": [
+      "SEC:0001477333:COMMON-A"
+    ],
+    "tickerAliases": [
+      "NET"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1477333/000095010326012340/dp251721_8k.htm",
+      "https://www.sec.gov/Archives/edgar/data/1477333/000147733326000054/cloud-20260630.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001490978:COMMON-STOCK",
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1490978/000149097826000010/sdgr-20251231.htm"
+    ],
+    "identifiers": [
+      "SEC:0001490978:COMMON-STOCK"
+    ],
+    "ticker": "NAS:SDGR",
+    "tickerAliases": [
+      "NAS:SDGR",
+      "SDGR"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001513845:CLASS-A-ORDINARY",
+    "ticker": "NAS:NBIS",
+    "identifiers": [
+      "SEC:0001513845:CLASS-A-ORDINARY"
+    ],
+    "tickerAliases": [
+      "NAS:NBIS",
+      "NBIS"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1513845/000110465926065681/nbis-20251231x20fa.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001516513:COMMON-A",
+    "ticker": "NYSE:DOCS",
+    "identifiers": [
+      "SEC:0001516513:COMMON-A"
+    ],
+    "tickerAliases": [
+      "DOCS",
+      "NYSE:DOCS"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1516513/000151651326000040/docs-20260630.htm",
+      "https://www.sec.gov/Archives/edgar/data/1516513/000151651326000025/docs-20260331.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001543151:COMMON-STOCK",
+    "ticker": "NYSE:UBER",
+    "identifiers": [
+      "SEC:0001543151:COMMON-STOCK"
+    ],
+    "tickerAliases": [
+      "NYSE:UBER",
+      "UBER"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1543151/000155278126000414/e26328_uber-8k.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001555280:COMMON-STOCK",
+    "ticker": "NYSE:ZTS",
+    "identifiers": [
+      "SEC:0001555280:COMMON-STOCK"
+    ],
+    "tickerAliases": [
+      "NYSE:ZTS",
+      "ZTS"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1555280/000155528026000040/zts-20260630.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001562088:COMMON-A",
+    "ticker": "NAS:DUOL",
+    "identifiers": [
+      "SEC:0001562088:COMMON-A"
+    ],
+    "tickerAliases": [
+      "DUOL",
+      "NAS:DUOL"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1562088/000162828026053603/duol-20260630.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001571996:COMMON-C",
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1571996/000157199626000046/dell-20260731.htm",
+      "https://www.sec.gov/Archives/edgar/data/1571996/000119312526391976/d172674d8k.htm"
+    ],
+    "identifiers": [
+      "SEC:0001571996:COMMON-C"
+    ],
+    "ticker": "NYSE:DELL",
+    "tickerAliases": [
+      "DELL",
+      "NYSE:DELL"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001576789:ORDINARY-SHARES",
+    "ticker": "NAS:WIX",
+    "identifiers": [
+      "SEC:0001576789:ORDINARY-SHARES"
+    ],
+    "tickerAliases": [
+      "NAS:WIX",
+      "WIX"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1576789/000162828026015222/wix-20251231.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001577552:ADS-COMMON",
+    "ticker": "NYSE:BABA",
+    "identifiers": [
+      "SEC:0001577552:ADS-COMMON"
+    ],
+    "tickerAliases": [
+      "BABA",
+      "NYSE:BABA"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1577552/000119312526231755/baba-20260331.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001581280:COMMON-STOCK",
+    "ticker": "NAS:TWST",
+    "identifiers": [
+      "SEC:0001581280:COMMON-STOCK"
+    ],
+    "tickerAliases": [
+      "NAS:TWST",
+      "TWST"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1581280/000158128026000047/twst-20260630.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001583708:COMMON-A",
+    "ticker": "NYSE:S",
+    "identifiers": [
+      "SEC:0001583708:COMMON-A"
+    ],
+    "tickerAliases": [
+      "NYSE:S",
+      "S"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1583708/000158370826000055/s-20260731.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001596532:COMMON-STOCK",
+    "ticker": "ANET",
+    "identifiers": [
+      "SEC:0001596532:COMMON-STOCK"
+    ],
+    "tickerAliases": [
+      "ANET"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1596532/000159653226000175/anet-20260630.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001601830:COMMON-A",
+    "ticker": "NAS:RXRX",
+    "identifiers": [
+      "SEC:0001601830:COMMON-A"
+    ],
+    "tickerAliases": [
+      "NAS:RXRX",
+      "RXRX"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1601830/000160183026000098/0001601830-26-000098-index.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001639920:ORDINARY-SHARES",
+    "ticker": "NYSE:SPOT",
+    "identifiers": [
+      "SEC:0001639920:ORDINARY-SHARES"
+    ],
+    "tickerAliases": [
+      "NYSE:SPOT",
+      "SPOT"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1639920/000162828026006874/ck0001639920-20251231.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001652044:CAPITAL-C",
+    "ticker": "GOOG",
+    "identifiers": [
+      "SEC:0001652044:CAPITAL-C"
+    ],
+    "tickerAliases": [
+      "GOOG",
+      "NAS:GOOG"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1652044/000165204426000071/goog-20260630.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001653482:COMMON-A",
+    "ticker": "NAS:GTLB",
+    "identifiers": [
+      "SEC:0001653482:COMMON-A"
+    ],
+    "tickerAliases": [
+      "GTLB",
+      "NAS:GTLB"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1653482/000162828026059820/gtlb-20260828.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001660134:COMMON-A",
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1660134/000166013426000020/okta-20260131.htm"
+    ],
+    "identifiers": [
+      "SEC:0001660134:COMMON-A"
+    ],
+    "ticker": "NAS:OKTA",
+    "tickerAliases": [
+      "NAS:OKTA",
+      "OKTA"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001674101:COMMON-A",
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1674101/000162828026050609/vrt-20260630.htm",
+      "https://www.sec.gov/Archives/edgar/data/1674101/000162828026063311/vrt-20260924.htm"
+    ],
+    "identifiers": [
+      "SEC:0001674101:COMMON-A"
+    ],
+    "ticker": "NYSE:VRT",
+    "tickerAliases": [
+      "NYSE:VRT",
+      "VRT"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001691493:CLASS-A-ORDINARY",
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1691493/000129281426002166/nuform20f_2025.htm"
+    ],
+    "identifiers": [
+      "SEC:0001691493:CLASS-A-ORDINARY"
+    ],
+    "ticker": "NYSE:NU",
+    "tickerAliases": [
+      "NU",
+      "NYSE:NU"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001703399:ADS-COMMON",
+    "ticker": "NYSE:SE",
+    "identifiers": [
+      "SEC:0001703399:ADS-COMMON"
+    ],
+    "tickerAliases": [
+      "NYSE:SE",
+      "SE"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1703399/000114036126015366/ef20067274_20f.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001709048:ORDINARY-SHARES",
+    "ticker": "NAS:GFS",
+    "identifiers": [
+      "SEC:0001709048:ORDINARY-SHARES"
+    ],
+    "tickerAliases": [
+      "GFS",
+      "NAS:GFS"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1709048/000170904826000239/globalfoundriesincf-3asr.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001730168:COMMON-STOCK",
+    "ticker": "AVGO",
+    "identifiers": [
+      "SEC:0001730168:COMMON-STOCK"
+    ],
+    "tickerAliases": [
+      "AVGO"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1730168/000173016826000080/avgo-20260802.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001734722:COMMON-A",
+    "ticker": "NYSE:PATH",
+    "identifiers": [
+      "SEC:0001734722:COMMON-A"
+    ],
+    "tickerAliases": [
+      "NYSE:PATH",
+      "PATH"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1734722/000173472226000050/path-20260731.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001737806:ADS-COMMON",
+    "ticker": "NAS:PDD",
+    "identifiers": [
+      "SEC:0001737806:ADS-COMMON"
+    ],
+    "tickerAliases": [
+      "NAS:PDD",
+      "PDD"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1737806/000110465926050727/pdd-20251231x20f.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001744676:ADS-COMMON",
+    "ticker": "NYSE:TME",
+    "identifiers": [
+      "SEC:0001744676:ADS-COMMON"
+    ],
+    "tickerAliases": [
+      "NYSE:TME",
+      "TME"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1744676/000119312526160257/tme-20251231.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001807794:ORDINARY-SHARES",
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1807794/000162828026043303/crdo-20260502.htm",
+      "https://www.sec.gov/Archives/edgar/data/1807794/000162828026060111/crdo-20260801.htm"
+    ],
+    "identifiers": [
+      "SEC:0001807794:ORDINARY-SHARES"
+    ],
+    "ticker": "CRDO",
+    "tickerAliases": [
+      "CRDO",
+      "NAS:CRDO"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001828791:COMMON-A",
+    "ticker": "NAS:DSP",
+    "identifiers": [
+      "SEC:0001828791:COMMON-A"
+    ],
+    "tickerAliases": [
+      "DSP",
+      "NAS:DSP"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1828791/000182879126000072/dsp-20260630.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001835632:COMMON-STOCK",
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1835632/000183563226000011/mrvl-20260131.htm"
+    ],
+    "identifiers": [
+      "SEC:0001835632:COMMON-STOCK"
+    ],
+    "ticker": "NAS:MRVL",
+    "tickerAliases": [
+      "MRVL",
+      "NAS:MRVL"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001845338:ORDINARY-SHARES",
+    "ticker": "NAS:MNDY",
+    "identifiers": [
+      "SEC:0001845338:ORDINARY-SHARES"
+    ],
+    "tickerAliases": [
+      "MNDY",
+      "NAS:MNDY"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1845338/000117891326000870/zk2634436.htm",
+      "https://www.sec.gov/Archives/edgar/data/1845338/000110465921080087/tm211978-21_424b4.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001910139:COMMON-A",
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1910139/000110465926014300/mbly-20251227x10k.htm",
+      "https://www.sec.gov/Archives/edgar/data/1910139/000110465926086264/mbly-20260627x10q.htm"
+    ],
+    "identifiers": [
+      "SEC:0001910139:COMMON-A"
+    ],
+    "ticker": "NAS:MBLY",
+    "tickerAliases": [
+      "MBLY",
+      "NAS:MBLY"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0001996810:COMMON",
+    "ticker": "NYSE:GEV",
+    "identifiers": [
+      "SEC:0001996810:COMMON"
+    ],
+    "tickerAliases": [
+      "GEV",
+      "NYSE:GEV"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/1996810/000199681026000148/gev-20260630.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0002080126:COMMON-A",
+    "ticker": "NYSE:FPS",
+    "identifiers": [
+      "SEC:0002080126:COMMON-A"
+    ],
+    "tickerAliases": [
+      "FPS",
+      "NYSE:FPS"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/2080126/000208012626000035/fps-20260630.htm",
+      "https://www.sec.gov/Archives/edgar/data/2080126/000119312526294982/olympus_iv_-_form_424b4.htm"
+    ]
+  },
+  {
+    "canonicalId": "SEC:0002081206:COMMON-A",
+    "ticker": "NYSE:AGBK",
+    "identifiers": [
+      "SEC:0002081206:COMMON-A"
+    ],
+    "tickerAliases": [
+      "AGBK",
+      "NYSE:AGBK"
+    ],
+    "evidenceUrls": [
+      "https://www.sec.gov/Archives/edgar/data/2081206/000175392626000308/g085129_424b1.htm",
+      "https://www.sec.gov/Archives/edgar/data/2081206/000175392626000296/g085115_8a.htm"
+    ]
+  }
+]

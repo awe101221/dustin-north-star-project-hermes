@@ -9,7 +9,15 @@ import type { RankedForecast, SleeveRanking } from "@/lib/qqq-rankings";
 import { SLEEVE_LABELS } from "@/lib/ranking-constants";
 import { bareSymbol } from "@/lib/utils";
 
-function ForecastRow({ row }: { row: RankedForecast }) {
+const NU_REVIEWED_FILINGS = [
+  { label: "July 20 acquisition filing", url: "https://www.sec.gov/Archives/edgar/data/1691493/000129281426003814/nu20260720_6k.htm" },
+  { label: "September 10 launch filing", url: "https://www.sec.gov/Archives/edgar/data/1691493/000129281426004518/nu20260909_6k.htm" },
+  { label: "September 30 clarification filing", url: "https://www.sec.gov/Archives/edgar/data/1691493/000129281426004752/nu20260930_6k.htm" },
+];
+
+function ForecastRow({ row, publicationHash }: { row: RankedForecast; publicationHash?: string }) {
+  const reviewedNuFilings = publicationHash === "a9af2c4fcd81bad5387f2881ad49ea8d4c6fee0bda5180c1954412dbf1e6e144"
+    && row.securityId === "SEC:0001691493:CLASS-A-ORDINARY" ? NU_REVIEWED_FILINGS : [];
   return <li className="rounded-lg border border-border bg-surface/70">
     <div className="flex items-start gap-3 p-3 sm:p-4">
       <span className="num w-9 shrink-0 pt-1 text-[14px] text-muted">{row.rank}</span>
@@ -51,6 +59,10 @@ function ForecastRow({ row }: { row: RankedForecast }) {
         </div>
         <p className="text-muted">{row.limitations}</p>
         <div className="flex flex-wrap gap-3">{row.evidenceUrls.map((url, i) => <a key={url} href={url} target="_blank" rel="noreferrer" className="inline-flex min-h-9 items-center gap-1 text-cyan hover:underline">Source {i + 1}<ArrowUpRight className="size-3" /></a>)}</div>
+        {reviewedNuFilings.length ? <div>
+          <p className="text-muted">Additional reviewed filings for this snapshot</p>
+          <div className="flex flex-wrap gap-3">{reviewedNuFilings.map(({ label, url }) => <a key={url} href={url} target="_blank" rel="noreferrer" className="inline-flex min-h-9 items-center gap-1 text-cyan hover:underline">{label}<ArrowUpRight className="size-3" /></a>)}</div>
+        </div> : null}
       </div>
     </details>
   </li>;
@@ -68,7 +80,7 @@ export function SleeveRankingView({ ranking, coverageError }: { ranking: SleeveR
       <Badge variant={ranking.missingSlots ? "warn" : "pos"}>{ranking.rows.length} / 50 ranked</Badge>
       <span className="sm:ml-auto text-muted">Updated {fmtDateTime(ranking.asOf)}</span>
     </div>
-    <p className="text-[12px] leading-5 text-muted">Ordered by modeled probability that the stock beats QQQ over five years, using matched price-return scenarios. Estimates reflect model assumptions; they are not calibrated success rates. Equal estimates share the same likelihood and use alphabetical ordering.</p>
+    <p className="text-[12px] leading-5 text-muted">This snapshot compares accepted eligible forecasts, ordered by modeled probability that the stock beats QQQ over five years using matched USD price-return scenarios. Estimates reflect model assumptions; they are not calibrated success rates. Equal estimates share the same likelihood, with alphabetical ordering also determining the 50-row cutoff.</p>
     {ranking.missingSlots ? <div className="panel border-warn/30 p-4 text-[12px] leading-5" role="status">
       <p className="font-medium">{ranking.missingSlots} ranking slots await fresh, independently reviewed QQQ forecasts.</p>
       <p className="mt-1 text-muted">{ranking.rows.length ? "The reviewed names below have comparable forecasts." : "No independently reviewed likelihood forecasts have been published yet. Existing research and company models remain available below."}</p>
@@ -78,19 +90,19 @@ export function SleeveRankingView({ ranking, coverageError }: { ranking: SleeveR
       <input className="min-w-0 flex-1 bg-transparent outline-none" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search company, ticker, or theme" />
     </label>
     <ol aria-label={`${SLEEVE_LABELS[ranking.sleeve]} Top 50 ranking`} className="space-y-2">
-      {rows.map((row) => <ForecastRow key={row.securityId} row={row} />)}
+      {rows.map((row) => <ForecastRow key={row.securityId} row={row} publicationHash={publication?.review.contentHash} />)}
     </ol>
     {ranking.rows.length && !rows.length ? <p className="p-4 text-[12px] text-muted">No ranked companies match this search.</p> : null}
     <details className="panel p-4" open={ranking.rows.length === 0}>
-      <summary className="cursor-pointer text-[13px] font-medium">Research awaiting a comparable forecast · {ranking.candidates.length + ranking.stale.length}</summary>
+      <summary className="cursor-pointer text-[13px] font-medium">Research without a current rank · {ranking.candidates.length + ranking.stale.length}</summary>
       {coverageError ? <p role="alert" className="mt-3 text-[12px] text-warn">{coverageError}</p> : null}
-      <p className="my-3 text-[11px] text-muted">These names remain unranked until their security identity and comparable QQQ forecast are reviewed. Prior scores and expected returns do not establish likelihood of beating QQQ.</p>
+      <p className="my-3 text-[11px] text-muted">A current rank requires an approved comparable forecast and a place in the published Top 50. Prior scores and expected returns do not establish likelihood of beating QQQ.</p>
       <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
         {ranking.stale.map((c) => <Link key={c.ticker} href={`/companies/${encodeURIComponent(c.ticker)}`} className="panel-2 p-3 text-[12px]">
           <span className="num text-gold">{bareSymbol(c.ticker)}</span><p>{c.companyName}</p><p className="text-[11px] text-warn">Model or valuation price needs refresh.</p>
         </Link>)}
         {ranking.candidates.map((c) => <Link key={c.ticker} href={`/companies/${encodeURIComponent(c.ticker)}`} className="panel-2 p-3 text-[12px] hover:border-cyan/40">
-          <span className="num text-gold">{bareSymbol(c.ticker)}</span><p>{c.companyName}</p><p className="mt-1 text-[11px] text-muted">QQQ likelihood forecast pending review.</p>
+          <span className="num text-gold">{bareSymbol(c.ticker)}</span><p>{c.companyName}</p><p className="mt-1 text-[11px] text-muted">No current Top 50 rank.</p>
         </Link>)}
       </div>
     </details>

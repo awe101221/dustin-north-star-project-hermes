@@ -9,6 +9,25 @@ const nonempty = z.string().trim().min(1);
 const timestamp = z.iso.datetime({ offset: true });
 const evidenceUrl = z.url().refine((s) => new URL(s).protocol === "https:", "HTTPS evidence required");
 const ticker = nonempty.max(30).regex(/^(?:[A-Z]+:)?[A-Z0-9][A-Z0-9.-]*$/);
+type ProbabilityMass = { units: bigint; scale: number };
+function decimalMass(weights: number[]): ProbabilityMass {
+  const parts = weights.map((weight) => {
+    const [mantissa, exponent = "0"] = weight.toString().split("e");
+    const [whole, fraction = ""] = mantissa!.split(".");
+    return { units: BigInt(whole! + fraction), scale: fraction.length - Number(exponent) };
+  });
+  const scale = Math.max(0, ...parts.map((p) => p.scale));
+  return { units: parts.reduce((n, p) => n + p.units * 10n ** BigInt(scale - p.scale), 0n), scale };
+}
+function compareMass(a: ProbabilityMass, b: ProbabilityMass): number {
+  const scale = Math.max(a.scale, b.scale);
+  const difference = a.units * 10n ** BigInt(scale - a.scale) - b.units * 10n ** BigInt(scale - b.scale);
+  return difference < 0n ? -1 : difference > 0n ? 1 : 0;
+}
+function massNumber(mass: ProbabilityMass): number {
+  return Number(`${mass.units}e-${mass.scale}`);
+}
+export function sumProbabilities(weights: number[]): number { return massNumber(decimalMass(weights)); }
 
 export const rankingForecastSchema = z.object({
   securityId: nonempty.toUpperCase().regex(/^(ISIN:[A-Z]{2}[A-Z0-9]{9}[0-9]|SEC:\d{10}:[A-Z0-9-]+)$/),
@@ -37,7 +56,7 @@ export const rankingForecastSchema = z.object({
     rationale: nonempty.max(4000),
   }).strict()).min(3).max(12),
 }).strict().superRefine((row, ctx) => {
-  if (Math.abs(row.scenarios.reduce((n, s) => n + s.probability, 0) - 1) > 1e-9)
+  if (compareMass(decimalMass(row.scenarios.map((s) => s.probability)), { units: 1n, scale: 0 }) !== 0)
     ctx.addIssue({ code: "custom", path: ["scenarios"], message: "Scenario probabilities must sum to one" });
   if (new Set(row.scenarios.map((s) => s.name.toLowerCase())).size !== row.scenarios.length)
     ctx.addIssue({ code: "custom", path: ["scenarios"], message: "Scenario names must be unique" });
@@ -68,7 +87,7 @@ export const rankingDraftSchema = z.object({
   methodology: nonempty.max(6000),
   forecasts: z.array(rankingForecastSchema).min(1).max(500),
 }).strict().superRefine((draft, ctx) => {
-  if (Math.abs(draft.benchmarkScenarios.reduce((n, s) => n + s.probability, 0) - 1) > 1e-9 || new Set(draft.benchmarkScenarios.map((s) => s.name)).size !== draft.benchmarkScenarios.length)
+  if (compareMass(decimalMass(draft.benchmarkScenarios.map((s) => s.probability)), { units: 1n, scale: 0 }) !== 0 || new Set(draft.benchmarkScenarios.map((s) => s.name)).size !== draft.benchmarkScenarios.length)
     ctx.addIssue({ code: "custom", path: ["benchmarkScenarios"], message: "QQQ scenarios must be unique and sum to one" });
   const securities = draft.forecasts.map((f) => f.securityId);
   if (new Set(securities).size !== securities.length || new Set(draft.forecasts.map((f) => f.ticker)).size !== draft.forecasts.length)
@@ -80,8 +99,8 @@ export const rankingDraftSchema = z.object({
         ctx.addIssue({ code: "custom", path: ["forecasts", i, "scenarios"], message: "Every stock scenario must match a shared QQQ scenario return" });
     }
     for (const benchmark of draft.benchmarkScenarios) {
-      const mass = f.scenarios.filter((s) => s.benchmarkScenario === benchmark.name).reduce((n, s) => n + s.probability, 0);
-      if (Math.abs(mass - benchmark.probability) > 1e-9)
+      const mass = decimalMass(f.scenarios.filter((s) => s.benchmarkScenario === benchmark.name).map((s) => s.probability));
+      if (compareMass(mass, decimalMass([benchmark.probability])) !== 0)
         ctx.addIssue({ code: "custom", path: ["forecasts", i, "scenarios"], message: "Every company must use the same QQQ marginal probability distribution" });
     }
     if (Date.parse(f.priceAsOf) !== Date.parse(draft.benchmarkAsOf))
@@ -149,23 +168,12 @@ export type SleeveRanking = {
   missingSlots: number;
 };
 
-type ProbabilityMass = { units: bigint; scale: number };
 /** Sum the canonical decimal weights exactly. Binary addition noise must not
  * break real ties, and display rounding must not erase a real difference. */
 function beatMass(f: RankingForecast): ProbabilityMass {
-  const parts = f.scenarios.filter((s) => s.stockAnnualizedReturn > s.qqqAnnualizedReturn).map((s) => {
-    const [mantissa, exponent = "0"] = s.probability.toString().split("e");
-    const [whole, fraction = ""] = mantissa!.split(".");
-    return { units: BigInt(whole! + fraction), scale: fraction.length - Number(exponent) };
-  });
-  const scale = Math.max(0, ...parts.map((p) => p.scale));
-  const units = parts.reduce((n, p) => n + p.units * 10n ** BigInt(scale - p.scale), 0n);
-  return units > 10n ** BigInt(scale) ? { units: 1n, scale: 0 } : { units, scale };
-}
-function compareMass(a: ProbabilityMass, b: ProbabilityMass): number {
-  const scale = Math.max(a.scale, b.scale);
-  const difference = a.units * 10n ** BigInt(scale - a.scale) - b.units * 10n ** BigInt(scale - b.scale);
-  return difference < 0n ? -1 : difference > 0n ? 1 : 0;
+  const mass = decimalMass(f.scenarios.filter((s) => s.stockAnnualizedReturn > s.qqqAnnualizedReturn).map((s) => s.probability));
+  if (compareMass(mass, { units: 1n, scale: 0 }) > 0) throw new Error("Winning probability mass cannot exceed one");
+  return mass;
 }
 
 export function forecastMetrics(f: RankingForecast) {
@@ -173,7 +181,7 @@ export function forecastMetrics(f: RankingForecast) {
   return {
     // Ties with QQQ are not outperformance. Do not multiply marginal scenario
     // probabilities: the stock and QQQ outcomes describe the SAME scenario.
-    probabilityBeatQqq: Number(`${probability.units}e-${probability.scale}`),
+    probabilityBeatQqq: massNumber(probability),
     expectedAnnualizedReturn: f.scenarios.reduce((n, s) => n + s.probability * s.stockAnnualizedReturn, 0),
     expectedQqqReturn: f.scenarios.reduce((n, s) => n + s.probability * s.qqqAnnualizedReturn, 0),
   };

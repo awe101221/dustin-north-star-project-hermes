@@ -259,10 +259,25 @@ describe("QQQ likelihood rankings", () => {
   });
   it("compares real decimal mass differences before conversion to display numbers", () => {
     const a = forecast("AAA"), b = forecast("ZZZ");
-    b.scenarios.push({ ...b.scenarios[2]!, name: "Additional tiny win", stockAnnualizedReturn: 0.3, stockTerminalPrice: 100 * 1.3 ** 5, probability: 1e-100 });
-    expect(rankingForecastSchema.safeParse(b).success).toBe(true);
+    const weights = [0.5999999999999999, 9.9e-17, 1e-18];
+    for (const f of [a, b]) {
+      const base = f.scenarios[1]!;
+      f.scenarios = [f.scenarios[0]!, f.scenarios[2]!, ...weights.map((probability, i) => ({ ...base, name: `Base part ${i}`, probability }))];
+    }
+    a.scenarios.at(-1)!.stockAnnualizedReturn = 0.05; a.scenarios.at(-1)!.stockTerminalPrice = 100 * 1.05 ** 5;
+    expect(draft([a, b]).forecasts).toHaveLength(2);
     expect(forecastMetrics(a).probabilityBeatQqq).toBe(forecastMetrics(b).probabilityBeatQqq);
     expect(rankForecasts([a, b])[0]!.ticker).toBe("ZZZ");
+  });
+  it("rejects unbalanced dust and exact marginal mismatches even when binary sums hide them", () => {
+    const f = forecast(); f.scenarios.push({ ...f.scenarios[1]!, name: "Unbalanced dust", probability: 1e-100 });
+    expect(rankingForecastSchema.safeParse(f).success).toBe(false);
+    const a = forecast(), b = forecast();
+    a.scenarios[1]!.probability = 0.6000000000000001; a.scenarios[0]!.probability = 0.1999999999999999;
+    expect(rankingForecastSchema.safeParse(a).success).toBe(true);
+    expect(() => draft([a])).toThrow();
+    const d = draft([b]); d.benchmarkScenarios.push({ ...d.benchmarkScenarios[0]!, name: "Dust", probability: 1e-100 });
+    expect(rankingDraftSchema.safeParse(d).success).toBe(false);
   });
 
 });

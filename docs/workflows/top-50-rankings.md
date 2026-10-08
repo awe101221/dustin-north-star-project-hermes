@@ -19,7 +19,7 @@ Each draft has `schemaVersion: "qqq-top50/v1"`, `sleeve`, an ISO timestamp `asOf
 currentPrice, currency, thesis, whyBeatQqq, falsifier, nextAction, theme,
 evidenceUrls, limitations, capitalStructure, probabilityRationale, and three to twelve matched scenarios. Each scenario
 has name, benchmarkScenario, probability, stockAnnualizedReturn, stockTerminalPrice, qqqAnnualizedReturn, and rationale.
-Numbers are decimal ratios. Probabilities sum to exactly one (tolerance 1e-9).
+Numbers are decimal ratios. Canonical decimal probability weights sum to exactly one, and benchmark marginals match exactly. No residual tolerance or silent normalization is applied.
 All stock and QQQ outcomes are in USD. Native-currency forecasts without an evidenced USD/FX bridge are unranked; a local-currency return cannot be compared directly with QQQ's USD return.
 The five-year terminal price must reproduce the stock CAGR within a tight relative arithmetic tolerance. Each scenario's rationale traces economic drivers to its per-share
 outcome. `capitalStructure` records the share basis, financing, corporate

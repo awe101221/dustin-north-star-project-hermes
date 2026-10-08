@@ -2,7 +2,7 @@ import fs from "node:fs";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { z } from "zod";
-import { rankingDraftSchema, rankingPublicationSchema, exactAuthorDraft, rankForecasts, assertSharedForecastConsistency, buildSleeveRanking, latestRankingPublication } from "../../src/lib/qqq-rankings";
+import { rankingDraftSchema, rankingPublicationSchema, exactAuthorDraft, rankForecasts, sumProbabilities, assertSharedForecastConsistency, buildSleeveRanking, latestRankingPublication } from "../../src/lib/qqq-rankings";
 import { requireCanonicalRankingSecurities } from "../../src/lib/ranking-securities";
 import { verifyRankingAuthorities, type RankingAuthority } from "../../src/lib/ranking-authority";
 
@@ -28,8 +28,8 @@ function main() {
     const ranked = rankForecasts(draft.forecasts);
     console.log(JSON.stringify({ sleeve: draft.sleeve, contentHash: hash(draft), coverage: `${ranked.length}/50`,
       rows: ranked.map((r) => ({ rank: r.rank, ticker: r.ticker, probabilityBeatQqq: r.probabilityBeatQqq,
-        scenarioProbabilityTotal: r.scenarios.reduce((n, s) => n + s.probability, 0),
-        benchmarkMarginals: draft.benchmarkScenarios.map((b) => ({ name: b.name, expected: b.probability, actual: r.scenarios.filter((s) => s.benchmarkScenario === b.name).reduce((n, s) => n + s.probability, 0) })),
+        scenarioProbabilityTotal: sumProbabilities(r.scenarios.map((s) => s.probability)),
+        benchmarkMarginals: draft.benchmarkScenarios.map((b) => ({ name: b.name, expected: b.probability, actual: sumProbabilities(r.scenarios.filter((s) => s.benchmarkScenario === b.name).map((s) => s.probability)) })),
         outcomes: r.scenarios.map((s) => ({ name: s.name, probability: s.probability, stockTerminalPrice: s.stockTerminalPrice,
           impliedTerminalPrice: r.currentPrice * (1 + s.stockAnnualizedReturn) ** 5, stockAnnualizedReturn: s.stockAnnualizedReturn,
           qqqAnnualizedReturn: s.qqqAnnualizedReturn, strictlyBeatsQqq: s.stockAnnualizedReturn > s.qqqAnnualizedReturn })) })) }, null, 2));

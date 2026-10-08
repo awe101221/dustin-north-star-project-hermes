@@ -2,7 +2,8 @@ import fs from "node:fs";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { z } from "zod";
-import { rankingDraftSchema, rankingPublicationSchema, rankForecasts, assertSharedForecastConsistency, buildSleeveRanking } from "../../src/lib/qqq-rankings";
+import { rankingDraftSchema, rankingPublicationSchema, rankForecasts, assertSharedForecastConsistency, buildSleeveRanking, latestRankingPublication } from "../../src/lib/qqq-rankings";
+import { canonicalizeRankingSecurities } from "../../src/lib/ranking-securities";
 import { verifyRankingAuthorities, type RankingAuthority } from "../../src/lib/ranking-authority";
 
 const [command, ...args] = process.argv.slice(2);
@@ -32,7 +33,15 @@ function main() {
     const raw = read(file ?? "src/lib/reviewed-qqq-rankings.json");
     if (!Array.isArray(raw)) throw new Error("Publications must be an array");
     const publications = raw.map((p: unknown) => rankingPublicationSchema.parse(p));
+    const securityIndex = args.indexOf("--securities");
+    const securities = read(securityIndex >= 0 ? args[securityIndex + 1]! : "src/lib/reviewed-ranking-securities.json");
     for (const p of publications) {
+      p.draft = canonicalizeRankingSecurities(p.draft, securities);
+      for (const submission of p.author.submissions) {
+        const forecast = p.draft.forecasts.find((f) => f.securityId === submission.securityId)!;
+        if (hash({ ...p.draft, sleeve: "core", forecasts: [forecast] }) !== submission.contentHash)
+          throw new Error("Forecast differs from its exact-content author submission");
+      }
       if (hash(p.draft) !== p.review.contentHash) throw new Error("Publication differs from exact reviewed content");
     }
     assertSharedForecastConsistency(publications);
@@ -43,7 +52,7 @@ function main() {
       const output = outputIndex >= 0 ? args[outputIndex + 1] : undefined;
       if (!board || !output || !file) throw new Error("export-authorities requires PUBLICATIONS --board BOARD --output OUTPUT");
       const authorities: RankingAuthority[] = [];
-      for (const p of publications) for (const record of [p.review, p.approval]) {
+      for (const p of publications) for (const record of [...p.author.submissions, p.review, p.approval]) {
         const call = (verb: string) => JSON.parse(execFileSync("hermes", ["kanban", "--board", board, verb, record.taskId, "--json"], { encoding: "utf8", timeout: 30000, maxBuffer: 4 * 1024 * 1024 }));
         const shown = call("show");
         const runs = call("runs") as { id: number; profile: string; status: string; outcome: string; started_at: number; ended_at: number; metadata: Record<string, unknown> | null }[];
@@ -57,7 +66,7 @@ function main() {
           !accepted)
           throw new Error(`Actual Hermes task/run has not accepted this exact content: ${record.taskId}`);
         authorities.push({ taskId: record.taskId, runId: record.runId, actor: record.actor, taskStatus: "done", runStatus: "done", runOutcome: "completed",
-          startedAt: run.started_at, endedAt: run.ended_at, recordedAt: record.reviewedAt, contentHash: record.contentHash, decision });
+          startedAt: run.started_at, endedAt: run.ended_at, recordedAt: new Date(run.ended_at * 1000).toISOString(), contentHash: record.contentHash, decision });
       }
       verifyRankingAuthorities(publications, authorities);
       fs.writeFileSync(output, JSON.stringify(authorities, null, 2) + "\n", { mode: 0o600 });
@@ -70,7 +79,7 @@ function main() {
       throw new Error("Release requires 50 fresh accepted forecasts in each sleeve");
     console.log(JSON.stringify({ verifiedPublications: publications.length,
       sleeves: ["core", "ai-regime"].map((sleeve) => {
-        const latest = publications.filter((p) => p.draft.sleeve === sleeve).sort((a, b) => Date.parse(b.draft.asOf) - Date.parse(a.draft.asOf))[0];
+        const latest = latestRankingPublication(sleeve as "core" | "ai-regime", publications);
         return { sleeve, asOf: latest?.draft.asOf ?? null, forecasts: latest?.draft.forecasts.length ?? 0 };
       }) }, null, 2));
     return;

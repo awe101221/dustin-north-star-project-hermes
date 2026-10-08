@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import { buildSleeveRanking, forecastMetrics, rankForecasts, rankingDraftSchema, rankingPublicationSchema, type RankingDraft, type RankingForecast, type RankingPublication, assertSharedForecastConsistency } from "./qqq-rankings";
 vi.mock("server-only", () => ({}));
+import { canonicalizeRankingSecurities, rankingSecurityForTicker, rankingSecurityMaster } from "./ranking-securities";
 import { loadReviewedRankings } from "./server/qqq-rankings";
 
 const now = "2026-10-07T22:00:00Z";
@@ -24,16 +25,20 @@ function draft(forecasts = [forecast()], sleeve: RankingDraft["sleeve"] = "core"
 function publication(forecasts = [forecast()], sleeve: RankingDraft["sleeve"] = "core"): RankingPublication {
   const d = draft(forecasts, sleeve);
   const contentHash = createHash("sha256").update(JSON.stringify(d)).digest("hex");
-  return rankingPublicationSchema.parse({ draft: d, author: "investment-underwriter",
+  return rankingPublicationSchema.parse({ draft: d, author: { submissions: d.forecasts.map((f, i) => ({ actor: "investment-underwriter", securityId: f.securityId, taskId: `t_${(i + 3).toString(16).padStart(8, "0")}`, runId: String(i + 3), submittedAt: "2026-10-07T20:20:00Z", decision: "AUTHOR FORECAST SUBMISSION", contentHash: createHash("sha256").update(JSON.stringify({ ...d, sleeve: "core", forecasts: [f] })).digest("hex") })) },
     review: { taskId: "t_00000001", runId: "1", actor: "evidence-risk-reviewer", contentHash, reviewedAt: "2026-10-07T20:30:00Z", verdict: "PASS" },
     approval: { taskId: "t_00000002", runId: "2", actor: "north-star-pm", contentHash, reviewedAt: "2026-10-07T21:00:00Z", decision: "APPROVE RANKING PUBLICATION" } });
 }
 
 function authorities(pubs: RankingPublication[]) {
-  return pubs.flatMap((p) => [p.review, p.approval].map((r) => ({ taskId: r.taskId, runId: r.runId, actor: r.actor,
-    taskStatus: "done", runStatus: "done", runOutcome: "completed", recordedAt: r.reviewedAt,
-    startedAt: Date.parse(r.reviewedAt) / 1000 - 60, endedAt: Date.parse(r.reviewedAt) / 1000 + 60,
+  return pubs.flatMap((p) => [...p.author.submissions, p.review, p.approval].map((r) => ({ taskId: r.taskId, runId: r.runId, actor: r.actor,
+    taskStatus: "done", runStatus: "done", runOutcome: "completed", recordedAt: "submittedAt" in r ? r.submittedAt : r.reviewedAt,
+    startedAt: Date.parse("submittedAt" in r ? r.submittedAt : r.reviewedAt) / 1000 - 60, endedAt: Date.parse("submittedAt" in r ? r.submittedAt : r.reviewedAt) / 1000,
     contentHash: r.contentHash, decision: "verdict" in r ? r.verdict : r.decision })));
+}
+
+function securities(pubs: RankingPublication[]) {
+  return pubs.flatMap((p) => p.draft.forecasts.map((f) => ({ canonicalId: f.securityId, ticker: f.ticker, identifiers: [f.securityId], tickerAliases: [f.ticker], evidenceUrls: f.evidenceUrls })));
 }
 
 describe("QQQ likelihood rankings", () => {
@@ -64,11 +69,11 @@ describe("QQQ likelihood rankings", () => {
     expect(buildSleeveRanking("core", pubs, [], now).rows).toHaveLength(1);
     expect(buildSleeveRanking("ai-regime", pubs, [], now).rows).toHaveLength(1);
   });
-  it("leaves missing probabilities unranked and deduplicates exchange aliases", () => {
+  it("leaves missing probabilities and unresolved exchange aliases unranked", () => {
     const ranking = buildSleeveRanking("core", [], [{ ticker: "ABC", companyName: null, thesis: null, nextAction: null }, { ticker: "NAS:ABC", companyName: null, thesis: null, nextAction: null }], now);
     expect(ranking.rows).toEqual([]);
     expect(ranking.missingSlots).toBe(50);
-    expect(ranking.candidates).toHaveLength(1);
+    expect(ranking.candidates).toHaveLength(2);
   });
   it("withholds stale models/prices and future-approved publications", () => {
     const f = forecast(); f.modelAsOf = "2026-08-01T20:00:00Z";
@@ -100,20 +105,20 @@ describe("QQQ likelihood rankings", () => {
     expect(rankingPublicationSchema.safeParse({ ...p, author: p.review.actor }).success).toBe(false);
     expect(rankingPublicationSchema.safeParse({ ...p, approval: { ...p.approval, contentHash: "0".repeat(64) } }).success).toBe(false);
     expect(rankingPublicationSchema.safeParse({ ...p, approval: { ...p.approval, reviewedAt: "2026-10-07T20:00:00Z" } }).success).toBe(false);
-    expect(loadReviewedRankings([p], authorities([p]))).toHaveLength(1);
+    expect(loadReviewedRankings([p], authorities([p]), securities([p]))).toHaveLength(1);
     p.draft.forecasts[0]!.thesis = "Changed after review";
-    expect(() => loadReviewedRankings([p], authorities([p]))).toThrow(/differs/);
+    expect(() => loadReviewedRankings([p], authorities([p]), securities([p]))).toThrow(/differs/);
   });
   it("requires one same-date numeric forecast for a shared stock across sleeves", () => {
     const core = publication();
     const aiForecast = forecast(); aiForecast.scenarios[1]!.stockAnnualizedReturn = 0.05; aiForecast.scenarios[1]!.stockTerminalPrice = 100 * 1.05 ** 5;
     aiForecast.modelAsOf = "2026-10-07T20:00:00Z";
     const ai = publication([aiForecast], "ai-regime");
-    expect(() => loadReviewedRankings([core, ai], authorities([core, ai]))).toThrow(/conflicting/);
+    expect(() => loadReviewedRankings([core, ai], authorities([core, ai]), securities([core, ai]))).toThrow(/conflicting/);
   });
   it("binds runtime approvals to completed Hermes authority readbacks and exact roles", () => {
     const p = publication();
-    expect(() => loadReviewedRankings([p], [])).toThrow(/authority readback/);
+    expect(() => loadReviewedRankings([p], [], securities([p]))).toThrow(/authority readback/);
     expect(rankingPublicationSchema.safeParse({ ...p, review: { ...p.review, actor: "Evidence-Risk-Reviewer" } }).success).toBe(false);
     expect(rankingPublicationSchema.safeParse({ ...p, review: { ...p.review, runId: "01" } }).success).toBe(false);
   });
@@ -145,6 +150,53 @@ describe("QQQ likelihood rankings", () => {
     expect(rankForecasts([low, high])[0]!.ticker).toBe("ZZZ");
     const f = forecast(); f.currentPrice = 1e308;
     expect(rankingDraftSchema.safeParse({ ...draft(), forecasts: [f] }).success).toBe(false);
+  });
+
+  it("resolves evidenced identifier namespaces through a reviewed master and rejects unknown aliases", () => {
+    const a = forecast(), b = forecast("NAS:ABC");
+    b.securityId = "ISIN:US0000000019";
+    const master = [{ canonicalId: a.securityId, ticker: "ABC", identifiers: [a.securityId, b.securityId, "SEC:0000000001:COMMON-STOCK"], tickerAliases: ["ABC", "NAS:ABC"], evidenceUrls: a.evidenceUrls }];
+    expect(() => canonicalizeRankingSecurities(draft([a, b]), master)).toThrow(/Duplicate canonical/);
+    b.securityId = "SEC:0000000001:COMMON-STOCK";
+    expect(() => canonicalizeRankingSecurities(draft([a, b]), master)).toThrow(/Duplicate canonical/);
+    b.securityId = "SEC:0000000001:UNKNOWN";
+    expect(() => canonicalizeRankingSecurities(draft([b]), master)).toThrow(/unresolved/);
+  });
+  it("retains pending coverage for distinct exchange instruments", () => {
+    const p = publication([forecast("NAS:ABC")]);
+    const r = buildSleeveRanking("core", [p], [{ ticker: "ASX:ABC", companyName: "Other issuer", thesis: null, nextAction: null }], now);
+    expect(r.candidates).toHaveLength(1);
+  });
+  it("rejects low-price arithmetic mismatches and accepts an exact zero terminal price", () => {
+    const f = forecast(); f.currentPrice = 0.001;
+    f.scenarios = f.scenarios.map((s) => ({ ...s, stockTerminalPrice: f.currentPrice * (1 + s.stockAnnualizedReturn) ** 5 }));
+    expect(draft([f]).forecasts).toHaveLength(1);
+    f.scenarios[0]!.stockTerminalPrice = 0.02;
+    expect(() => draft([f])).toThrow();
+    f.scenarios[0]!.stockAnnualizedReturn = -1; f.scenarios[0]!.stockTerminalPrice = 0;
+    expect(draft([f]).forecasts).toHaveLength(1);
+  });
+  it("requires authority-derived times and rejects approval before completed review", () => {
+    const p = publication(), receipts = authorities([p]);
+    receipts[0]!.recordedAt = "2026-10-07T20:19:30Z";
+    expect(() => loadReviewedRankings([p], receipts, securities([p]))).toThrow(/timestamp/);
+    const concurrent = authorities([p]); concurrent[2]!.startedAt = Date.parse("2026-10-07T20:29:30Z") / 1000;
+    expect(() => loadReviewedRankings([p], concurrent, securities([p]))).toThrow(/after the accepted/);
+  });
+  it("requires exact author content even when the bundle review hash is valid", () => {
+    const p = publication(); p.author.submissions[0]!.contentHash = "a".repeat(64);
+    expect(() => loadReviewedRankings([p], authorities([p]), securities([p]))).toThrow(/submitted by its underwriter/);
+    expect(rankingPublicationSchema.safeParse({ ...p, author: { submissions: [] } }).success).toBe(false);
+  });
+  it("rejects conflicting same-time revisions rather than selecting by input order", () => {
+    const a = publication(), b = publication(); b.review.contentHash = "b".repeat(64); b.approval.contentHash = b.review.contentHash;
+    expect(() => buildSleeveRanking("core", [a, b], [], now)).toThrow(/Ambiguous equal-precedence/);
+  });
+  it("resolves dossier identities only through explicit reviewed ticker aliases", () => {
+    const p = publication(), master = securities([p]); master[0]!.tickerAliases.push("NAS:ABC");
+    expect(rankingSecurityForTicker("nas:abc", master)?.canonicalId).toBe(p.draft.forecasts[0]!.securityId);
+    expect(rankingSecurityForTicker("ASX:ABC", master)).toBeNull();
+    expect(() => rankingSecurityMaster([...master, { ...master[0]!, ticker: "OTHER" }])).toThrow(/Conflicting canonical/);
   });
 
 });

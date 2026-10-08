@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { isModelStale } from "@/lib/model-freshness";
 import { bareSymbol } from "@/lib/utils";
+import { rankingSecurityMaster } from "./ranking-securities";
 
 import { RANKING_LIMIT, RANKING_HORIZON_YEARS, RANKING_MAX_AGE_DAYS, type RankingSleeve } from "@/lib/ranking-constants";
 export { RANKING_LIMIT, RANKING_HORIZON_YEARS, RANKING_MAX_AGE_DAYS, SLEEVE_LABELS, type RankingSleeve } from "@/lib/ranking-constants";
@@ -42,7 +43,7 @@ export const rankingForecastSchema = z.object({
     ctx.addIssue({ code: "custom", path: ["scenarios"], message: "Scenario names must be unique" });
   row.scenarios.forEach((s, i) => {
     const impliedPrice = row.currentPrice * (1 + s.stockAnnualizedReturn) ** RANKING_HORIZON_YEARS;
-    if (!Number.isFinite(impliedPrice) || Math.abs(impliedPrice - s.stockTerminalPrice) > Math.max(0.02, impliedPrice * 1e-6))
+    if (!Number.isFinite(impliedPrice) || Math.abs(impliedPrice - s.stockTerminalPrice) > Math.max(Number.EPSILON * Math.max(row.currentPrice, impliedPrice) * 16, impliedPrice * 1e-8))
       ctx.addIssue({ code: "custom", path: ["scenarios", i, "stockTerminalPrice"], message: "Five-year terminal price must reproduce the stock CAGR (within price rounding)" });
   });
 });
@@ -100,11 +101,21 @@ const attestation = z.object({
 }).strict();
 export const rankingPublicationSchema = z.object({
   draft: rankingDraftSchema,
-  author: z.literal("investment-underwriter"),
+  author: z.object({ submissions: z.array(attestation.omit({ reviewedAt: true }).extend({
+    actor: z.literal("investment-underwriter"), securityId: nonempty,
+    submittedAt: timestamp, decision: z.literal("AUTHOR FORECAST SUBMISSION"),
+  })).min(1) }).strict(),
   review: attestation.extend({ actor: z.literal("evidence-risk-reviewer"), verdict: z.enum(["PASS", "PASS WITH CAVEATS"]) }),
   approval: attestation.extend({ actor: z.literal("north-star-pm"), decision: z.literal("APPROVE RANKING PUBLICATION") }),
 }).strict().superRefine((p, ctx) => {
-  if (new Set([p.author, p.review.actor, p.approval.actor]).size !== 3 || p.review.taskId === p.approval.taskId || p.review.runId === p.approval.runId)
+  const submissions = p.author.submissions;
+  const expected = new Set(p.draft.forecasts.map((f) => f.securityId));
+  if (submissions.length !== expected.size || new Set(submissions.map((s) => s.securityId)).size !== expected.size || submissions.some((s) => !expected.has(s.securityId)))
+    ctx.addIssue({ code: "custom", path: ["author"], message: "Each forecast needs exactly one exact-content author submission" });
+  if (p.review.taskId === p.approval.taskId || p.review.runId === p.approval.runId ||
+    new Set(submissions.map((s) => s.taskId)).size !== submissions.length ||
+    new Set(submissions.map((s) => s.runId)).size !== submissions.length ||
+    submissions.some((s) => [p.review.taskId, p.approval.taskId].includes(s.taskId) || [p.review.runId, p.approval.runId].includes(s.runId) || Date.parse(s.submittedAt) > Date.parse(p.review.reviewedAt)))
     ctx.addIssue({ code: "custom", path: ["review"], message: "Author, independent reviewer, and PM must be distinct" });
   if (p.review.contentHash !== p.approval.contentHash)
     ctx.addIssue({ code: "custom", path: ["approval"], message: "Review and approval must bind identical content" });
@@ -122,7 +133,7 @@ export type RankedForecast = RankingForecast & {
   expectedAnnualizedReturn: number;
   expectedQqqReturn: number;
 };
-export type RankingCandidate = { ticker: string; companyName: string | null; thesis: string | null; nextAction: string | null };
+export type RankingCandidate = { securityId?: string; ticker: string; companyName: string | null; thesis: string | null; nextAction: string | null };
 export type SleeveRanking = {
   sleeve: RankingSleeve;
   asOf: string | null;
@@ -157,10 +168,13 @@ export function buildSleeveRanking(sleeve: RankingSleeve, publications: RankingP
   const stale = forecasts.filter((f) => isModelStale(f.modelAsOf, now, RANKING_MAX_AGE_DAYS) || isModelStale(f.priceAsOf, now, RANKING_MAX_AGE_DAYS));
   const blocked = new Set(stale.map((f) => f.securityId));
   const rows = rankForecasts(forecasts.filter((f) => !blocked.has(f.securityId)));
-  const covered = new Set(forecasts.map((f) => bareSymbol(f.ticker).toUpperCase()));
+  const master = rankingSecurityMaster();
+  const identity = (c: { securityId?: string; ticker: string }) => master.identifiers.get(c.securityId?.toUpperCase() ?? "")?.canonicalId
+    ?? master.tickers.get(c.ticker.toUpperCase())?.canonicalId ?? `unresolved:${c.ticker.toUpperCase()}`;
+  const covered = new Set(forecasts.map(identity));
   const seen = new Set<string>();
   const pending = candidates.filter((c) => {
-    const symbol = bareSymbol(c.ticker).toUpperCase();
+    const symbol = identity(c);
     if (!symbol || covered.has(symbol) || seen.has(symbol)) return false;
     seen.add(symbol);
     return true;
@@ -174,8 +188,13 @@ export function buildSleeveRanking(sleeve: RankingSleeve, publications: RankingP
 }
 
 export function latestRankingPublication(sleeve: RankingSleeve, publications: RankingPublication[], now = new Date().toISOString()): RankingPublication | null {
-  return publications.filter((p) => p.draft.sleeve === sleeve && Date.parse(p.approval.reviewedAt) <= Date.parse(now))
-    .sort((a, b) => Date.parse(b.draft.asOf) - Date.parse(a.draft.asOf) || Date.parse(b.approval.reviewedAt) - Date.parse(a.approval.reviewedAt))[0] ?? null;
+  const active = publications.filter((p) => p.draft.sleeve === sleeve && Date.parse(p.approval.reviewedAt) <= Date.parse(now))
+    .sort((a, b) => Date.parse(b.draft.asOf) - Date.parse(a.draft.asOf) || Date.parse(b.approval.reviewedAt) - Date.parse(a.approval.reviewedAt));
+  const latest = active[0] ?? null;
+  if (latest && active.some((p) => Date.parse(p.draft.asOf) === Date.parse(latest.draft.asOf) &&
+    Date.parse(p.approval.reviewedAt) === Date.parse(latest.approval.reviewedAt) && p.review.contentHash !== latest.review.contentHash))
+    throw new Error("Ambiguous equal-precedence ranking revisions");
+  return latest;
 }
 
 /** Active sleeves use one shared comparator and one numeric model per security. */

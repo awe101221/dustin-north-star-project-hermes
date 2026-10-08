@@ -84,7 +84,7 @@ export function SleeveRankingView({ ranking, coverageError }: { ranking: SleeveR
     <details className="panel p-4" open={ranking.rows.length === 0}>
       <summary className="cursor-pointer text-[13px] font-medium">Research awaiting a comparable forecast · {ranking.candidates.length + ranking.stale.length}</summary>
       {coverageError ? <p role="alert" className="mt-3 text-[12px] text-warn">{coverageError}</p> : null}
-      <p className="my-3 text-[11px] text-muted">These names are unranked. Prior scores and expected returns do not establish likelihood of beating QQQ.</p>
+      <p className="my-3 text-[11px] text-muted">These names remain unranked until their security identity and comparable QQQ forecast are reviewed. Prior scores and expected returns do not establish likelihood of beating QQQ.</p>
       <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
         {ranking.stale.map((c) => <Link key={c.ticker} href={`/companies/${encodeURIComponent(c.ticker)}`} className="panel-2 p-3 text-[12px]">
           <span className="num text-gold">{bareSymbol(c.ticker)}</span><p>{c.companyName}</p><p className="text-[11px] text-warn">Model or valuation price needs refresh.</p>

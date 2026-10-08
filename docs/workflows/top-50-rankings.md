@@ -20,8 +20,7 @@ currentPrice, currency, thesis, whyBeatQqq, falsifier, nextAction, theme,
 evidenceUrls, limitations, capitalStructure, probabilityRationale, and three to twelve matched scenarios. Each scenario
 has name, benchmarkScenario, probability, stockAnnualizedReturn, stockTerminalPrice, qqqAnnualizedReturn, and rationale.
 Numbers are decimal ratios. Probabilities sum to exactly one (tolerance 1e-9).
-The five-year terminal price must reproduce the stock CAGR within price
-rounding. Each scenario's rationale traces economic drivers to its per-share
+The five-year terminal price must reproduce the stock CAGR within a tight relative arithmetic tolerance. Each scenario's rationale traces economic drivers to its per-share
 outcome. `capitalStructure` records the share basis, financing, corporate
 actions, and material dilution bounds; `probabilityRationale` explains the
 subjective outcome weights. Independently verify primary sources, security
@@ -102,3 +101,11 @@ The actual run profile, terminal status and metadata must match the exact conten
 Both active sleeves share the exact QQQ timestamp, price, scenario names, weights and returns. Submit their refresh together. A correction with the same model as-of activates by its later PM approval timestamp; inactive future publications do not affect current consistency.
 
 Authors work one ticker and one framework per Hermes card, with an independent Evidence & Risk review per company before final sleeve review and PM closeout.
+
+## Author submissions and identity resolution
+
+`author` contains `submissions`, one attestation per forecast: `actor: investment-underwriter`, `securityId`, `taskId`, `runId`, `contentHash`, `submittedAt`, and `decision: AUTHOR FORECAST SUBMISSION`. The contribution hash is the canonical one-forecast draft with `sleeve` normalized to `core`, retaining the final shared header and the exact forecast. This binds the same authored stock/QQQ model across sleeves without assigning a multi-company author card. After mechanical calculations, the underwriter confirms the exact canonical one-ticker artifact. Independent review starts only after every author's confirmation run has completed.
+
+All attestation timestamps equal the authoritative Hermes run `ended_at` timestamp. PM approval starts after independent review completed. Equal-precedence corrections with different hashes are rejected.
+
+`src/lib/reviewed-ranking-securities.json` is a reviewed identity master. Each entry records one canonical ID, canonical ticker, evidenced external identifier aliases and ticker aliases, and primary evidence URLs. Both identifier namespaces and equivalent share-class names must resolve through that master. Unknown or ambiguous aliases are rejected at the publication boundary. Canonicalize identifiers before final author confirmation and review; never silently change already reviewed bytes. Research candidates without resolved identity keep their full exchange-prefixed ticker and remain visible as unresolved coverage.

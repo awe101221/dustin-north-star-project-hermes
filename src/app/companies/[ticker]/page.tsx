@@ -11,6 +11,7 @@ import { getIdeaForTicker } from "@/lib/db/pipeline";
 import { getBestIdeasDashboard } from "@/lib/best-ideas";
 import { buildSleeveRanking, SLEEVE_LABELS } from "@/lib/qqq-rankings";
 import { loadReviewedRankings } from "@/lib/server/qqq-rankings";
+import { rankingSecurityForTicker } from "@/lib/ranking-securities";
 import { getCompanyModel } from "@/lib/company-models";
 import { getCompanyUnderwriting } from "@/lib/db/underwriting";
 import { resolvePersistedGraphTimestampState } from "@/lib/underwriting";
@@ -80,8 +81,9 @@ export default async function CompanyPage({ params }: { params: Promise<{ ticker
   const financialModel = getCompanyModel(symbol);
   const likelihoodLoaded = await safeLoad(async () => {
     const publications = loadReviewedRankings();
+    const security = rankingSecurityForTicker(raw);
     return (["core", "ai-regime"] as const).flatMap((sleeve) => {
-      const row = buildSleeveRanking(sleeve, publications).rows.find((f) => bareSymbol(f.ticker) === symbol);
+      const row = security ? buildSleeveRanking(sleeve, publications).rows.find((f) => f.securityId === security.canonicalId) : null;
       return row ? [{ sleeve, row }] : [];
     });
   });

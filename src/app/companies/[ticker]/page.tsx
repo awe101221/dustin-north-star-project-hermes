@@ -10,7 +10,7 @@ import { getLatestPositions, positionForTicker, getTrades } from "@/lib/db/portf
 import { getIdeaForTicker } from "@/lib/db/pipeline";
 import { getBestIdeasDashboard } from "@/lib/best-ideas";
 import { buildSleeveRanking, SLEEVE_LABELS } from "@/lib/qqq-rankings";
-import { loadReviewedRankings } from "@/lib/server/qqq-rankings";
+import { readLiveRankings } from "@/lib/server/qqq-rankings";
 import { rankingSecurityForTicker } from "@/lib/ranking-securities";
 import { getCompanyModel } from "@/lib/company-models";
 import { getCompanyUnderwriting } from "@/lib/db/underwriting";
@@ -81,10 +81,10 @@ export default async function CompanyPage({ params }: { params: Promise<{ ticker
   const modelIdea = rankedIdea ?? revisitIdea?.idea ?? null;
   const financialModel = getCompanyModel(symbol);
   const likelihoodLoaded = await safeLoad(async () => {
-    const publications = loadReviewedRankings(undefined, undefined, undefined, now);
-    const security = rankingSecurityForTicker(raw);
+    const release = await readLiveRankings(now);
+    const security = rankingSecurityForTicker(raw, release.securities);
     return (["core", "ai-regime"] as const).flatMap((sleeve) => {
-      const row = security ? buildSleeveRanking(sleeve, publications, [], now).rows.find((f) => f.securityId === security.canonicalId) : null;
+      const row = security ? buildSleeveRanking(sleeve, release.publications, [], now, release.securities).rows.find((f) => f.securityId === security.canonicalId) : null;
       return row ? [{ sleeve, row }] : [];
     });
   });

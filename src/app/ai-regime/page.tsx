@@ -4,7 +4,7 @@ import { ErrorPanel, PageHeader } from "@/components/page-header";
 import { getRankingCandidates } from "@/lib/db/rankings";
 import { buildSleeveRanking } from "@/lib/qqq-rankings";
 import { safeLoad } from "@/lib/server/safe";
-import { loadReviewedRankings } from "@/lib/server/qqq-rankings";
+import { readLiveRankings } from "@/lib/server/qqq-rankings";
 import { serverReadClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "AI Regime Top 50" };
@@ -15,10 +15,10 @@ export default async function AiRegimePage() {
   const db = serverReadClient();
   const header = <PageHeader eyebrow="Hermes · AI Regime sleeve" title="AI Regime · Top 50" description="The 50 AI, infrastructure, Physical AI, Space, and second-order beneficiaries most likely to beat QQQ over five years." />;
   const [publications, candidates] = await Promise.all([
-    safeLoad(async () => loadReviewedRankings(undefined, undefined, undefined, now)),
+    safeLoad(async () => readLiveRankings(now)),
     safeLoad(async () => db ? getRankingCandidates(db, "ai-regime") : []),
   ]);
   if (!publications.ok) return <>{header}<ErrorPanel title="Ranking publication unavailable" detail={publications.error} /></>;
-  const ranking = buildSleeveRanking("ai-regime", publications.data, candidates.ok ? candidates.data : [], now);
+  const ranking = buildSleeveRanking("ai-regime", publications.data.publications, candidates.ok ? candidates.data : [], now, publications.data.securities);
   return <>{header}<SleeveRankingView ranking={ranking} coverageError={candidates.ok ? null : candidates.error} /></>;
 }

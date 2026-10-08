@@ -46,7 +46,7 @@ vi.mock("@/lib/db/portfolio", () => ({
 }));
 vi.mock("@/lib/db/pipeline", () => ({ getIdeaForTicker: harness.getIdeaForTicker }));
 vi.mock("@/lib/best-ideas", () => ({ getBestIdeasDashboard: harness.getBestIdeasDashboard }));
-vi.mock("@/lib/server/qqq-rankings", () => ({ loadReviewedRankings: () => [] }));
+vi.mock("@/lib/server/qqq-rankings", () => ({ readLiveRankings: async () => ({ publications: [], securities: [], releaseHash: null }) }));
 vi.mock("@/lib/db/underwriting", () => ({ getCompanyUnderwriting: harness.getCompanyUnderwriting }));
 vi.mock("@/lib/env", () => ({ isWriteConfigured: () => false }));
 vi.mock("@/components/companies/company-actions", () => ({ CompanyActions: () => null }));

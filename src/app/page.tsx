@@ -5,7 +5,7 @@ import { SleeveRankingView } from "@/components/rankings/sleeve-ranking-view";
 import { serverReadClient } from "@/lib/supabase/server";
 import { getRankingCandidates } from "@/lib/db/rankings";
 import { buildSleeveRanking } from "@/lib/qqq-rankings";
-import { loadReviewedRankings } from "@/lib/server/qqq-rankings";
+import { readLiveRankings } from "@/lib/server/qqq-rankings";
 import { safeLoad } from "@/lib/server/safe";
 
 export const metadata: Metadata = { title: "North Star Top 50" };
@@ -16,11 +16,11 @@ export default async function HomePage() {
   const db = serverReadClient();
   const header = <PageHeader eyebrow="Hermes · North Star sleeve" title="North Star · Top 50" description="The 50 companies most likely to beat QQQ over five years." />;
   const [publications, candidates] = await Promise.all([
-    safeLoad(async () => loadReviewedRankings(undefined, undefined, undefined, now)),
+    safeLoad(async () => readLiveRankings(now)),
     safeLoad(async () => db ? getRankingCandidates(db, "core") : []),
   ]);
   if (!publications.ok) return <>{header}<ErrorPanel title="Ranking publication unavailable" detail={publications.error} /></>;
-  const ranking = buildSleeveRanking("core", publications.data, candidates.ok ? candidates.data : [], now);
+  const ranking = buildSleeveRanking("core", publications.data.publications, candidates.ok ? candidates.data : [], now, publications.data.securities);
   return <>
     {header}
     <SleeveRankingView ranking={ranking} coverageError={candidates.ok ? null : candidates.error} />

@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { RankingPublication } from "./qqq-rankings";
 
-/** Readbacks exported from the actual Hermes task/run records. The reviewed
- * repository is the publication trust boundary; strings inside a draft cannot
- * create an authority record. Export from the live board before merging. */
+/** Readbacks exported from actual Hermes task/run records. The privileged
+ * publication CLI rechecks the live board before appending a Supabase release;
+ * strings inside a draft cannot create an authority record. */
 export const rankingAuthoritySchema = z.object({
   taskId: z.string().regex(/^t_[a-f0-9]{8}$/),
   runId: z.string().regex(/^[1-9][0-9]*$/),

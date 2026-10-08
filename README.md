@@ -67,14 +67,20 @@ rank or inclusion. Sources, scenarios, falsifiers, freshness, and independent
 review remain visible. Missing comparable forecasts are explicitly unranked;
 the page never pads a list to 50 or relabels expected return as a probability.
 
-The publication boundary is the reviewed repository file
-`src/lib/reviewed-qqq-rankings.json`. Each exact forecast draft needs independent
-Evidence & Risk acceptance and PM publication approval. Generic idea/note
-metadata cannot publish ranks. See [the workflow](docs/workflows/top-50-rankings.md).
-`npm run rankings -- schema`, `validate FILE`, and `verify` support Hermes research
-and reviewed PR updates. `GET /api/agent/rankings` returns both current sleeves.
-No database migration is required. Older notes and model/forecast histories are
-retained. The old best-ideas POST routes and learning `publish` command are retired.
+Approved live rankings are stored as an append-only, atomic two-sleeve snapshot
+in `hermes_qqq_ranking_releases` in INVESTING-BRAIN-AG. Page reads require a
+signed Hermes session; the service role has only SELECT/INSERT on this table.
+The reviewed JSON files retain the exact publication, identity, and authority
+artifacts for PR review. Generic idea/note metadata cannot publish ranks.
+Every forecast needs actual author submission, independent Evidence & Risk
+acceptance, and exact-hash PM publication approval. The privileged
+`publish-db` command rechecks actual Hermes task/run records before writing.
+See [the workflow](docs/workflows/top-50-rankings.md).
+`npm run rankings -- schema`, `validate FILE`, `verify`, `publish-db`, and
+`inspect-db` support research and verified releases. `GET /api/agent/rankings`
+returns both current sleeves from the same Supabase snapshot. Apply the Top50
+migration before release. Older notes and model/forecast histories are retained.
+The old best-ideas POST routes and learning `publish` command are retired.
 
 The sections below describe historical 10+10 workflows and supporting modules.
 

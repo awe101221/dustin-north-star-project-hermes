@@ -1,9 +1,10 @@
 # QQQ Top 50 ranking workflow
 
-Dustin's October 7 instruction replaces both Top 10 / Watchlist 10 surfaces with
+Dustin's instruction replaces both Top 10 / Watchlist 10 surfaces with
 one Top 50 per sleeve: `core` (North Star) and `ai-regime`. Rank is determined
-only by modeled likelihood of beating QQQ over **five years**, on a shared
-**price-only** basis. This is a research ranking; portfolio sizing and execution
+only by modeled likelihood of beating QQQ. The announced working comparison
+is **five years**, on a shared **USD price-only** basis; the broader ten-year
+investment mandate remains separate. This is a research ranking; portfolio sizing and execution
 remain separate. There is no 12% or 15% admission floor, lane, or stage bonus.
 
 ## Forecast contract
@@ -70,22 +71,41 @@ Re-use existing underwriting and cards; preserve unresolved evidence gaps.
    `APPROVE RANKING PUBLICATION`. Record distinct author/reviewer/PM identities,
    actual task/run ids and review/approval timestamps. A new content hash needs
    a new review and approval.
-4. A publication is `{draft, author, review, approval}`. Review contains taskId,
-   runId, actor, contentHash, reviewedAt, verdict; approval contains taskId,
-   runId, actor, contentHash, reviewedAt, decision. Append to
-   `src/lib/reviewed-qqq-rankings.json` through a reviewed PR. Run
-   `npm run rankings -- verify` and `npm run check` before merging.
-5. Verify both pages after deployment, including ranks, 50-name coverage,
-   probability order, dates, and dossier/source links. Preserve publications
-   for historical research and reconsideration. Rollback removes the newly
-   appended publication through a reviewed revert; forecasts are not rewritten.
+4. A publication is `{draft, author, review, approval}`. Keep its exact reviewed
+   artifacts in `src/lib/reviewed-qqq-rankings.json`, with the identity master and
+   actual authority exports, through a reviewed PR. Run `verify --require-full`
+   and the required software checks. A release contains exactly fifty forecasts
+   in each sleeve, one common model as-of, and one actual two-hash PM decision.
+5. Apply `20261008111533_qqq_top50_publications.sql` to INVESTING-BRAIN-AG. It
+   creates only `hermes_qqq_ranking_releases`, enables RLS, revokes public and
+   authenticated access, and grants the service role SELECT/INSERT only. The
+   app uses session-checked privileged reads; the agent GET uses bearer auth.
+6. After the review gates, run the privileged CLI below. It re-exports and
+   compares the actual completed Hermes task/run records, verifies all hashes,
+   identities, probabilities, freshness and chronology, and inserts both sleeves
+   and their evidence registry in one immutable row. It verifies the stored
+   payload and actual active snapshot. Repeating the same exact hash is safe;
+   no UPDATE/DELETE or legacy writes are used. Equal-precedence conflicting
+   snapshots are rejected. A newer active release prevents an older publication.
+7. Verify actual fifty-row desktop/mobile pages, order, probabilities, sources,
+   hashes, retained-rank search, redirects and dossiers; complete required CI and
+   production READY verification. For this initial replacement, the old pages
+   remain active until the reviewed software PR is merged. Future refreshes use
+   the same financial gates and software checks, then verify the live release.
+   Preserve old snapshots. Corrections need new reviewed content and a strictly
+   later actual PM approval; do not rewrite or delete a published release.
 
-This uses the same repository publication boundary as the former reviewed AI
-sleeve roster. Unrestricted idea/note metadata cannot authorize a rank. The old
-`best-ideas-snapshot` notes and short-horizon ledger remain historical data;
-the old learning CLI no longer publishes new 10+10 rankings. Continue grading
-and reviewing already registered outcomes. Move the weekday ranking refresh to
-this contract; do not publish the old 20-company workflow beside it.
+```sh
+npm run rankings -- publish-db PUBLICATIONS --board awe-capital --securities SECURITIES --authorities AUTHORITIES
+npm run rankings -- inspect-db
+```
+
+All live storage remains in INVESTING-BRAIN-AG. The repository files are review
+artifacts; runtime rankings come from the validated Supabase snapshot. Idea/note
+metadata cannot authorize a rank. Old `best-ideas-snapshot` notes and the
+short-horizon ledger remain historical data; the old learning CLI no longer
+publishes new 10+10 rankings. Continue grading already registered outcomes.
+Move the weekday ranking refresh to this contract.
 
 ## Security identity and completed authority records
 
@@ -98,7 +118,7 @@ npm run rankings -- export-authorities PUBLICATIONS --board awe-capital --output
 npm run rankings -- verify --require-full
 ```
 
-The actual run profile, terminal status and metadata must match the exact content hash and verdict/decision. Completion metadata includes `contentHash` (or `content_hash`) and `verdict`/`decision`; a two-sleeve PM closeout may supply these in a `publications` array. Do not hand-author receipt identities. CI and the runtime reject unmatched authority readbacks. The reviewed repository is the trust boundary for exported readbacks; draft role names alone cannot create an authority record.
+The actual run profile, terminal status and metadata must match the exact content hash and verdict/decision. Completion metadata includes `contentHash` (or `content_hash`) and `verdict`/`decision`; a two-sleeve PM closeout may supply these in a `publications` array. Do not hand-author receipt identities. CI and the runtime reject unmatched authority readbacks. The privileged publication command rechecks exported readbacks against the actual board; draft role names alone cannot create authority. Runtime revalidates the exact stored payload and its signed evidence registry.
 
 Both active sleeves share the exact QQQ timestamp, price, scenario names, weights and returns. Submit their refresh together. A correction with the same model as-of activates by its later PM approval timestamp; inactive future publications do not affect current consistency.
 
@@ -112,6 +132,6 @@ All attestation timestamps equal the authoritative Hermes run `ended_at` timesta
 
 Stages must occupy strictly later seconds: author completion precedes independent review start, and review completion precedes PM start. Each runtime request and CLI operation captures one activation timestamp for consistency checks and both sleeve selections. The loader returns only publications active at that validated snapshot.
 
-`src/lib/reviewed-ranking-securities.json` is a reviewed identity master. Each entry records one canonical ID, canonical ticker, evidenced external identifier aliases and ticker aliases, and primary evidence URLs. Both identifier namespaces and equivalent share-class names must resolve through that master. Unknown or ambiguous aliases are rejected at the publication boundary. Canonicalize identifiers before final author confirmation and review; never silently change already reviewed bytes. Research candidates without resolved identity keep their full exchange-prefixed ticker and remain visible as unresolved coverage.
+`src/lib/reviewed-ranking-securities.json` retains the reviewed identity-master artifact. The active Supabase release stores and supplies the matching master at runtime. Each entry records one canonical ID, canonical ticker, evidenced external identifier aliases and ticker aliases, and primary evidence URLs. Both identifier namespaces and equivalent share-class names must resolve through that master. Unknown or ambiguous aliases are rejected at the publication boundary. Canonicalize identifiers before final author confirmation and review; never silently change already reviewed bytes. Research candidates without resolved identity keep their full exchange-prefixed ticker and remain visible as unresolved coverage.
 
 Publication rejects recognized noncanonical IDs as well: normalize the research draft first, then confirm and review its canonical bytes. Explicit unknown/conflicting candidate IDs remain unresolved even if their ticker is already covered.

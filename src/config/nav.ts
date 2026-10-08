@@ -31,13 +31,13 @@ export type NavItem = {
 
 /**
  * Primary navigation. The app is centered on Hermes's ranked conclusions first:
- * Top 10 best ideas, Watchlist 10, then the research/pipeline/tools that explain
+ * Top 50 per sleeve, then the research/pipeline/tools that explain
  * or improve those rankings. Portfolio is context, not the product center.
  */
 export const NAV: NavItem[] = [
-  { href: "/", label: "10 + 10", short: "10 + 10", icon: Trophy, hotkey: "b", description: "One ranked Top 10 + Watchlist 10 surface with models and QQQ-relative underwriting" },
-  { href: "/challengers", label: "Challengers", short: "Challengers", icon: Scale, hotkey: "h", description: "Compare challengers with the current 10 + 10 through evidence and admission gates" },
-  { href: "/ai-regime", label: "AI Regime", short: "AI Regime", icon: Cpu, hotkey: "d", description: "Thematic sleeve for AI, Physical AI, Space AI/infrastructure, and hidden beneficiaries" },
+  { href: "/", label: "North Star Top 50", short: "Top 50", icon: Trophy, hotkey: "b", description: "50 North Star companies ranked by modeled likelihood of beating QQQ over five years" },
+  { href: "/challengers", label: "Challengers", short: "Challengers", icon: Scale, hotkey: "h", description: "Research candidates and historical reviewed tournaments" },
+  { href: "/ai-regime", label: "AI Regime Top 50", short: "AI Top 50", icon: Cpu, hotkey: "d", description: "50 AI Regime companies ranked by modeled likelihood of beating QQQ over five years" },
   { href: "/learnings", label: "Learnings", short: "Learnings", icon: Brain, hotkey: "l", description: "Archive of Hermes investing philosophy updates that shape the ranked list" },
   { href: "/research", label: "Research", short: "Research", icon: BookOpenText, hotkey: "r", description: "Hermes memos, notes, journal, and source-backed conclusions" },
   { href: "/pipeline", label: "Idea Pipeline", short: "Pipeline", icon: KanbanSquare, hotkey: "i", description: "Sourcing → Diligence → Live → Monitor → Archive" },

@@ -1,29 +1,23 @@
 import type { Metadata } from "next";
-import { AiRegimeView } from "@/components/ai-regime/ai-regime-view";
-import { ErrorPanel, NotConfigured, PageHeader } from "@/components/page-header";
-import { buildAiRegimeModule } from "@/lib/ai-regime";
-import { getBestIdeasDashboard } from "@/lib/best-ideas";
-import { getIdeas } from "@/lib/db/pipeline";
-import { REVIEWED_SLEEVE_ROSTER } from "@/lib/reviewed-sleeve-roster";
+import { SleeveRankingView } from "@/components/rankings/sleeve-ranking-view";
+import { ErrorPanel, PageHeader } from "@/components/page-header";
+import { getRankingCandidates } from "@/lib/db/rankings";
+import { buildSleeveRanking } from "@/lib/qqq-rankings";
 import { safeLoad } from "@/lib/server/safe";
-import { loadSleeveWatchPublications } from "@/lib/server/sleeve-watch";
+import { loadReviewedRankings } from "@/lib/server/qqq-rankings";
 import { serverReadClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "AI Regime" };
+export const metadata: Metadata = { title: "AI Regime Top 50" };
 export const dynamic = "force-dynamic";
 
 export default async function AiRegimePage() {
   const db = serverReadClient();
-  const header = <PageHeader eyebrow="Hermes · thematic sleeve workspace" title="AI Regime" description="Beat QQQ over 10 years. Research sleeve, not a trade recommendation." />;
-  if (!db) return <>{header}<NotConfigured what="the Dustin North Star Hermes brain" /></>;
-  const result = await safeLoad(async () => {
-    const [dashboard, ideas, watchPublications] = await Promise.all([
-      getBestIdeasDashboard(db),
-      getIdeas(db),
-      loadSleeveWatchPublications(db),
-    ]);
-    return buildAiRegimeModule({ dashboard, ideas, watchPublications, rosterPublications: REVIEWED_SLEEVE_ROSTER });
-  });
-  if (!result.ok) return <>{header}<ErrorPanel title="AI Regime failed to load" detail={result.error} /></>;
-  return <AiRegimeView module={result.data} />;
+  const header = <PageHeader eyebrow="Hermes · AI Regime sleeve" title="AI Regime · Top 50" description="The 50 AI, infrastructure, Physical AI, Space, and second-order beneficiaries most likely to beat QQQ over five years." />;
+  const [publications, candidates] = await Promise.all([
+    safeLoad(async () => loadReviewedRankings()),
+    safeLoad(async () => db ? getRankingCandidates(db, "ai-regime") : []),
+  ]);
+  if (!publications.ok) return <>{header}<ErrorPanel title="Ranking publication unavailable" detail={publications.error} /></>;
+  const ranking = buildSleeveRanking("ai-regime", publications.data, candidates.ok ? candidates.data : []);
+  return <>{header}<SleeveRankingView ranking={ranking} coverageError={candidates.ok ? null : candidates.error} /></>;
 }

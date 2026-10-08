@@ -115,12 +115,12 @@ function sealedTournament(sourceTaskId: string, sourceRunId: number, shared: Rec
 describe("Challenger Board view", () => {
   it("shows the hurdle, incumbent comparisons, evidence gate, and workflow links", () => {
     const markup = renderToStaticMarkup(<ChallengerBoardView board={board()} />);
-    expect(markup).toContain("10 + 10 Challenger Board");
+    expect(markup).toContain("Historical challenger research");
     expect(markup).toContain("Replacement watch");
-    expect(markup).toContain("fallen out");
+    expect(markup).toContain("Current Top 50");
     expect(markup).toContain("QQQ remains the default");
-    expect(markup).toContain("Weakest Top 10");
-    expect(markup).toContain("Weakest Watchlist 10");
+    expect(markup).toContain("Historical weakest Top 10");
+    expect(markup).toContain("Historical weakest Watchlist 10");
     expect(markup).toContain("Evidence grade B");
     expect(markup).toContain('href="/companies/NAS%3AADBE"');
     expect(markup).toContain('href="/pipeline?idea=idea-adbe"');

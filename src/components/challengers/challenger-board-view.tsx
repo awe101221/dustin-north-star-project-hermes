@@ -123,15 +123,15 @@ export function ChallengerBoardView({ board }: { board: ChallengerBoard }) {
   const visibleCandidates = board.candidates.slice(0, VISIBLE_CANDIDATES);
   const backlog = board.candidates.slice(VISIBLE_CANDIDATES);
   return <>
-    <PageHeader eyebrow="Hermes · comparative underwriting" title="10 + 10 Challenger Board"
-      description="Challengers earn a place by beating a weaker current name. The tournament also watches fallen names for a return on price, earnings, or a material announcement. QQQ remains the default."
-      actions={<><Link href="/" className={workflowLink}>Current 10 + 10</Link><Link href="/quant" className={workflowLink}>Source with Quant <ArrowUpRight aria-hidden="true" className="size-3.5" /></Link></>}
+    <PageHeader eyebrow="Hermes · comparative underwriting" title="Historical challenger research"
+      description="Prior challenger comparisons and reviewed tournament evidence. Current sleeve ranks use five-year QQQ outperformance likelihood. QQQ remains the default."
+      actions={<><Link href="/" className={workflowLink}>Current Top 50</Link><Link href="/quant" className={workflowLink}>Source with Quant <ArrowUpRight aria-hidden="true" className="size-3.5" /></Link></>}
       meta={<><span>As of {fmtDate(board.asOf)}</span><span>Research triage · not a trade recommendation</span></>} />
     <div className="space-y-5">
-      <section className="rounded-lg border border-gold/30 bg-gold-soft/30 p-4 sm:p-5" aria-label="Admission standard">
+      <section className="rounded-lg border border-gold/30 bg-gold-soft/30 p-4 sm:p-5" aria-label="Historical review context">
         <h2 className="flex items-center gap-2 text-[16px] font-semibold text-gold"><Scale aria-hidden="true" className="size-5" />Replacement watch</h2>
-        <p className="mt-2 text-[12px] leading-5 text-foreground-secondary">The tournament is where names are considered for the 10 + 10, for both Core and the AI sleeve. It also watches contenders and names that have fallen out, for a price move, earnings, or an announcement that could put them in. There is no IRR floor to be watched. A name enters the ranked 10 + 10 above 12% and does not have to clear the Capital Line. From there the best names are ranked. The Capital Line is populated only when a name clears 15%. A pass does not displace anyone. Dustin approves every roster write.</p>
-        <p className="mt-2 text-[12px] leading-5 text-muted">This board does not add names to the 10 + 10, change positions, or authorize trades. Models expire at 45 days; events within 14 days or already passed require a refresh.</p>
+        <p className="mt-2 text-[12px] leading-5 text-foreground-secondary">These historical comparisons preserve the earlier 10+10 tournament and its reviews. Current Top 50 ranks depend only on fresh, independently reviewed five-year likelihood of beating QQQ. A prior hurdle, admission decision, expected IRR, or triage score cannot establish that likelihood. Dustin retains portfolio and trade authority.</p>
+        <p className="mt-2 text-[12px] leading-5 text-muted">This historical board does not publish Top 50 ranks, change positions, or authorize trades. Models expire at 45 days; events within 14 days or already passed require a refresh.</p>
       </section>
       <LatestTournament board={board} />
       <section aria-label="Live candidate status" className="space-y-2">
@@ -149,8 +149,8 @@ export function ChallengerBoardView({ board }: { board: ChallengerBoard }) {
       <section className="panel p-4" aria-label="Incumbent floors">
         <h2 className="mb-3 text-[14px] font-semibold">The incumbents to beat</h2>
         <dl className="grid gap-3 sm:grid-cols-2">
-          <Detail label="Weakest Top 10"><span className="num text-[17px] font-semibold">{floors.topTenTicker ?? "Unavailable"} · {fmtPct(floors.topTenReturn)}</span></Detail>
-          <Detail label="Weakest Watchlist 10"><span className="num text-[17px] font-semibold">{floors.watchlistTicker ?? "Unavailable"} · {fmtPct(floors.watchlistReturn)}</span></Detail>
+          <Detail label="Historical weakest Top 10"><span className="num text-[17px] font-semibold">{floors.topTenTicker ?? "Unavailable"} · {fmtPct(floors.topTenReturn)}</span></Detail>
+          <Detail label="Historical weakest Watchlist 10"><span className="num text-[17px] font-semibold">{floors.watchlistTicker ?? "Unavailable"} · {fmtPct(floors.watchlistReturn)}</span></Detail>
         </dl>
         <p className="mt-3 text-[11px] leading-5 text-muted">Lowest recorded modeled return in each lane · ranking as of {fmtDate(board.rankingAsOf)} · {board.sourceMode === "hermes-snapshot" ? "Hermes snapshot" : "scored idea table"}. Incomplete return coverage leaves a floor unavailable. Return comparisons inform review; they do not establish a superior investment case.</p>
       </section>
@@ -171,7 +171,7 @@ export function ChallengerBoardView({ board }: { board: ChallengerBoard }) {
             {backlog.map((candidate) => <CandidateCard key={candidate.id} candidate={candidate} />)}
           </div>
         </details> : null}
-        {!board.candidates.length ? <div className="panel p-6 text-[13px] text-muted">No challengers outside the current 10 + 10. <Link href="/pipeline" className="text-cyan hover:underline">Open the idea pipeline</Link> to review discovery research.</div> : null}
+        {!board.candidates.length ? <div className="panel p-6 text-[13px] text-muted">No historical challenger candidates available. <Link href="/pipeline" className="text-cyan hover:underline">Open the idea pipeline</Link> to review discovery research.</div> : null}
       </section>
       <p className="text-[11px] leading-5 text-muted">Triage score: up to 40 points for expected / required IRR (capped at 2×), 40 for evidence grade, and 20 for portfolio fit. Missing components leave the score unavailable. Scores never override gates or PM decisions. Source-lane counts exclude current members and duplicate symbols.</p>
     </div>

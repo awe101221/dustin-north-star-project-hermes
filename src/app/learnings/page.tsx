@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: "Learnings" };
 export const dynamic = "force-dynamic";
 
 const DESCRIPTION =
-  "The archive of what Hermes has learned about investing, ranking, and QQQ opportunity cost — the philosophy that governs the Top 10 + Watchlist 10.";
+  "The archive of what Hermes has learned about investing, ranking, and QQQ opportunity cost — research lessons for the Top 50 sleeves and the investing mandate.";
 
 export default async function LearningsPage() {
   const db = serverReadClient();
@@ -42,7 +42,7 @@ export default async function LearningsPage() {
           <>
             <span>updates daily or when new knowledge improves the ranking philosophy</span>
             <span>·</span>
-            <span>feeds Best Ideas</span>
+            <span>informs research and forecast review</span>
           </>
         }
       />

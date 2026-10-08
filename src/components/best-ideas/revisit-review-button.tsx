@@ -10,10 +10,10 @@ export function RevisitReviewButton({ ticker, nextAction, canWrite }: { ticker: 
   const review = useMutation({
     mutationFn: () => api("/api/hermes/agent-tasks", { method: "POST", json: {
       task_type: "reunderwrite",
-      title: `Revisit ${ticker} for the 10 + 10`,
+      title: `Revisit ${ticker} for the Top 50`,
       ticker,
       priority: 60,
-      instructions: `Review ${ticker}, a former Top 10 or Watchlist 10 company. Read its retained company model, prior thesis, falsifiers, and latest research. Check new filings, fundamentals, valuation and price; update the model with dated evidence and compare its QQQ-relative case with the current 10 + 10. Explain whether it merits re-entry and what still needs to improve. Persist the research and model updates and reference them in the task result. Do not promote it without a fresh ranked review. Prior research action: ${nextAction || "Refresh the thesis and test the prior falsifiers."}`,
+      instructions: `Review ${ticker}, a former Top 10 or Watchlist 10 company, for the Top 50 ranking. Read its retained company model, prior thesis, falsifiers, and latest research. Check new filings, fundamentals, valuation and price. Produce a dated five-year price-only forecast using the current shared QQQ scenarios and matched stock/QQQ outcomes. Estimate its probability of beating QQQ, explain the assumptions and uncertainty, and compare with the current sleeve ranking. Persist the research and reference it in the task result. Publication requires independent Evidence & Risk review and exact-content North Star PM approval. Prior research action: ${nextAction || "Refresh the thesis and test the prior falsifiers."}`,
     } }),
     onSuccess: () => toast.success(`Re-entry review queued for ${ticker}`),
     onError: (error) => toast.error(error.message),

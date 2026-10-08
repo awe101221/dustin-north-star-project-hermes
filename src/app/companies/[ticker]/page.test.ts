@@ -46,6 +46,7 @@ vi.mock("@/lib/db/portfolio", () => ({
 }));
 vi.mock("@/lib/db/pipeline", () => ({ getIdeaForTicker: harness.getIdeaForTicker }));
 vi.mock("@/lib/best-ideas", () => ({ getBestIdeasDashboard: harness.getBestIdeasDashboard }));
+vi.mock("@/lib/server/qqq-rankings", () => ({ loadReviewedRankings: () => [] }));
 vi.mock("@/lib/db/underwriting", () => ({ getCompanyUnderwriting: harness.getCompanyUnderwriting }));
 vi.mock("@/lib/env", () => ({ isWriteConfigured: () => false }));
 vi.mock("@/components/companies/company-actions", () => ({ CompanyActions: () => null }));
@@ -159,7 +160,7 @@ describe("CompanyPage persisted underwriting model suppression", () => {
     expect(markup).toContain("Former Watchlist · #3");
     expect(markup).toContain("QQQ case needs a fresh ranked review");
     expect(markup).not.toContain("Above QQQ line");
-    expect(markup).toContain('href="/#revisit"');
+    expect(markup).toContain('href="/rankings/history#revisit"');
   });
 
   it("keeps an existing company model accessible even if ranking history cannot be loaded", async () => {

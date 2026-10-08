@@ -24,7 +24,7 @@ function ModelList({ title, icon, items, tone }: { title: string; icon: React.Re
   );
 }
 
-export function CompanyFinancialModelView({ model, rankedIdea, formerSelection = false }: { model: CompanyFinancialModel; rankedIdea: RankedBestIdea | null; formerSelection?: boolean }) {
+export function CompanyFinancialModelView({ model, rankedIdea, formerSelection = false, historical = false }: { model: CompanyFinancialModel; rankedIdea: RankedBestIdea | null; formerSelection?: boolean; historical?: boolean }) {
   const baseRows = buildForecastRows(model, "Base");
   const base = model.scenarios.find((scenario) => scenario.name === "Base")!;
   const excess = model.probabilityWeightedReturn - model.qqqHurdle;
@@ -33,12 +33,12 @@ export function CompanyFinancialModelView({ model, rankedIdea, formerSelection =
       <CardHeader className="flex-col gap-3 border-b border-border bg-gold-soft/25 sm:flex-row">
         <div className="min-w-0">
           <div className="mb-1.5 flex flex-wrap items-center gap-2">
-            {rankedIdea ? <Badge variant={formerSelection ? "outline" : "gold"}>{formerSelection ? "Former " : ""}{rankedIdea.lane === "top-ten" ? `Top 10 · #${rankedIdea.rank}` : `Watchlist · #${rankedIdea.rank}`}</Badge> : <Badge variant="outline">Company model · no current rank</Badge>}
-            {rankedIdea && !formerSelection ? <Badge variant={rankedIdea.qqqLine === "above" ? "pos" : "warn"}>{rankedIdea.qqqLine === "above" ? "Above QQQ line" : "QQQ better by default"}</Badge> : <Badge variant="muted">QQQ case needs a fresh ranked review</Badge>}
+            {rankedIdea ? <Badge variant={formerSelection ? "outline" : "gold"}>{formerSelection ? "Former " : historical ? "Historical " : ""}{rankedIdea.lane === "top-ten" ? `Top 10 · #${rankedIdea.rank}` : `Watchlist · #${rankedIdea.rank}`}</Badge> : <Badge variant="outline">Company model · no current rank</Badge>}
+            {rankedIdea && !formerSelection && !historical ? <Badge variant={rankedIdea.qqqLine === "above" ? "pos" : "warn"}>{rankedIdea.qqqLine === "above" ? "Above QQQ line" : "QQQ better by default"}</Badge> : <Badge variant="muted">QQQ case needs a fresh ranked review</Badge>}
             <Badge variant="outline">5-year model</Badge>
           </div>
           <CardTitle className="text-[15px]">Forward financial model</CardTitle>
-          <CardDescription className="mt-1 max-w-3xl">Bear, base, and bull assumptions. The Capital Line is 15%. A name can enter the ranked 10 + 10 above 12% without clearing it. Scenario returns are research estimates, not targets or trade instructions.</CardDescription>
+          <CardDescription className="mt-1 max-w-3xl">Historical bear, base, and bull assumptions. The prior fixed return hurdle is retained for context. Current Top 50 ranks use separately reviewed QQQ outperformance likelihood forecasts.</CardDescription>
         </div>
         <div className="sm:ml-auto sm:text-right">
           <p className="eyebrow">Model refreshed</p>

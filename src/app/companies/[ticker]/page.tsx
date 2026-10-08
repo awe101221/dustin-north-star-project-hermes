@@ -36,6 +36,7 @@ export async function generateMetadata({ params }: { params: Promise<{ ticker: s
 }
 
 export default async function CompanyPage({ params }: { params: Promise<{ ticker: string }> }) {
+  const now = new Date().toISOString();
   const raw = decodeURIComponent((await params).ticker).toUpperCase();
   const db = serverReadClient();
   const underwritingDb = await underwritingReadClient();
@@ -80,10 +81,10 @@ export default async function CompanyPage({ params }: { params: Promise<{ ticker
   const modelIdea = rankedIdea ?? revisitIdea?.idea ?? null;
   const financialModel = getCompanyModel(symbol);
   const likelihoodLoaded = await safeLoad(async () => {
-    const publications = loadReviewedRankings();
+    const publications = loadReviewedRankings(undefined, undefined, undefined, now);
     const security = rankingSecurityForTicker(raw);
     return (["core", "ai-regime"] as const).flatMap((sleeve) => {
-      const row = security ? buildSleeveRanking(sleeve, publications).rows.find((f) => f.securityId === security.canonicalId) : null;
+      const row = security ? buildSleeveRanking(sleeve, publications, [], now).rows.find((f) => f.securityId === security.canonicalId) : null;
       return row ? [{ sleeve, row }] : [];
     });
   });

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
-import { buildSleeveRanking, forecastMetrics, rankForecasts, rankingDraftSchema, rankingPublicationSchema, type RankingDraft, type RankingForecast, type RankingPublication, assertSharedForecastConsistency } from "./qqq-rankings";
+import { buildSleeveRanking, exactAuthorDraft, forecastMetrics, rankForecasts, rankingDraftSchema, rankingPublicationSchema, type RankingDraft, type RankingForecast, type RankingPublication, assertSharedForecastConsistency } from "./qqq-rankings";
 vi.mock("server-only", () => ({}));
 import { canonicalizeRankingSecurities, rankingSecurityForTicker, rankingSecurityMaster } from "./ranking-securities";
 import { loadReviewedRankings } from "./server/qqq-rankings";
@@ -197,6 +197,51 @@ describe("QQQ likelihood rankings", () => {
     expect(rankingSecurityForTicker("nas:abc", master)?.canonicalId).toBe(p.draft.forecasts[0]!.securityId);
     expect(rankingSecurityForTicker("ASX:ABC", master)).toBeNull();
     expect(() => rankingSecurityMaster([...master, { ...master[0]!, ticker: "OTHER" }])).toThrow(/Conflicting canonical/);
+  });
+  it("rejects a recognized noncanonical alias with a crafted null-forecast author hash", () => {
+    const p = publication(), master = securities([p]), alias = "ISIN:US0000000019";
+    master[0]!.identifiers.push(alias);
+    p.draft.forecasts[0]!.securityId = alias; p.author.submissions[0]!.securityId = alias;
+    p.author.submissions[0]!.contentHash = createHash("sha256").update(JSON.stringify({ ...p.draft, sleeve: "core", forecasts: [null] })).digest("hex");
+    expect(() => loadReviewedRankings([p], authorities([p]), master)).toThrow(/already be canonical/);
+    expect(() => exactAuthorDraft(p.draft, "missing")).toThrow(/exactly one canonical/);
+  });
+  it("surfaces explicit unknown or conflicting candidate identifiers despite a covered ticker", () => {
+    const p = publication(), master = securities([p]), other = securities([publication([forecast("OTHER")])])[0]!;
+    master.push(other);
+    const candidates = ["SEC:0000000001:UNKNOWN", other.canonicalId, master[0]!.canonicalId].map((securityId) => ({ securityId, ticker: "ABC", companyName: null, thesis: null, nextAction: null }));
+    const ranking = buildSleeveRanking("core", [p], candidates, now, master);
+    expect(ranking.candidates.map((c) => c.securityId)).toEqual([candidates[0]!.securityId, candidates[1]!.securityId]);
+  });
+  it("requires strictly separated authority stages at second precision", () => {
+    const p = publication(), a = authorities([p]), b = authorities([p]);
+    a[1]!.startedAt = a[0]!.endedAt;
+    expect(() => loadReviewedRankings([p], a, securities([p]))).toThrow(/after all exact-content/);
+    b[2]!.startedAt = b[1]!.endedAt;
+    expect(() => loadReviewedRankings([p], b, securities([p]))).toThrow(/after the accepted/);
+  });
+  it("freezes the validated activation snapshot if the clock crosses an approval boundary", () => {
+    const core = publication(), future = publication([forecast()], "ai-regime");
+    future.draft.benchmarkPrice = 1; future.approval.reviewedAt = "2026-10-08T21:00:00Z";
+    for (const s of future.author.submissions) s.contentHash = createHash("sha256").update(JSON.stringify(exactAuthorDraft(future.draft, s.securityId))).digest("hex");
+    future.review.contentHash = createHash("sha256").update(JSON.stringify(future.draft)).digest("hex"); future.approval.contentHash = future.review.contentHash;
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date(now));
+      const loaded = loadReviewedRankings([core, future], authorities([core, future]), securities([core, future]));
+      vi.setSystemTime(new Date("2026-10-08T22:00:00Z"));
+      expect(loaded).toHaveLength(1);
+      expect(buildSleeveRanking("ai-regime", loaded).rows).toEqual([]);
+      expect(() => assertSharedForecastConsistency(loaded)).not.toThrow();
+    } finally { vi.useRealTimers(); }
+  });
+  it("requires a zero terminal value for total loss even with a large starting price", () => {
+    const f = forecast(); f.currentPrice = 1e100;
+    f.scenarios = f.scenarios.map((s) => ({ ...s, stockTerminalPrice: f.currentPrice * (1 + s.stockAnnualizedReturn) ** 5 }));
+    f.scenarios[0]!.stockAnnualizedReturn = -1; f.scenarios[0]!.stockTerminalPrice = 1e80;
+    expect(() => draft([f])).toThrow();
+    f.scenarios[0]!.stockTerminalPrice = 0;
+    expect(draft([f]).forecasts).toHaveLength(1);
   });
 
 });

@@ -48,3 +48,11 @@ export function canonicalizeRankingSecurities(draft: RankingDraft, input: unknow
   if (new Set(forecasts.map((f) => f.securityId)).size !== forecasts.length) throw new Error("Duplicate canonical security in sleeve");
   return { ...draft, forecasts };
 }
+
+/** Identity normalization is research preparation, never a publication edit. */
+export function requireCanonicalRankingSecurities(draft: RankingDraft, input: unknown = reviewed): RankingDraft {
+  const resolved = canonicalizeRankingSecurities(draft, input);
+  if (draft.forecasts.some((f, i) => f.securityId !== resolved.forecasts[i]!.securityId))
+    throw new Error("Forecast identifiers must already be canonical before author confirmation and publication");
+  return resolved;
+}

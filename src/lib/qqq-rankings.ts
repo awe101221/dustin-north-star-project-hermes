@@ -43,8 +43,8 @@ export const rankingForecastSchema = z.object({
     ctx.addIssue({ code: "custom", path: ["scenarios"], message: "Scenario names must be unique" });
   row.scenarios.forEach((s, i) => {
     const impliedPrice = row.currentPrice * (1 + s.stockAnnualizedReturn) ** RANKING_HORIZON_YEARS;
-    if (!Number.isFinite(impliedPrice) || Math.abs(impliedPrice - s.stockTerminalPrice) > Math.max(Number.EPSILON * Math.max(row.currentPrice, impliedPrice) * 16, impliedPrice * 1e-8))
-      ctx.addIssue({ code: "custom", path: ["scenarios", i, "stockTerminalPrice"], message: "Five-year terminal price must reproduce the stock CAGR (within price rounding)" });
+    if (!Number.isFinite(impliedPrice) || Math.abs(impliedPrice - s.stockTerminalPrice) > impliedPrice * Math.max(Number.EPSILON * 16, 1e-8))
+      ctx.addIssue({ code: "custom", path: ["scenarios", i, "stockTerminalPrice"], message: "Five-year terminal price must reproduce the stock CAGR within relative arithmetic tolerance" });
   });
 });
 
@@ -126,6 +126,11 @@ export const rankingPublicationSchema = z.object({
 export type RankingForecast = z.infer<typeof rankingForecastSchema>;
 export type RankingDraft = z.infer<typeof rankingDraftSchema>;
 export type RankingPublication = z.infer<typeof rankingPublicationSchema>;
+export function exactAuthorDraft(draft: RankingDraft, securityId: string): RankingDraft {
+  const matches = draft.forecasts.filter((f) => f.securityId === securityId);
+  if (matches.length !== 1) throw new Error("Author submission must resolve exactly one canonical forecast");
+  return rankingDraftSchema.parse({ ...draft, sleeve: "core", forecasts: matches });
+}
 export type RankingProvenance = Omit<RankingPublication, "draft"> & { draft: Omit<RankingDraft, "forecasts"> };
 export type RankedForecast = RankingForecast & {
   rank: number;
@@ -162,15 +167,24 @@ export function rankForecasts(forecasts: RankingForecast[]): RankedForecast[] {
 }
 
 /** Call only with publications whose content hash was verified by the loader. */
-export function buildSleeveRanking(sleeve: RankingSleeve, publications: RankingPublication[], candidates: RankingCandidate[] = [], now = new Date().toISOString()): SleeveRanking {
+export function buildSleeveRanking(sleeve: RankingSleeve, publications: RankingPublication[], candidates: RankingCandidate[] = [], now = new Date().toISOString(), securityInput?: unknown): SleeveRanking {
   const publication = latestRankingPublication(sleeve, publications, now);
   const forecasts = publication?.draft.forecasts ?? [];
   const stale = forecasts.filter((f) => isModelStale(f.modelAsOf, now, RANKING_MAX_AGE_DAYS) || isModelStale(f.priceAsOf, now, RANKING_MAX_AGE_DAYS));
   const blocked = new Set(stale.map((f) => f.securityId));
   const rows = rankForecasts(forecasts.filter((f) => !blocked.has(f.securityId)));
-  const master = rankingSecurityMaster();
-  const identity = (c: { securityId?: string; ticker: string }) => master.identifiers.get(c.securityId?.toUpperCase() ?? "")?.canonicalId
-    ?? master.tickers.get(c.ticker.toUpperCase())?.canonicalId ?? `unresolved:${c.ticker.toUpperCase()}`;
+  const master = rankingSecurityMaster(securityInput);
+  const identity = (c: { securityId?: string; ticker: string }) => {
+    const symbol = c.ticker.toUpperCase();
+    const byTicker = master.tickers.get(symbol);
+    if (c.securityId) {
+      const id = c.securityId.toUpperCase();
+      const byId = master.identifiers.get(id);
+      if (!byId || (byTicker && byTicker.canonicalId !== byId.canonicalId)) return `unresolved:${id}:${symbol}`;
+      return byId.canonicalId;
+    }
+    return byTicker?.canonicalId ?? `unresolved:${symbol}`;
+  };
   const covered = new Set(forecasts.map(identity));
   const seen = new Set<string>();
   const pending = candidates.filter((c) => {

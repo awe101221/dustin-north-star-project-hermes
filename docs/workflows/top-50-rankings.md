@@ -108,4 +108,8 @@ Authors work one ticker and one framework per Hermes card, with an independent E
 
 All attestation timestamps equal the authoritative Hermes run `ended_at` timestamp. PM approval starts after independent review completed. Equal-precedence corrections with different hashes are rejected.
 
+Stages must occupy strictly later seconds: author completion precedes independent review start, and review completion precedes PM start. Each runtime request and CLI operation captures one activation timestamp for consistency checks and both sleeve selections. The loader returns only publications active at that validated snapshot.
+
 `src/lib/reviewed-ranking-securities.json` is a reviewed identity master. Each entry records one canonical ID, canonical ticker, evidenced external identifier aliases and ticker aliases, and primary evidence URLs. Both identifier namespaces and equivalent share-class names must resolve through that master. Unknown or ambiguous aliases are rejected at the publication boundary. Canonicalize identifiers before final author confirmation and review; never silently change already reviewed bytes. Research candidates without resolved identity keep their full exchange-prefixed ticker and remain visible as unresolved coverage.
+
+Publication rejects recognized noncanonical IDs as well: normalize the research draft first, then confirm and review its canonical bytes. Explicit unknown/conflicting candidate IDs remain unresolved even if their ticker is already covered.

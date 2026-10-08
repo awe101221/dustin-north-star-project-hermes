@@ -2,8 +2,8 @@ import fs from "node:fs";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { z } from "zod";
-import { rankingDraftSchema, rankingPublicationSchema, rankForecasts, assertSharedForecastConsistency, buildSleeveRanking, latestRankingPublication } from "../../src/lib/qqq-rankings";
-import { canonicalizeRankingSecurities } from "../../src/lib/ranking-securities";
+import { rankingDraftSchema, rankingPublicationSchema, exactAuthorDraft, rankForecasts, assertSharedForecastConsistency, buildSleeveRanking, latestRankingPublication } from "../../src/lib/qqq-rankings";
+import { requireCanonicalRankingSecurities } from "../../src/lib/ranking-securities";
 import { verifyRankingAuthorities, type RankingAuthority } from "../../src/lib/ranking-authority";
 
 const [command, ...args] = process.argv.slice(2);
@@ -11,6 +11,7 @@ const file = args[0] && !args[0].startsWith("--") ? args.shift() : undefined;
 const hash = (draft: unknown) => createHash("sha256").update(JSON.stringify(draft)).digest("hex");
 const read = (name: string) => JSON.parse(fs.readFileSync(name, "utf8"));
 function main() {
+  const now = new Date().toISOString();
   if (command === "schema") {
     console.log(JSON.stringify(z.toJSONSchema(rankingDraftSchema), null, 2));
     return;
@@ -26,7 +27,12 @@ function main() {
     }
     const ranked = rankForecasts(draft.forecasts);
     console.log(JSON.stringify({ sleeve: draft.sleeve, contentHash: hash(draft), coverage: `${ranked.length}/50`,
-      rows: ranked.map((r) => ({ rank: r.rank, ticker: r.ticker, probabilityBeatQqq: r.probabilityBeatQqq })) }, null, 2));
+      rows: ranked.map((r) => ({ rank: r.rank, ticker: r.ticker, probabilityBeatQqq: r.probabilityBeatQqq,
+        scenarioProbabilityTotal: r.scenarios.reduce((n, s) => n + s.probability, 0),
+        benchmarkMarginals: draft.benchmarkScenarios.map((b) => ({ name: b.name, expected: b.probability, actual: r.scenarios.filter((s) => s.benchmarkScenario === b.name).reduce((n, s) => n + s.probability, 0) })),
+        outcomes: r.scenarios.map((s) => ({ name: s.name, probability: s.probability, stockTerminalPrice: s.stockTerminalPrice,
+          impliedTerminalPrice: r.currentPrice * (1 + s.stockAnnualizedReturn) ** 5, stockAnnualizedReturn: s.stockAnnualizedReturn,
+          qqqAnnualizedReturn: s.qqqAnnualizedReturn, strictlyBeatsQqq: s.stockAnnualizedReturn > s.qqqAnnualizedReturn })) })) }, null, 2));
     return;
   }
   if (command === "verify" || command === "export-authorities") {
@@ -36,15 +42,14 @@ function main() {
     const securityIndex = args.indexOf("--securities");
     const securities = read(securityIndex >= 0 ? args[securityIndex + 1]! : "src/lib/reviewed-ranking-securities.json");
     for (const p of publications) {
-      p.draft = canonicalizeRankingSecurities(p.draft, securities);
+      p.draft = requireCanonicalRankingSecurities(p.draft, securities);
       for (const submission of p.author.submissions) {
-        const forecast = p.draft.forecasts.find((f) => f.securityId === submission.securityId)!;
-        if (hash({ ...p.draft, sleeve: "core", forecasts: [forecast] }) !== submission.contentHash)
+        if (hash(exactAuthorDraft(p.draft, submission.securityId)) !== submission.contentHash)
           throw new Error("Forecast differs from its exact-content author submission");
       }
       if (hash(p.draft) !== p.review.contentHash) throw new Error("Publication differs from exact reviewed content");
     }
-    assertSharedForecastConsistency(publications);
+    assertSharedForecastConsistency(publications, now);
     if (command === "export-authorities") {
       const boardIndex = args.indexOf("--board");
       const board = boardIndex >= 0 ? args[boardIndex + 1] : undefined;
@@ -75,11 +80,11 @@ function main() {
     }
     const authorityIndex = args.indexOf("--authorities");
     verifyRankingAuthorities(publications, read(authorityIndex >= 0 ? args[authorityIndex + 1]! : "src/lib/reviewed-ranking-authorities.json"));
-    if (args.includes("--require-full") && (["core", "ai-regime"] as const).some((sleeve) => buildSleeveRanking(sleeve, publications).rows.length !== 50))
+    if (args.includes("--require-full") && (["core", "ai-regime"] as const).some((sleeve) => buildSleeveRanking(sleeve, publications, [], now, securities).rows.length !== 50))
       throw new Error("Release requires 50 fresh accepted forecasts in each sleeve");
     console.log(JSON.stringify({ verifiedPublications: publications.length,
       sleeves: ["core", "ai-regime"].map((sleeve) => {
-        const latest = latestRankingPublication(sleeve as "core" | "ai-regime", publications);
+        const latest = latestRankingPublication(sleeve as "core" | "ai-regime", publications, now);
         return { sleeve, asOf: latest?.draft.asOf ?? null, forecasts: latest?.draft.forecasts.length ?? 0 };
       }) }, null, 2));
     return;

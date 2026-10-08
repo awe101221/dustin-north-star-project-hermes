@@ -12,14 +12,15 @@ export const metadata: Metadata = { title: "North Star Top 50" };
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
+  const now = new Date().toISOString();
   const db = serverReadClient();
   const header = <PageHeader eyebrow="Hermes · North Star sleeve" title="North Star · Top 50" description="The 50 companies most likely to beat QQQ over five years." />;
   const [publications, candidates] = await Promise.all([
-    safeLoad(async () => loadReviewedRankings()),
+    safeLoad(async () => loadReviewedRankings(undefined, undefined, undefined, now)),
     safeLoad(async () => db ? getRankingCandidates(db, "core") : []),
   ]);
   if (!publications.ok) return <>{header}<ErrorPanel title="Ranking publication unavailable" detail={publications.error} /></>;
-  const ranking = buildSleeveRanking("core", publications.data, candidates.ok ? candidates.data : []);
+  const ranking = buildSleeveRanking("core", publications.data, candidates.ok ? candidates.data : [], now);
   return <>
     {header}
     <SleeveRankingView ranking={ranking} coverageError={candidates.ok ? null : candidates.error} />

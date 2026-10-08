@@ -4,20 +4,19 @@ import publications from "@/lib/reviewed-qqq-rankings.json";
 import authorities from "@/lib/reviewed-ranking-authorities.json";
 import { verifyRankingAuthorities } from "@/lib/ranking-authority";
 import securities from "@/lib/reviewed-ranking-securities.json";
-import { canonicalizeRankingSecurities } from "@/lib/ranking-securities";
-import { rankingPublicationSchema, assertSharedForecastConsistency, type RankingPublication } from "@/lib/qqq-rankings";
+import { requireCanonicalRankingSecurities } from "@/lib/ranking-securities";
+import { rankingPublicationSchema, exactAuthorDraft, assertSharedForecastConsistency, type RankingPublication } from "@/lib/qqq-rankings";
 
 /** Exact draft bytes are canonical JSON produced by JSON.stringify(schema.parse).
  * The repository is the privileged publication boundary, as for the former
  * reviewed sleeve roster. Agent notes and idea metadata cannot publish ranks. */
-export function loadReviewedRankings(input: unknown = publications, authorityInput: unknown = authorities, securityInput: unknown = securities): RankingPublication[] {
+export function loadReviewedRankings(input: unknown = publications, authorityInput: unknown = authorities, securityInput: unknown = securities, now = new Date().toISOString()): RankingPublication[] {
   if (!Array.isArray(input)) throw new Error("Reviewed rankings must be an array");
   const verified = input.map((raw) => {
     const p = rankingPublicationSchema.parse(raw);
-    p.draft = canonicalizeRankingSecurities(p.draft, securityInput);
+    p.draft = requireCanonicalRankingSecurities(p.draft, securityInput);
     for (const submission of p.author.submissions) {
-      const f = p.draft.forecasts.find((f) => f.securityId === submission.securityId)!;
-      const authoredHash = createHash("sha256").update(JSON.stringify({ ...p.draft, sleeve: "core", forecasts: [f] })).digest("hex");
+      const authoredHash = createHash("sha256").update(JSON.stringify(exactAuthorDraft(p.draft, submission.securityId))).digest("hex");
       if (authoredHash !== submission.contentHash) throw new Error("Forecast differs from the exact content submitted by its underwriter");
     }
     const hash = createHash("sha256").update(JSON.stringify(p.draft)).digest("hex");
@@ -25,6 +24,7 @@ export function loadReviewedRankings(input: unknown = publications, authorityInp
     return p;
   });
   verifyRankingAuthorities(verified, authorityInput);
-  assertSharedForecastConsistency(verified);
-  return verified;
+  assertSharedForecastConsistency(verified, now);
+  // A caller cannot activate a future record after this validation snapshot.
+  return verified.filter((p) => Date.parse(p.approval.reviewedAt) <= Date.parse(now));
 }

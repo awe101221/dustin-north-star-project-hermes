@@ -37,10 +37,10 @@ export function verifyRankingAuthorities(publications: RankingPublication[], inp
         throw new Error("Ranking approval lacks a matching completed Hermes task/run authority readback");
       if ("submittedAt" in record) authorEnd = Math.max(authorEnd, authority.endedAt);
       else if ("verdict" in record) {
-        if (authorEnd > authority.startedAt) throw new Error("Independent review must start after all exact-content author submissions completed");
+        if (authorEnd >= authority.startedAt) throw new Error("Independent review must start after all exact-content author submissions completed");
         acceptedReviewEnd = authority.endedAt;
       }
-      else if (acceptedReviewEnd === null || acceptedReviewEnd > authority.startedAt)
+      else if (acceptedReviewEnd === null || acceptedReviewEnd >= authority.startedAt)
         throw new Error("PM approval run must start after the accepted independent review completed");
     }
   }

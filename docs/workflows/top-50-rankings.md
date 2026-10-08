@@ -76,7 +76,7 @@ Re-use existing underwriting and cards; preserve unresolved evidence gaps.
    actual authority exports, through a reviewed PR. Run `verify --require-full`
    and the required software checks. A release contains exactly fifty forecasts
    in each sleeve, one common model as-of, and one actual two-hash PM decision.
-5. Apply `20261008111533_qqq_top50_publications.sql` to INVESTING-BRAIN-AG. It
+5. Apply `20261008122650_qqq_top50_publications.sql` to INVESTING-BRAIN-AG. It
    creates only `hermes_qqq_ranking_releases`, enables RLS, revokes public and
    authenticated access, and grants the service role SELECT/INSERT only. The
    app uses session-checked privileged reads; the agent GET uses bearer auth.

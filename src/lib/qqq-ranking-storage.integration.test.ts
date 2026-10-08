@@ -7,7 +7,7 @@ const table = "public.hermes_qqq_ranking_releases";
 beforeAll(async () => {
   await db.exec("create role anon; create role authenticated; create role service_role bypassrls;");
   await db.exec("alter default privileges in schema public grant select, insert, update, delete on tables to anon, authenticated, service_role;");
-  await db.exec(fs.readFileSync("supabase/migrations/20261008111533_qqq_top50_publications.sql", "utf8"));
+  await db.exec(fs.readFileSync("supabase/migrations/20261008122650_qqq_top50_publications.sql", "utf8"));
 }, 30000);
 afterAll(async () => { await db.close(); });
 

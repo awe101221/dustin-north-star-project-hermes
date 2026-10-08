@@ -14,13 +14,13 @@ export function RevisitList({ dashboard, research, canWrite }: { dashboard: Best
       <CardHeader>
         <div>
           <CardTitle className="inline-flex items-center gap-1.5"><History className="size-3.5 text-cyan" /> Revisit · Former 10 + 10</CardTitle>
-          <CardDescription>Companies replaced from either list stay here with their research and models. Review new evidence, refresh the QQQ case, and reconsider them for a future 10 + 10.</CardDescription>
+          <CardDescription>Companies replaced from either list stay here with their research and models. Review new evidence and refresh the QQQ case for the Top 50.</CardDescription>
         </div>
         <Badge variant="outline">{dashboard.revisit.length} companies</Badge>
       </CardHeader>
       <CardContent className="space-y-3">
         {dashboard.revisitError ? <p role="alert" className="text-[12px] text-warn">{dashboard.revisitError}</p> : dashboard.revisit.length === 0 ? (
-          <p className="py-6 text-center text-[12px] text-muted">{dashboard.sourceMode === "idea-table" ? "Revisit tracking starts with published Hermes ranking snapshots." : "No former selections yet. Companies will appear here automatically when a published refresh replaces them from the 10 + 10."}</p>
+          <p className="py-6 text-center text-[12px] text-muted">{dashboard.sourceMode === "idea-table" ? "Revisit tracking starts with published Hermes ranking snapshots." : "No former selections yet. Saved 10+10 departures are retained here as historical research."}</p>
         ) : dashboard.revisit.map(({ idea, removedAt, lastSnapshotId }) => {
           const update = research[idea.ticker];
           const fresh = update?.item && Date.parse(update.item.occurredAt) > Date.parse(removedAt);
@@ -46,7 +46,7 @@ export function RevisitList({ dashboard, research, canWrite }: { dashboard: Best
             </article>
           );
         })}
-        <p className="text-[11px] text-muted">Research dates refresh when this page loads. A review request queues work for Hermes; re-entry happens when a new ranked snapshot includes the company again.</p>
+        <p className="text-[11px] text-muted">Research dates refresh when this page loads. A review request queues work for Hermes; the current Top 50 uses independently reviewed QQQ likelihood forecasts.</p>
       </CardContent>
     </Card>
   );

@@ -45,7 +45,7 @@ export function SystemMapView({ database }: { database: DatabaseReality[] }) {
             <LoopArrow />
             <LoopStep number="03" title="System persists" detail="Validated outputs, graph, forecasts, provenance" />
             <LoopArrow />
-            <LoopStep number="04" title="North Star displays" detail="10 + 10, models, evidence, QQQ alternative" />
+            <LoopStep number="04" title="North Star displays" detail="Top 50 sleeves, models, evidence, QQQ alternative" />
             <LoopArrow />
             <LoopStep number="05" title="Outcomes improve it" detail="Error, calibration, alpha, prompt/model revision" />
           </div>

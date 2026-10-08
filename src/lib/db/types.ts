@@ -5,6 +5,18 @@
  * `numeric`, so mappers in each domain module coerce with toNumber().
  */
 
+// ── Reviewed ranking snapshots ─────────────────────────────────────────────
+
+/** Parsed at the privileged server boundary before any ranking is rendered. */
+export type QqqRankingReleaseRow = {
+  release_hash: string;
+  as_of: string;
+  approved_at: string;
+  publications: unknown;
+  securities: unknown;
+  authorities: unknown;
+};
+
 // ── Legacy (Awe Capital) surfaces ───────────────────────────────────────────
 
 export type Verdict = "BUY" | "BUY-MORE" | "MAINTAIN" | "WATCH" | "TRIM" | "EXIT" | "PASS" | "AVOID" | "SHORT" | "DATA_GAP";

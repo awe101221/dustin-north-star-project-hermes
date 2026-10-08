@@ -58,11 +58,37 @@ them block the PR; several need a decision from you.
 
 ---
 
+## Top 50 sleeve rankings
+
+The home page and `/ai-regime` each show one Top 50, ordered by modeled likelihood
+of beating QQQ over five years on a matched price-only basis. Pipeline scores,
+conviction, position weights, and the former 12%/15% return hurdles do not affect
+rank or inclusion. Sources, scenarios, falsifiers, freshness, and independent
+review remain visible. Missing comparable forecasts are explicitly unranked;
+the page never pads a list to 50 or relabels expected return as a probability.
+
+Approved live rankings are stored as an append-only, atomic two-sleeve snapshot
+in `hermes_qqq_ranking_releases` in INVESTING-BRAIN-AG. Page reads require a
+signed Hermes session; the service role has only SELECT/INSERT on this table.
+The reviewed JSON files retain the exact publication, identity, and authority
+artifacts for PR review. Generic idea/note metadata cannot publish ranks.
+Every forecast needs actual author submission, independent Evidence & Risk
+acceptance, and exact-hash PM publication approval. The privileged
+`publish-db` command rechecks actual Hermes task/run records before writing.
+See [the workflow](docs/workflows/top-50-rankings.md).
+`npm run rankings -- schema`, `validate FILE`, `verify`, `publish-db`, and
+`inspect-db` support research and verified releases. `GET /api/agent/rankings`
+returns both current sleeves from the same Supabase snapshot. Apply the Top50
+migration before release. Older notes and model/forecast histories are retained.
+The old best-ideas POST routes and learning `publish` command are retired.
+
+The sections below describe historical 10+10 workflows and supporting modules.
+
 ## What shipped
 
 ### 10 + 10 Challenger Board
 
-`/challengers` compares existing pipeline candidates with the current Top 10 and
+`/challengers` retains comparisons of pipeline candidates with the historical Top 10 and
 Watchlist floors. The tournament has no IRR admission floor. 10 + 10 entry is above 12%. Capital Line is above 15%.
 model freshness, and event gates. Explicit PM decisions remain separate from gate
 status; the board never changes membership or authorizes trades. See the
@@ -79,7 +105,7 @@ changes the core 10 + 10. See [docs/ai-regime.md](docs/ai-regime.md).
 
 ### Revisit former 10 + 10 companies
 
-The home page's **Revisit · Former 10 + 10** section derives departures from saved
+The `/rankings/history` page's **Revisit · Former 10 + 10** section derives departures from saved
 Hermes ranking snapshots. It retains the last ranked thesis, lane, rank and exit
 date, links to the original snapshot and company model, and highlights research
 published after the exit. Moving between the two active lanes is not an exit;
@@ -101,8 +127,7 @@ shows due evidence, calibration cohorts, QQQ-relative outcomes and assumption re
 See [the exact refresh contract](docs/workflows/short-horizon-refresh.md) for payloads,
 materiality rules, grading policy, protected local credentials and replay procedures.
 `npm run learning -- grade` runs deterministic market/SEC grading; `feedback` feeds
-prior errors into underwriting; `publish FILE` requires a complete 20-company ladder
-check and publishes the snapshot atomically. Provider failures leave outcomes pending.
+prior errors into underwriting; `publish FILE` is retired; new rankings use the Top 50 publication contract. Provider failures leave outcomes pending.
 Price grading uses the existing licensed `GURUFOCUS_API_KEY` (also read from the protected
 Hermes environment with `--hermes-env`); SEC requests need a configured
 `SEC_USER_AGENT`. Milestones need explicit evidence review. Neither unavailable data

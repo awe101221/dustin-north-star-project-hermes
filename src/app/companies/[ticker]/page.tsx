@@ -9,6 +9,9 @@ import { getUniverseForTicker, getGuruSignalForSymbol, getHoldersForSymbol } fro
 import { getLatestPositions, positionForTicker, getTrades } from "@/lib/db/portfolio";
 import { getIdeaForTicker } from "@/lib/db/pipeline";
 import { getBestIdeasDashboard } from "@/lib/best-ideas";
+import { buildSleeveRanking, SLEEVE_LABELS } from "@/lib/qqq-rankings";
+import { readLiveRankings } from "@/lib/server/qqq-rankings";
+import { rankingSecurityForTicker } from "@/lib/ranking-securities";
 import { getCompanyModel } from "@/lib/company-models";
 import { getCompanyUnderwriting } from "@/lib/db/underwriting";
 import { resolvePersistedGraphTimestampState } from "@/lib/underwriting";
@@ -33,6 +36,7 @@ export async function generateMetadata({ params }: { params: Promise<{ ticker: s
 }
 
 export default async function CompanyPage({ params }: { params: Promise<{ ticker: string }> }) {
+  const now = new Date().toISOString();
   const raw = decodeURIComponent((await params).ticker).toUpperCase();
   const db = serverReadClient();
   const underwritingDb = await underwritingReadClient();
@@ -76,6 +80,14 @@ export default async function CompanyPage({ params }: { params: Promise<{ ticker
   const revisitIdea = bestIdeas?.revisit?.find((entry) => bareSymbol(entry.idea.ticker) === symbol) ?? null;
   const modelIdea = rankedIdea ?? revisitIdea?.idea ?? null;
   const financialModel = getCompanyModel(symbol);
+  const likelihoodLoaded = await safeLoad(async () => {
+    const release = await readLiveRankings(now);
+    const security = rankingSecurityForTicker(raw, release.securities);
+    return (["core", "ai-regime"] as const).flatMap((sleeve) => {
+      const row = security ? buildSleeveRanking(sleeve, release.publications, [], now, release.securities).rows.find((f) => f.securityId === security.canonicalId) : null;
+      return row ? [{ sleeve, row }] : [];
+    });
+  });
   const graphTimestampState = underwritingLoaded.ok
     ? resolvePersistedGraphTimestampState(underwritingLoaded.data?.nodes ?? [])
     : null;
@@ -105,17 +117,25 @@ export default async function CompanyPage({ params }: { params: Promise<{ ticker
         <Stat label="13F buyers / sellers" value={latestGuru ? `${latestGuru.buyers} / ${latestGuru.sellers}` : "—"} caption={latestGuru ? `quarter ${fmtDate(latestGuru.reportDate)}` : "not in tracked 13F flow"} />
       </div>
 
+      {likelihoodLoaded.ok ? likelihoodLoaded.data.length ? <div className="mb-4 panel p-4 text-[12px]">
+        {likelihoodLoaded.data.map(({ sleeve, row }) => <div key={sleeve} className="mb-2">
+          <Link href={sleeve === "core" ? "/" : "/ai-regime"} className="text-cyan hover:underline">{SLEEVE_LABELS[sleeve]} Top 50 · #{row.rank}</Link>
+          <p className="mt-1">{fmtPct(row.probabilityBeatQqq, 1)} modeled five-year likelihood of beating QQQ · model {fmtDate(row.modelAsOf)}</p>
+          <p className="mt-1 text-muted">{row.whyBeatQqq}</p>
+        </div>)}
+      </div> : null : <ErrorPanel title="QQQ ranking unavailable" detail={likelihoodLoaded.error} />}
+
       {revisitIdea && !rankedIdea ? (
         <div className="mb-4 panel p-3 text-[12px] text-muted">
           <Badge variant="cyan">Revisit · Former 10 + 10</Badge>
           <p className="mt-2">Moved out of the ranked list {fmtDate(revisitIdea.removedAt)}. Research and models remain available for a fresh QQQ-relative review.</p>
-          <Link href="/#revisit" className="mt-2 inline-block text-cyan hover:underline">Back to Revisit</Link>
+          <Link href="/rankings/history#revisit" className="mt-2 inline-block text-cyan hover:underline">Back to Revisit</Link>
         </div>
       ) : null}
 
       {financialModel && modelOutputAvailable ? (
         <div className="mb-4">
-          <CompanyFinancialModelView model={financialModel} rankedIdea={modelIdea} formerSelection={!rankedIdea && Boolean(revisitIdea)} />
+          <CompanyFinancialModelView model={financialModel} rankedIdea={modelIdea} formerSelection={!rankedIdea && Boolean(revisitIdea)} historical />
         </div>
       ) : null}
 

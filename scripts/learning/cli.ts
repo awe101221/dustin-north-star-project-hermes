@@ -4,10 +4,7 @@ import os from "node:os";
 import { createHash } from "node:crypto";
 import { hermesClient } from "../lib/rest";
 import { loadEnv, optionalEnv } from "../lib/env";
-import { bestIdeasSnapshotNote } from "../../src/lib/best-ideas";
-import { bestIdeasSnapshotCreate } from "../../src/lib/server/schemas";
-import { forecastLadderCreate, ladderReviewCreate, ladderMetrics, type LadderEvaluation } from "../../src/lib/forecast-ladder";
-import { assertLadderRanking } from "../../src/lib/forecast-ranking";
+import { ladderReviewCreate, ladderMetrics, type LadderEvaluation } from "../../src/lib/forecast-ladder";
 import { createEvidenceProvider, gradeDueLadders } from "../../src/lib/forecast-evidence";
 import { createGuruFocusPriceProvider } from "../../src/lib/providers/gurufocus-prices";
 import { MARKET_POLICY_VERSION, priceReturnEvidence } from "../../src/lib/market-price-provider";
@@ -64,22 +61,7 @@ async function main() {
     if (!model || !agent || !externalKey) throw new Error("start requires actual model version, agent name, and stable invocation key");
     return output({ run_id: await startRun(model, agent, externalKey) });
   }
-  if (command === "publish") {
-    const input = bestIdeasSnapshotCreate.parse(fileJson(rest[0]));
-    if (input.topTen.length !== 10 || input.watchlistTen.length !== 10) throw new Error("Weekday learning refresh requires exactly 10 + 10");
-    assertLadderRanking(input);
-    const registered = [];
-    for (const forecast of input.forecastLadders!) {
-      const parsed = forecastLadderCreate.parse(forecast);
-      registered.push(await db.rpc("hermes_register_forecast_ladder", { p_input: parsed }));
-    }
-    const runId = input.forecastLadders![0]!.run_id;
-    // Snapshot replay is keyed by the immutable refresh run. Verify payload;
-    // never overwrite a publication to make a conflicting retry succeed.
-    const note = bestIdeasSnapshotNote(input, input.actor);
-    const publication = await db.rpc<{ note: { id: string }; replay: boolean }>("hermes_publish_learning_snapshot", { p_run_id: runId, p_note: note });
-    return output({ note_id: publication.note.id, registered, replay: publication.replay });
-  }
+  if (command === "publish") throw new Error("10+10 publication is retired. Use npm run rankings and docs/workflows/top-50-rankings.md; existing forecasts remain available for grading and feedback.");
   if (command === "grade") {
     const forecasts = await db.selectAll<LadderEvaluation>("hermes_ladder_evaluations", "select=*&outcome_id=is.null&order=due_date.asc,id.asc");
     const runId = await startRun("deterministic-evidence-grader-v2", "hermes-outcome-grader", `ladder-grade:${new Date().toISOString()}`, "forecast-outcome-grading");

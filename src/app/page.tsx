@@ -1,56 +1,32 @@
 import type { Metadata } from "next";
-import { PageHeader, NotConfigured, ErrorPanel } from "@/components/page-header";
+import Link from "next/link";
+import { PageHeader, ErrorPanel } from "@/components/page-header";
+import { SleeveRankingView } from "@/components/rankings/sleeve-ranking-view";
 import { serverReadClient } from "@/lib/supabase/server";
-import { BEST_IDEAS_SNAPSHOT_TAG, getBestIdeasDashboard } from "@/lib/best-ideas";
-import { getLatestResearchForTickers } from "@/lib/db/research";
-import { isWriteConfigured } from "@/lib/env";
+import { getRankingCandidates } from "@/lib/db/rankings";
+import { buildSleeveRanking } from "@/lib/qqq-rankings";
+import { readLiveRankings } from "@/lib/server/qqq-rankings";
 import { safeLoad } from "@/lib/server/safe";
-import { BestIdeasView } from "@/components/best-ideas/best-ideas-view";
 
-export const metadata: Metadata = { title: "10 + 10" };
+export const metadata: Metadata = { title: "North Star Top 50" };
 export const dynamic = "force-dynamic";
 
-const DESCRIPTION =
-  "The simplified home base: Hermes's Top 10 ideas plus Watchlist 10, ranked by the current QQQ-relative case. Chat is the main interface; this app organizes the results.";
-
 export default async function HomePage() {
+  const now = new Date().toISOString();
   const db = serverReadClient();
-  if (!db) {
-    return (
-      <>
-        <PageHeader eyebrow="Hermes ranked research" title="10 + 10" description={DESCRIPTION} />
-        <NotConfigured what="the Dustin North Star Hermes brain" />
-      </>
-    );
-  }
-
-  const result = await safeLoad(() => getBestIdeasDashboard(db));
-  if (!result.ok) {
-    return (
-      <>
-        <PageHeader eyebrow="Hermes ranked research" title="10 + 10" description={DESCRIPTION} />
-        <ErrorPanel detail={result.error} />
-      </>
-    );
-  }
-
-  const revisitResearch = await getLatestResearchForTickers(db, result.data.revisit.map(({ idea }) => idea.ticker), BEST_IDEAS_SNAPSHOT_TAG);
-
-  return (
-    <>
-      <PageHeader
-        eyebrow="Hermes ranked research"
-        title="10 + 10"
-        description={DESCRIPTION}
-        meta={
-          <>
-            <span>Beat QQQ over 10 years</span>
-            <span>·</span>
-            <span>not a trade recommendation</span>
-          </>
-        }
-      />
-      <BestIdeasView dashboard={result.data} revisitResearch={revisitResearch} canWrite={isWriteConfigured()} />
-    </>
-  );
+  const header = <PageHeader eyebrow="Hermes · North Star sleeve" title="North Star · Top 50" description="The 50 companies most likely to beat QQQ over five years." />;
+  const [publications, candidates] = await Promise.all([
+    safeLoad(async () => readLiveRankings(now)),
+    safeLoad(async () => db ? getRankingCandidates(db, "core") : []),
+  ]);
+  if (!publications.ok) return <>{header}<ErrorPanel title="Ranking publication unavailable" detail={publications.error} /></>;
+  const ranking = buildSleeveRanking("core", publications.data.publications, candidates.ok ? candidates.data : [], now, publications.data.securities);
+  return <>
+    {header}
+    <SleeveRankingView ranking={ranking} coverageError={candidates.ok ? null : candidates.error} />
+    <div className="panel mt-5 p-4">
+      <Link href="/rankings/history" className="text-[13px] font-medium text-cyan hover:underline">Historical rankings &amp; Revisit</Link>
+      <p className="mt-2 text-[12px] text-muted">Prior 10+10 selections, company models, and research for reconsideration.</p>
+    </div>
+  </>;
 }

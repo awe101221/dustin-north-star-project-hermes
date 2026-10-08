@@ -1,3 +1,8 @@
+> Historical 10+10 workflow. New ranking publication uses
+> [Top 50 QQQ rankings](top-50-rankings.md). The old `publish` command and
+> best-ideas POST routes return a retirement error. Continue grading and
+> reviewing the immutable forecasts already registered under this contract.
+
 # Weekday 10+10 forecast-to-outcome contract, v1
 
 You are the Dustin North Star Hermes underwriting agent. The mission is to improve

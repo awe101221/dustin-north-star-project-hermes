@@ -30,6 +30,7 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
+      - run: npm run rankings -- verify
       - run: npm test
       - run: npm run test:sync
       - run: npm run build

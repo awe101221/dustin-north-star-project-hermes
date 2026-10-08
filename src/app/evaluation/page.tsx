@@ -71,7 +71,7 @@ export default async function EvaluationPage() {
 
         <div className="grid gap-4 xl:grid-cols-[1.25fr_.75fr]">
           <Card className="overflow-hidden">
-            <CardHeader><div><CardTitle>Current 10 + 10 scenario registry</CardTitle><CardDescription>One row per company, forecast type, unit, model version, and state so unlike predictions are never merged.</CardDescription></div><Badge variant="cyan">{registry.size} forecasts</Badge></CardHeader>
+            <CardHeader><div><CardTitle>Historical scenario registry</CardTitle><CardDescription>One row per company, forecast type, unit, model version, and state so unlike predictions are never merged.</CardDescription></div><Badge variant="cyan">{registry.size} forecasts</Badge></CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[820px] text-[11.5px]">

@@ -2,7 +2,7 @@
   "name": "dustin-north-star-project-hermes",
   "version": "0.1.0",
   "private": true,
-  "description": "Dustin North Star Project Hermes — quant PM dashboard for beating QQQ over a decade. Next.js + TypeScript + Tailwind + shadcn/ui + Supabase.",
+  "description": "Dustin North Star Project Hermes \u2014 quant PM dashboard for beating QQQ over a decade. Next.js + TypeScript + Tailwind + shadcn/ui + Supabase.",
   "scripts": {
     "learning": "tsx scripts/learning/cli.ts",
     "dev": "next dev",
@@ -13,7 +13,7 @@
     "test": "vitest run",
     "test:sync": "python3 -m unittest scripts.sync.test_challenger_board_sync",
     "test:watch": "vitest",
-    "check": "npm run lint && npm run typecheck && npm run test && npm run test:sync && npm run build",
+    "check": "npm run lint && npm run typecheck && npm run rankings -- verify && npm run test && npm run test:sync && npm run build",
     "db:migrate": "tsx scripts/db/apply-migrations.ts",
     "db:verify": "tsx scripts/db/verify.ts",
     "migrate:knowledge": "tsx scripts/migrate/import-legacy-knowledge.ts",
@@ -23,7 +23,8 @@
     "seed:pipeline": "tsx scripts/seed/seed-pipeline.ts",
     "seed:underwriting": "tsx scripts/seed/seed-underwriting.ts",
     "migrate:all": "npm run seed:mandate && npm run migrate:knowledge && npm run seed:pipeline && npm run seed:underwriting && npm run db:verify",
-    "smoke": "tsx scripts/smoke/screenshot-routes.ts"
+    "smoke": "tsx scripts/smoke/screenshot-routes.ts",
+    "rankings": "tsx scripts/rankings/cli.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "6.3.1",

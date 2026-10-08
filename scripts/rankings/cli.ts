@@ -1,0 +1,137 @@
+import fs from "node:fs";
+import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
+import { z } from "zod";
+import { loadEnvConfig } from "@next/env";
+import { createClient } from "@supabase/supabase-js";
+import { publicSupabaseUrl, serviceRoleKey } from "../../src/lib/env";
+import { rankingAuthoritySchema } from "../../src/lib/ranking-authority";
+import { prepareRankingRelease, decodeRankingRelease } from "../../src/lib/ranking-release";
+import { appendQqqRankingRelease, getLatestQqqRankingRelease } from "../../src/lib/db/qqq-rankings";
+import { rankingDraftSchema, rankingPublicationSchema, exactAuthorDraft, rankForecasts, sumProbabilities, assertSharedForecastConsistency, buildSleeveRanking, latestRankingPublication } from "../../src/lib/qqq-rankings";
+import { requireCanonicalRankingSecurities } from "../../src/lib/ranking-securities";
+import { verifyRankingAuthorities, type RankingAuthority } from "../../src/lib/ranking-authority";
+
+const [command, ...args] = process.argv.slice(2);
+const file = args[0] && !args[0].startsWith("--") ? args.shift() : undefined;
+const hash = (draft: unknown) => createHash("sha256").update(JSON.stringify(draft)).digest("hex");
+const read = (name: string) => JSON.parse(fs.readFileSync(name, "utf8"));
+function releaseDb() {
+  loadEnvConfig(process.cwd());
+  const url = publicSupabaseUrl(); // refuses every other project ref
+  const key = serviceRoleKey();
+  if (!key) throw new Error("SUPABASE_SERVICE_ROLE_KEY is required for privileged ranking storage");
+  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+}
+async function main() {
+  const now = new Date().toISOString();
+  if (command === "inspect-db") {
+    const row = await getLatestQqqRankingRelease(releaseDb(), { now });
+    if (!row) throw new Error("No live ranking release has been published");
+    const bundle = decodeRankingRelease(row, now);
+    console.log(JSON.stringify({ releaseHash: row.release_hash, asOf: row.as_of, approvedAt: row.approved_at,
+      sleeves: bundle.publications.map((p) => ({ sleeve: p.draft.sleeve, contentHash: p.review.contentHash,
+        rows: buildSleeveRanking(p.draft.sleeve, bundle.publications, [], now, bundle.securities).rows.length })) }, null, 2));
+    return;
+  }
+  if (command === "schema") {
+    console.log(JSON.stringify(z.toJSONSchema(rankingDraftSchema), null, 2));
+    return;
+  }
+  if (command === "validate") {
+    if (!file) throw new Error("Draft JSON file required");
+    const draft = rankingDraftSchema.parse(read(file));
+    const canonicalIndex = args.indexOf("--canonical");
+    if (canonicalIndex >= 0) {
+      const output = args[canonicalIndex + 1];
+      if (!output) throw new Error("--canonical requires an output path");
+      fs.writeFileSync(output, JSON.stringify(draft), { mode: 0o600 });
+    }
+    const ranked = rankForecasts(draft.forecasts);
+    console.log(JSON.stringify({ sleeve: draft.sleeve, contentHash: hash(draft), coverage: `${ranked.length}/50`,
+      rows: ranked.map((r) => ({ rank: r.rank, ticker: r.ticker, probabilityBeatQqq: r.probabilityBeatQqq,
+        scenarioProbabilityTotal: sumProbabilities(r.scenarios.map((s) => s.probability)),
+        benchmarkMarginals: draft.benchmarkScenarios.map((b) => ({ name: b.name, expected: b.probability, actual: sumProbabilities(r.scenarios.filter((s) => s.benchmarkScenario === b.name).map((s) => s.probability)) })),
+        outcomes: r.scenarios.map((s) => ({ name: s.name, probability: s.probability, stockTerminalPrice: s.stockTerminalPrice,
+          impliedTerminalPrice: r.currentPrice * (1 + s.stockAnnualizedReturn) ** 5, stockAnnualizedReturn: s.stockAnnualizedReturn,
+          qqqAnnualizedReturn: s.qqqAnnualizedReturn, strictlyBeatsQqq: s.stockAnnualizedReturn > s.qqqAnnualizedReturn })) })) }, null, 2));
+    return;
+  }
+  if (command === "verify" || command === "export-authorities" || command === "publish-db") {
+    const raw = read(file ?? "src/lib/reviewed-qqq-rankings.json");
+    if (!Array.isArray(raw)) throw new Error("Publications must be an array");
+    const publications = raw.map((p: unknown) => rankingPublicationSchema.parse(p));
+    const securityIndex = args.indexOf("--securities");
+    const securities = read(securityIndex >= 0 ? args[securityIndex + 1]! : "src/lib/reviewed-ranking-securities.json");
+    for (const p of publications) {
+      p.draft = requireCanonicalRankingSecurities(p.draft, securities);
+      for (const submission of p.author.submissions) {
+        if (hash(exactAuthorDraft(p.draft, submission.securityId)) !== submission.contentHash)
+          throw new Error("Forecast differs from its exact-content author submission");
+      }
+      if (hash(p.draft) !== p.review.contentHash) throw new Error("Publication differs from exact reviewed content");
+    }
+    assertSharedForecastConsistency(publications, now);
+    if (command === "export-authorities" || command === "publish-db") {
+      const boardIndex = args.indexOf("--board");
+      const board = boardIndex >= 0 ? args[boardIndex + 1] : undefined;
+      const outputIndex = args.indexOf("--output");
+      const output = outputIndex >= 0 ? args[outputIndex + 1] : undefined;
+      if (!board || !file || (command === "export-authorities" && !output)) throw new Error("Actual authority verification requires PUBLICATIONS --board BOARD; export-authorities also requires --output OUTPUT");
+      const authorities: RankingAuthority[] = [];
+      for (const p of publications) for (const record of [...p.author.submissions, p.review, p.approval]) {
+        const call = (verb: string) => JSON.parse(execFileSync("hermes", ["kanban", "--board", board, verb, record.taskId, "--json"], { encoding: "utf8", timeout: 30000, maxBuffer: 4 * 1024 * 1024 }));
+        const shown = call("show");
+        const runs = call("runs") as { id: number; profile: string; status: string; outcome: string; started_at: number; ended_at: number; metadata: Record<string, unknown> | null }[];
+        const run = runs.find((r) => String(r.id) === record.runId);
+        const decision = "verdict" in record ? record.verdict : record.decision;
+        const metadata = run?.metadata;
+        const accepted = [metadata, ...(Array.isArray(metadata?.publications) ? metadata.publications as Record<string, unknown>[] : [])]
+          .some((m) => (m?.contentHash ?? m?.content_hash) === record.contentHash && (m?.verdict ?? m?.decision) === decision);
+        if (shown.task.id !== record.taskId || shown.task.assignee !== record.actor || shown.task.status !== "done" ||
+          !run || run.profile !== record.actor || run.status !== "done" || run.outcome !== "completed" ||
+          !accepted)
+          throw new Error(`Actual Hermes task/run has not accepted this exact content: ${record.taskId}`);
+        authorities.push({ taskId: record.taskId, runId: record.runId, actor: record.actor, taskStatus: "done", runStatus: "done", runOutcome: "completed",
+          startedAt: run.started_at, endedAt: run.ended_at, recordedAt: new Date(run.ended_at * 1000).toISOString(), contentHash: record.contentHash, decision });
+      }
+      verifyRankingAuthorities(publications, authorities);
+      if (command === "export-authorities") {
+        fs.writeFileSync(output!, JSON.stringify(authorities, null, 2) + "\n", { mode: 0o600 });
+        console.log(JSON.stringify({ exportedAuthorities: authorities.length }));
+        return;
+      }
+      const authorityIndex = args.indexOf("--authorities");
+      const supplied = rankingAuthoritySchema.array().parse(read(authorityIndex >= 0 ? args[authorityIndex + 1]! : "src/lib/reviewed-ranking-authorities.json"));
+      if (JSON.stringify(supplied) !== JSON.stringify(rankingAuthoritySchema.array().parse(authorities)))
+        throw new Error("Publication authority file differs from fresh actual Hermes task/run readbacks");
+      const row = prepareRankingRelease({ publications, securities, authorities: supplied }, now);
+      const db = releaseDb();
+      const latest = await getLatestQqqRankingRelease(db, { now });
+      if (latest && (Date.parse(latest.as_of) > Date.parse(row.as_of) || (Date.parse(latest.as_of) === Date.parse(row.as_of) && Date.parse(latest.approved_at) > Date.parse(row.approved_at))))
+        throw new Error("An already active newer ranking release prevents publishing this older snapshot");
+      const stored = await appendQqqRankingRelease(db, row);
+      decodeRankingRelease(stored, now);
+      const active = await getLatestQqqRankingRelease(db, { now });
+      if (active?.release_hash !== row.release_hash) throw new Error("New release is not the actual active Supabase snapshot");
+      console.log(JSON.stringify({ publishedReleaseHash: row.release_hash, projectRef: "cwiaqczpifnxxcucqwvr",
+        publicationHashes: Object.fromEntries(publications.map((p) => [p.draft.sleeve, p.review.contentHash])), coreRows: 50, aiRegimeRows: 50 }));
+      return;
+    }
+    const authorityIndex = args.indexOf("--authorities");
+    verifyRankingAuthorities(publications, read(authorityIndex >= 0 ? args[authorityIndex + 1]! : "src/lib/reviewed-ranking-authorities.json"));
+    if (args.includes("--require-full") && (["core", "ai-regime"] as const).some((sleeve) => buildSleeveRanking(sleeve, publications, [], now, securities).rows.length !== 50))
+      throw new Error("Release requires 50 fresh accepted forecasts in each sleeve");
+    console.log(JSON.stringify({ verifiedPublications: publications.length,
+      sleeves: ["core", "ai-regime"].map((sleeve) => {
+        const latest = latestRankingPublication(sleeve as "core" | "ai-regime", publications, now);
+        return { sleeve, asOf: latest?.draft.asOf ?? null, forecasts: latest?.draft.forecasts.length ?? 0 };
+      }) }, null, 2));
+    return;
+  }
+  throw new Error("Commands: schema | validate DRAFT [--canonical OUTPUT] | verify [PUBLICATIONS] [--authorities FILE] [--require-full] | export-authorities PUBLICATIONS --board BOARD --output FILE | publish-db PUBLICATIONS --board BOARD --securities FILE --authorities FILE | inspect-db");
+}
+main().catch((error: unknown) => {
+  console.error(error instanceof z.ZodError ? error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("\n") : error instanceof Error ? error.message : "Ranking validation failed");
+  process.exitCode = 1;
+});

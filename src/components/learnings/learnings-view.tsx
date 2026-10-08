@@ -6,8 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 const DEFAULT_PRINCIPLES = [
   "QQQ is the default unless an active idea has a clear 10-year opportunity-cost edge.",
-  "Every Top 10 idea must state why it beats QQQ and what would make QQQ better.",
-  "Incomplete risk or falsifier work pushes an idea toward Watchlist, not Top 10.",
+  "Every ranked forecast must state why it beats QQQ and what would make QQQ better.",
+  "Missing outcome-critical evidence keeps a company unranked until independent review.",
   "Hermes rankings should change when evidence improves, breaks, or reprices.",
 ];
 
@@ -21,7 +21,7 @@ export function LearningsView({ archive }: { archive: LearningArchive }) {
           <CardHeader>
             <div>
               <CardTitle className="inline-flex items-center gap-1.5"><Brain className="size-3.5 text-gold" /> Current investing philosophy</CardTitle>
-              <CardDescription>The rules Hermes is using to build and adjust the Top 10 + Watchlist 10 for beating QQQ over 10 years.</CardDescription>
+              <CardDescription>Research lessons for the five-year QQQ likelihood rankings and the longer-term investing mandate.</CardDescription>
             </div>
             <Badge variant="gold">continuous learning</Badge>
           </CardHeader>
@@ -29,6 +29,7 @@ export function LearningsView({ archive }: { archive: LearningArchive }) {
             <p className="mb-4 text-[12.5px] leading-5 text-foreground-secondary">
               {current?.summary ?? "No persisted learning snapshot yet. Hermes will use the baseline philosophy below until daily or event-driven learning notes are published."}
             </p>
+            <p className="mb-4 text-[12px] text-muted">Current sleeve ranks use independently reviewed five-year QQQ outperformance likelihood. Earlier notes may refer to the historical 10+10 workflow; they remain dated research.</p>
             <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
               {principles.map((principle, index) => (
                 <div key={principle} className="panel-2 p-3">
@@ -54,7 +55,7 @@ export function LearningsView({ archive }: { archive: LearningArchive }) {
             </div>
             <div className="panel-2 p-3">
               <p className="eyebrow mb-1">Event-driven</p>
-              <p>Any memo, market event, mistake, or ranking change that improves the Top 10 process should create an archive entry.</p>
+              <p>Any memo, market event, mistake, or ranking change that improves the Top 50 process should create an archive entry.</p>
             </div>
             <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted">
               <CalendarClock className="size-3.5" /> Last update {fmtDateTime(current?.asOf)}
@@ -80,7 +81,7 @@ export function LearningsView({ archive }: { archive: LearningArchive }) {
               </div>
               <p className="mt-2 text-[12.5px] leading-5 text-foreground-secondary">{change.learning}</p>
               <div className="mt-2 panel-2 p-2.5">
-                <p className="eyebrow mb-1">Implication for Top 10 + Watchlist 10</p>
+                <p className="eyebrow mb-1">Implication recorded at publication</p>
                 <p className="text-[12px] leading-4 text-muted">{change.implication}</p>
               </div>
               {change.tickers.length ? <p className="mt-2 num text-[11px] text-muted">Tickers: {change.tickers.join(", ")}</p> : null}

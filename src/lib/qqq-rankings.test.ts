@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
-import { buildSleeveRanking, exactAuthorDraft, forecastMetrics, rankForecasts, rankingDraftSchema, rankingPublicationSchema, type RankingDraft, type RankingForecast, type RankingPublication, assertSharedForecastConsistency } from "./qqq-rankings";
+import { buildSleeveRanking, exactAuthorDraft, forecastMetrics, rankForecasts, rankingDraftSchema, rankingForecastSchema, rankingPublicationSchema, type RankingDraft, type RankingForecast, type RankingPublication, assertSharedForecastConsistency } from "./qqq-rankings";
 vi.mock("server-only", () => ({}));
 import { canonicalizeRankingSecurities, rankingSecurityForTicker, rankingSecurityMaster } from "./ranking-securities";
 import { loadReviewedRankings } from "./server/qqq-rankings";
@@ -88,6 +88,9 @@ describe("QQQ likelihood rankings", () => {
     const d = draft();
     expect(rankingDraftSchema.safeParse({ ...d, horizonYears: 10 }).success).toBe(false);
     expect(rankingDraftSchema.safeParse({ ...d, returnBasis: "total-return" }).success).toBe(false);
+    d.forecasts[0]!.currency = "EUR" as "USD";
+    expect(rankingDraftSchema.safeParse(d).success).toBe(false);
+    d.forecasts[0]!.currency = "USD";
     d.forecasts[0]!.scenarios[0]!.probability = 0.3;
     expect(rankingDraftSchema.safeParse(d).success).toBe(false);
     d.forecasts[0] = forecast(); d.forecasts[0]!.priceAsOf = "2026-10-06T20:00:00Z";
@@ -242,6 +245,24 @@ describe("QQQ likelihood rankings", () => {
     expect(() => draft([f])).toThrow();
     f.scenarios[0]!.stockTerminalPrice = 0;
     expect(draft([f]).forecasts).toHaveLength(1);
+  });
+  it("breaks exact decimal ties alphabetically despite binary addition differences", () => {
+    const a = forecast("AAA"), b = forecast("ZZZ");
+    for (const [f, wins, losses] of [[a, [0.16, 0.30, 0.15], [0.04, 0.25, 0.10]], [b, [0.14, 0.34, 0.13], [0.06, 0.21, 0.12]]] as const) {
+      f.scenarios.forEach((s, i) => { s.probability = wins[i]!; s.stockAnnualizedReturn = 1; s.stockTerminalPrice = 3200; });
+      f.scenarios.push(...f.scenarios.map((s, i) => ({ ...s, name: `${s.name} loss`, probability: losses[i]!, stockAnnualizedReturn: -1, stockTerminalPrice: 0 })));
+      expect(rankingForecastSchema.safeParse(f).success).toBe(true);
+    }
+    expect(forecastMetrics(a).probabilityBeatQqq).toBe(0.61);
+    expect(forecastMetrics(b).probabilityBeatQqq).toBe(0.61);
+    expect(rankForecasts([b, a]).map((r) => r.ticker)).toEqual(["AAA", "ZZZ"]);
+  });
+  it("compares real decimal mass differences before conversion to display numbers", () => {
+    const a = forecast("AAA"), b = forecast("ZZZ");
+    b.scenarios.push({ ...b.scenarios[2]!, name: "Additional tiny win", stockAnnualizedReturn: 0.3, stockTerminalPrice: 100 * 1.3 ** 5, probability: 1e-100 });
+    expect(rankingForecastSchema.safeParse(b).success).toBe(true);
+    expect(forecastMetrics(a).probabilityBeatQqq).toBe(forecastMetrics(b).probabilityBeatQqq);
+    expect(rankForecasts([a, b])[0]!.ticker).toBe("ZZZ");
   });
 
 });

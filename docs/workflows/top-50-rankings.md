@@ -20,6 +20,7 @@ currentPrice, currency, thesis, whyBeatQqq, falsifier, nextAction, theme,
 evidenceUrls, limitations, capitalStructure, probabilityRationale, and three to twelve matched scenarios. Each scenario
 has name, benchmarkScenario, probability, stockAnnualizedReturn, stockTerminalPrice, qqqAnnualizedReturn, and rationale.
 Numbers are decimal ratios. Probabilities sum to exactly one (tolerance 1e-9).
+All stock and QQQ outcomes are in USD. Native-currency forecasts without an evidenced USD/FX bridge are unranked; a local-currency return cannot be compared directly with QQQ's USD return.
 The five-year terminal price must reproduce the stock CAGR within a tight relative arithmetic tolerance. Each scenario's rationale traces economic drivers to its per-share
 outcome. `capitalStructure` records the share basis, financing, corporate
 actions, and material dilution bounds; `probabilityRationale` explains the
@@ -44,6 +45,7 @@ explain how probabilities and QQQ outcomes were selected. Rank probability is
 returns count as no outperformance. Equal probabilities sort alphabetically,
 never by position size, conviction, pipeline stage, or expected return. These
 are subjective model estimates, not measured or calibrated success rates.
+Canonical decimal scenario weights are summed and compared exactly before conversion to display numbers, so floating-point addition cannot change a tie or erase a genuine difference.
 
 Supply at least 50 independently reviewed, fresh forecasts in each sleeve to
 fill it; a larger research universe may be supplied, and the engine takes the

@@ -17,7 +17,7 @@ export const rankingForecastSchema = z.object({
   modelAsOf: timestamp,
   priceAsOf: timestamp,
   currentPrice: z.number().finite().positive(),
-  currency: nonempty.max(8),
+  currency: z.literal("USD"),
   thesis: nonempty.max(4000),
   whyBeatQqq: nonempty.max(4000),
   falsifier: nonempty.max(4000),
@@ -149,21 +149,40 @@ export type SleeveRanking = {
   missingSlots: number;
 };
 
+type ProbabilityMass = { units: bigint; scale: number };
+/** Sum the canonical decimal weights exactly. Binary addition noise must not
+ * break real ties, and display rounding must not erase a real difference. */
+function beatMass(f: RankingForecast): ProbabilityMass {
+  const parts = f.scenarios.filter((s) => s.stockAnnualizedReturn > s.qqqAnnualizedReturn).map((s) => {
+    const [mantissa, exponent = "0"] = s.probability.toString().split("e");
+    const [whole, fraction = ""] = mantissa!.split(".");
+    return { units: BigInt(whole! + fraction), scale: fraction.length - Number(exponent) };
+  });
+  const scale = Math.max(0, ...parts.map((p) => p.scale));
+  const units = parts.reduce((n, p) => n + p.units * 10n ** BigInt(scale - p.scale), 0n);
+  return units > 10n ** BigInt(scale) ? { units: 1n, scale: 0 } : { units, scale };
+}
+function compareMass(a: ProbabilityMass, b: ProbabilityMass): number {
+  const scale = Math.max(a.scale, b.scale);
+  const difference = a.units * 10n ** BigInt(scale - a.scale) - b.units * 10n ** BigInt(scale - b.scale);
+  return difference < 0n ? -1 : difference > 0n ? 1 : 0;
+}
+
 export function forecastMetrics(f: RankingForecast) {
-  const probability = f.scenarios.reduce((n, s) => n + (s.stockAnnualizedReturn > s.qqqAnnualizedReturn ? s.probability : 0), 0);
+  const probability = beatMass(f);
   return {
     // Ties with QQQ are not outperformance. Do not multiply marginal scenario
     // probabilities: the stock and QQQ outcomes describe the SAME scenario.
-    probabilityBeatQqq: Math.min(1, probability),
+    probabilityBeatQqq: Number(`${probability.units}e-${probability.scale}`),
     expectedAnnualizedReturn: f.scenarios.reduce((n, s) => n + s.probability * s.stockAnnualizedReturn, 0),
     expectedQqqReturn: f.scenarios.reduce((n, s) => n + s.probability * s.qqqAnnualizedReturn, 0),
   };
 }
 
 export function rankForecasts(forecasts: RankingForecast[]): RankedForecast[] {
-  return forecasts.map((f) => ({ ...f, ...forecastMetrics(f) }))
-    .sort((a, b) => b.probabilityBeatQqq - a.probabilityBeatQqq || bareSymbol(a.ticker).localeCompare(bareSymbol(b.ticker)) || a.securityId.localeCompare(b.securityId))
-    .slice(0, RANKING_LIMIT).map((f, i) => ({ ...f, rank: i + 1 }));
+  return forecasts.map((f) => ({ row: { ...f, ...forecastMetrics(f) }, mass: beatMass(f) }))
+    .sort((a, b) => compareMass(b.mass, a.mass) || bareSymbol(a.row.ticker).localeCompare(bareSymbol(b.row.ticker)) || a.row.securityId.localeCompare(b.row.securityId))
+    .slice(0, RANKING_LIMIT).map(({ row }, i) => ({ ...row, rank: i + 1 }));
 }
 
 /** Call only with publications whose content hash was verified by the loader. */
